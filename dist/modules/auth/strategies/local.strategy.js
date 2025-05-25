@@ -1,0 +1,62 @@
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.LocalStrategy = void 0;
+const passport_local_1 = require("passport-local");
+const passport_1 = require("@nestjs/passport");
+const common_1 = require("@nestjs/common");
+const auth_service_1 = require("../services/auth.service");
+const users_service_1 = require("../../users/services/users.service");
+let LocalStrategy = class LocalStrategy extends (0, passport_1.PassportStrategy)(passport_local_1.Strategy) {
+    authService;
+    usersService;
+    constructor(authService, usersService) {
+        super({ usernameField: 'email', passReqToCallback: true });
+        this.authService = authService;
+        this.usersService = usersService;
+    }
+    async validate(req, email, password) {
+        const user = await this.usersService.findByEmail(email);
+        if (!user) {
+            throw new common_1.UnauthorizedException('Invalid credentials');
+        }
+        if (user.lockedUntil && user.lockedUntil > new Date()) {
+            throw new common_1.UnauthorizedException('Account is locked due to too many failed login attempts.');
+        }
+        if (user.active === false) {
+            throw new common_1.UnauthorizedException('Account is inactive.');
+        }
+        const validUser = await this.authService.validateUser(email, password);
+        if (!validUser) {
+            await this.usersService.recordFailedLoginAttempt(email);
+            throw new common_1.UnauthorizedException('Invalid credentials');
+        }
+        if (user.mfaEnabled) {
+            const mfaCode = req.body.mfaCode || req.headers['x-mfa-code'];
+            if (!mfaCode) {
+                throw new common_1.UnauthorizedException('MFA code required.');
+            }
+            const mfaValid = await this.authService.validateMfaCode(user, mfaCode);
+            if (!mfaValid) {
+                throw new common_1.UnauthorizedException('Invalid MFA code.');
+            }
+        }
+        await this.usersService.resetFailedLoginAttempts(user.id);
+        return validUser;
+    }
+};
+exports.LocalStrategy = LocalStrategy;
+exports.LocalStrategy = LocalStrategy = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [auth_service_1.AuthService,
+        users_service_1.UsersService])
+], LocalStrategy);
+//# sourceMappingURL=local.strategy.js.map

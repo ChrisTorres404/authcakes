@@ -1,0 +1,20 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SkipThrottle = exports.ThrottleApiWrite = exports.ThrottleApiRead = exports.ThrottleRefresh = exports.ThrottlePasswordReset = exports.ThrottleRegister = exports.ThrottleLogin = void 0;
+const common_1 = require("@nestjs/common");
+const throttler_1 = require("@nestjs/throttler");
+const ThrottleLogin = () => (0, throttler_1.Throttle)({ default: { limit: 5, ttl: 900 } });
+exports.ThrottleLogin = ThrottleLogin;
+const ThrottleRegister = () => (0, throttler_1.Throttle)({ default: { limit: 3, ttl: 3600 } });
+exports.ThrottleRegister = ThrottleRegister;
+const ThrottlePasswordReset = () => (0, throttler_1.Throttle)({ default: { limit: 3, ttl: 3600 } });
+exports.ThrottlePasswordReset = ThrottlePasswordReset;
+const ThrottleRefresh = () => (0, throttler_1.Throttle)({ default: { limit: 10, ttl: 60 } });
+exports.ThrottleRefresh = ThrottleRefresh;
+const ThrottleApiRead = () => (0, throttler_1.Throttle)({ default: { limit: 100, ttl: 60 } });
+exports.ThrottleApiRead = ThrottleApiRead;
+const ThrottleApiWrite = () => (0, throttler_1.Throttle)({ default: { limit: 30, ttl: 60 } });
+exports.ThrottleApiWrite = ThrottleApiWrite;
+const SkipThrottle = () => (0, common_1.SetMetadata)('skipThrottle', true);
+exports.SkipThrottle = SkipThrottle;
+//# sourceMappingURL=throttle.decorator.js.map
