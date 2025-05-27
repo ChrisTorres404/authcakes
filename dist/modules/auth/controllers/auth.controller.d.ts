@@ -21,7 +21,11 @@ export declare class AuthController {
         user: {
             id: string;
             email: string;
+            firstName: string;
+            lastName: string;
             role: string;
+            avatar: string;
+            emailVerified: boolean;
         };
         sessionId: string;
         accessToken: string;
@@ -35,7 +39,11 @@ export declare class AuthController {
         user: {
             id: string;
             email: string;
+            firstName: string;
+            lastName: string;
             role: string;
+            avatar: string;
+            emailVerified: boolean;
         };
         accessToken: string;
         refreshToken: string;
@@ -65,11 +73,16 @@ export declare class AuthController {
         user: {
             id: string;
             email: string;
+            firstName: string;
+            lastName: string;
             role: string;
+            avatar: string;
+            emailVerified: boolean;
         };
         sessionId: string;
         accessToken: string;
         refreshToken: string;
+        verificationToken: string;
     }>;
     verifyEmail(token: string): Promise<{
         success: boolean;

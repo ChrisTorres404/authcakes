@@ -2,10 +2,13 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.seedUserDevices = seedUserDevices;
 const common_1 = require("@nestjs/common");
-async function seedUserDevices(userDeviceRepository, userRepository) {
+async function seedUserDevices(userDeviceRepository, userRepository, options = {}) {
     const logger = new common_1.Logger('UserDevicesSeeder');
     const count = await userDeviceRepository.count();
-    if (count === 0) {
+    if (count === 0 || options.force) {
+        if (count > 0 && options.force) {
+            logger.log('Force option enabled - seeding user devices even though devices already exist');
+        }
         logger.log('Seeding user devices...');
         const adminUser = await userRepository.findOne({ where: { email: 'admin@example.com' } });
         if (adminUser) {

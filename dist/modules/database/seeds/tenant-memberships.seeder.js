@@ -2,10 +2,13 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.seedTenantMemberships = seedTenantMemberships;
 const common_1 = require("@nestjs/common");
-async function seedTenantMemberships(tenantMembershipRepository, userRepository, tenantRepository) {
+async function seedTenantMemberships(tenantMembershipRepository, userRepository, tenantRepository, options = {}) {
     const logger = new common_1.Logger('TenantMembershipsSeeder');
     const membershipsCount = await tenantMembershipRepository.count();
-    if (membershipsCount === 0) {
+    if (membershipsCount === 0 || options.force) {
+        if (membershipsCount > 0 && options.force) {
+            logger.log('Force option enabled - seeding tenant memberships even though memberships already exist');
+        }
         logger.log('Seeding tenant memberships...');
         const adminUser = await userRepository.findOne({ where: { email: 'admin@example.com' } });
         const demoUser = await userRepository.findOne({ where: { email: 'demo@example.com' } });

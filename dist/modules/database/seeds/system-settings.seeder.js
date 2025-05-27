@@ -2,10 +2,13 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.seedSystemSettings = seedSystemSettings;
 const common_1 = require("@nestjs/common");
-async function seedSystemSettings(systemSettingsRepository) {
+async function seedSystemSettings(systemSettingsRepository, options = {}) {
     const logger = new common_1.Logger('SystemSettingsSeeder');
     const settingsCount = await systemSettingsRepository.count();
-    if (settingsCount === 0) {
+    if (settingsCount === 0 || options.force) {
+        if (settingsCount > 0 && options.force) {
+            logger.log('Force option enabled - seeding system settings even though settings already exist');
+        }
         logger.log('Seeding system settings...');
         const settings = [
             { key: 'global_session_timeout_minutes', value: '30', type: 'number', description: 'Global session timeout in minutes' },

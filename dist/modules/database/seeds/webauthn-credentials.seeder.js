@@ -2,10 +2,13 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.seedWebauthnCredentials = seedWebauthnCredentials;
 const common_1 = require("@nestjs/common");
-async function seedWebauthnCredentials(webauthnCredentialRepository, userRepository) {
+async function seedWebauthnCredentials(webauthnCredentialRepository, userRepository, options = {}) {
     const logger = new common_1.Logger('WebauthnCredentialsSeeder');
     const count = await webauthnCredentialRepository.count();
-    if (count === 0) {
+    if (count === 0 || options.force) {
+        if (count > 0 && options.force) {
+            logger.log('Force option enabled - seeding WebAuthn credentials even though credentials already exist');
+        }
         logger.log('Seeding WebAuthn credentials...');
         const adminUser = await userRepository.findOne({ where: { email: 'admin@example.com' } });
         if (adminUser) {

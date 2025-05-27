@@ -92,6 +92,6 @@ __decorate([
     __metadata("design:type", Date)
 ], TenantInvitation.prototype, "updatedAt", void 0);
 exports.TenantInvitation = TenantInvitation = __decorate([
-    (0, typeorm_1.Entity)('organization_invitations')
+    (0, typeorm_1.Entity)('tenant_invitations')
 ], TenantInvitation);
 //# sourceMappingURL=tenant-invitation.entity.js.map

@@ -22,10 +22,17 @@ let SeedCommand = SeedCommand_1 = class SeedCommand extends nest_commander_1.Com
         this.seederService = seederService;
         common_1.Logger.log('SeedCommand constructed');
     }
-    async run() {
-        this.logger.log('Starting database seeding...');
+    parseForceOption(val) {
+        return !!val;
+    }
+    async run(passedParams, options) {
+        console.log('SeedCommand.run() called with options:', options);
+        this.logger.log('SeedCommand.run() called with options: ' + JSON.stringify(options));
         try {
-            await this.seederService.seed();
+            const seederOptions = {
+                force: options.force,
+            };
+            await this.seederService.seed(seederOptions);
             this.logger.log('Database seeding completed successfully!');
             process.exit(0);
         }
@@ -36,6 +43,15 @@ let SeedCommand = SeedCommand_1 = class SeedCommand extends nest_commander_1.Com
     }
 };
 exports.SeedCommand = SeedCommand;
+__decorate([
+    (0, nest_commander_1.Option)({
+        flags: '-f, --force',
+        description: 'Force seeding even if tables are not empty',
+    }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Boolean]),
+    __metadata("design:returntype", Boolean)
+], SeedCommand.prototype, "parseForceOption", null);
 exports.SeedCommand = SeedCommand = SeedCommand_1 = __decorate([
     (0, nest_commander_1.Command)({ name: 'seed', description: 'Seed the database with initial data' }),
     __metadata("design:paramtypes", [seeder_service_1.SeederService])

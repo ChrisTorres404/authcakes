@@ -33,6 +33,12 @@ import {
     ThrottlePasswordReset, 
     ThrottleRefresh 
   } from '../../../common/decorators/throttle.decorator';
+  import { ApiOperation, ApiBody, ApiOkResponse, ApiBadRequestResponse, ApiConflictResponse, ApiUnauthorizedResponse } from '@nestjs/swagger';
+  import { LoginResponseDto } from '../dto/login-response.dto';
+  import { SuccessResponseDto } from '../dto/success-response.dto';
+  import { TokenResponseDto } from '../dto/token-response.dto';
+  import { SessionStatusResponseDto } from '../dto/session-status-response.dto';
+  import { SessionListResponseDto } from '../dto/session-list-response.dto';
   
   @Controller('auth')
   export class AuthController {
@@ -48,6 +54,9 @@ import {
     @ThrottleLogin()
     @Post('login')
     @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Login with email and password' })
+    @ApiBody({ type: LoginDto })
+    @ApiOkResponse({ type: LoginResponseDto, description: 'Successful login returns user info and tokens.' })
     async login(@Body() loginDto: LoginDto, @Req() req, @Res({ passthrough: true }) res: Response) {
       // Get device info from request headers
       const deviceInfo = this.extractDeviceInfo(req);
@@ -71,6 +80,8 @@ import {
   
     @Post('logout')
     @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Logout the current user and clear authentication cookies.' })
+    @ApiOkResponse({ type: SuccessResponseDto, description: 'Logout successful.' })
     async logout(@Req() req, @Res({ passthrough: true }) res: Response) {
       // Get session ID from token payload
       const sessionId = req.user.sessionId;
@@ -91,6 +102,8 @@ import {
     @ThrottleRefresh()
     @Post('refresh')
     @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Refresh access and refresh tokens using a valid refresh token.' })
+    @ApiOkResponse({ type: TokenResponseDto, description: 'Returns new access and refresh tokens, and user info.' })
     async refresh(@Req() req, @Res({ passthrough: true }) res: Response) {
       const userId = req.user.id;
       const oldSessionId = req.user.sessionId;
@@ -121,6 +134,8 @@ import {
   
     @Get('session-status')
     @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Check if the current session is valid and get remaining time.' })
+    @ApiOkResponse({ type: SessionStatusResponseDto, description: 'Session validity and remaining time.' })
     async checkSessionStatus(@Req() req) {
       // Get user and session ID
       const userId = req.user.id ?? '';
@@ -147,6 +162,8 @@ import {
     }
   
     @Get('sessions')
+    @ApiOperation({ summary: 'List all active sessions for the current user.' })
+    @ApiOkResponse({ type: SessionListResponseDto, description: 'List of active sessions.' })
     async listSessions(@Req() req) {
       const userId = req.user.id;
       const sessions = await this.tokenService.listActiveSessions(userId);
@@ -163,6 +180,9 @@ import {
   
     @Post('revoke-session')
     @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Revoke a specific session for the current user.' })
+    @ApiBody({ type: RevokeSessionDto })
+    @ApiOkResponse({ type: SuccessResponseDto, description: 'Session revoked successfully.' })
     async revokeSession(@Body() dto: RevokeSessionDto, @Req() req) {
       const userId = req.user.id;
   
@@ -182,24 +202,38 @@ import {
     @ThrottleRegister()
     @Post('register')
     @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Register a new user account.' })
+    @ApiBody({ type: RegisterDto })
+    @ApiOkResponse({ type: LoginResponseDto, description: 'Registration successful, returns user info and tokens.' })
+    @ApiBadRequestResponse({ description: 'Invalid input or weak password.' })
+    @ApiConflictResponse({ description: 'Email already in use.' })
     async register(@Body() registerDto: RegisterDto, @Req() req, @Res({ passthrough: true }) res: Response) {
       // Get device info from request headers
       const deviceInfo = this.extractDeviceInfo(req);
   
       // Register user and generate tokens
-      const { accessToken, refreshToken, sessionId, user } =
+      const { accessToken, refreshToken, sessionId, user, verificationToken } =
         await this.authService.register(registerDto, deviceInfo);
   
       // Set cookies
       this.setAuthCookies(res, { accessToken, refreshToken, sessionId });
   
-      // Return user info
+      // Return user info (full user object) and verificationToken for dev only
       return {
         success: true,
-        user,
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+          avatar: user.avatar,
+          emailVerified: user.emailVerified,
+        },
         sessionId,
         accessToken,
         refreshToken,
+        verificationToken, // For development use only
       };
     }
   
@@ -208,6 +242,10 @@ import {
      */
     @Public()
     @Post('verify-email')
+    @ApiOperation({ summary: 'Verify user email with a token.' })
+    @ApiBody({ schema: { example: { token: 'verification-token' } } })
+    @ApiOkResponse({ description: 'Email verified and user info returned.' })
+    @ApiBadRequestResponse({ description: 'Invalid or expired verification token.' })
     async verifyEmail(@Body('token') token: string) {
       const user = await this.authService.verifyEmail(token);
       return { success: true, user };
@@ -220,6 +258,10 @@ import {
     @ThrottlePasswordReset()
     @Post('forgot-password')
     @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Request a password reset email.' })
+    @ApiBody({ type: ForgotPasswordDto })
+    @ApiOkResponse({ description: 'Password reset token sent if email exists.' })
+    @ApiBadRequestResponse({ description: 'Invalid email or user not found.' })
     async forgotPassword(@Body() dto: ForgotPasswordDto) {
       // This will generate a reset token and (TODO) send email
       const token = await this.authService.requestPasswordReset(dto.email);
@@ -233,6 +275,8 @@ import {
     @ThrottlePasswordReset()
     @Post('reset-password')
     @HttpCode(200)
+    @ApiOperation({ summary: 'Reset password using a token and optional OTP.' })
+    @ApiOkResponse({ description: 'Password reset and user info returned.' })
     async resetPassword(@Body() dto: ResetPasswordDto) {
       const user = await this.authService.resetPassword(dto.token, dto.password, dto.otp);
       return { success: true, user };
@@ -242,9 +286,13 @@ import {
      * Request account recovery (when user has lost all credentials)
      */
     @Public()
-    @ThrottlePasswordReset() // Reuse password reset throttling
+    @ThrottlePasswordReset()
     @Post('request-account-recovery')
     @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Request account recovery when all credentials are lost.' })
+    @ApiBody({ type: RequestAccountRecoveryDto })
+    @ApiOkResponse({ description: 'Account recovery token sent if email exists.' })
+    @ApiBadRequestResponse({ description: 'Invalid email or user not found.' })
     async requestAccountRecovery(@Body() dto: RequestAccountRecoveryDto) {
       // This will generate a recovery token and send notification
       const result = await this.authService.requestAccountRecovery(dto.email);
@@ -255,9 +303,13 @@ import {
      * Complete account recovery by setting new password with recovery token
      */
     @Public()
-    @ThrottlePasswordReset() // Reuse password reset throttling
+    @ThrottlePasswordReset()
     @Post('complete-account-recovery')
     @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Complete account recovery by setting a new password with a recovery token.' })
+    @ApiBody({ type: CompleteAccountRecoveryDto })
+    @ApiOkResponse({ description: 'Account recovery completed.' })
+    @ApiBadRequestResponse({ description: 'Invalid token, password, or MFA code.' })
     async completeAccountRecovery(@Body() dto: CompleteAccountRecoveryDto) {
       const result = await this.authService.completeAccountRecovery(dto.token, dto.newPassword);
       return result;
@@ -268,6 +320,10 @@ import {
      */
     @Post('change-password')
     @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Change password for the current user.' })
+    @ApiBody({ schema: { example: { oldPassword: 'OldPassword123!', newPassword: 'NewPassword123!' } } })
+    @ApiOkResponse({ description: 'Password changed and all sessions/tokens revoked.' })
+    @ApiBadRequestResponse({ description: 'Invalid input or weak password.' })
     async changePassword(@Req() req, @Body('oldPassword') oldPassword: string, @Body('newPassword') newPassword: string) {
       const userId = req.user.id;
       const result = await this.authService.changePassword(userId, oldPassword, newPassword);
@@ -282,6 +338,9 @@ import {
      */
     @Post('mfa/enroll')
     @HttpCode(200)
+    @ApiOperation({ summary: 'Enroll in multi-factor authentication (MFA).' })
+    @ApiOkResponse({ schema: { example: { success: true, secret: 'BASE32SECRET', otpauth_url: 'otpauth://totp/Service:user@example.com?secret=BASE32SECRET&issuer=Service' } }, description: 'MFA enrollment secret and URL returned.' })
+    @ApiUnauthorizedResponse({ description: 'User is not authenticated.' })
     async mfaEnroll(@Req() req) {
       // Generate a TOTP secret for the user
       const secret = require('speakeasy').generateSecret({ length: 20 });
@@ -292,6 +351,14 @@ import {
   
     @Post('mfa/verify')
     @HttpCode(200)
+    @ApiOperation({ summary: 'Verify MFA code to enable MFA.' })
+    @ApiBody({ schema: { example: { code: '123456' } } })
+    @ApiOkResponse({ schema: { oneOf: [
+      { example: { success: true } },
+      { example: { success: false, message: 'No MFA secret set' } },
+      { example: { success: false, message: 'Invalid MFA code' } }
+    ] }, description: 'MFA enabled if code is valid.' })
+    @ApiUnauthorizedResponse({ description: 'User is not authenticated.' })
     async mfaVerify(@Req() req, @Body('code') code: string) {
       // Get user and secret
       const user = await this.authService.getUserById(req.user.id);
@@ -317,6 +384,8 @@ import {
      * Social login (stub)
      */
     @Post('social')
+    @ApiOperation({ summary: 'Social login (not implemented).', description: 'This endpoint is a stub and does not perform social login.' })
+    @ApiOkResponse({ schema: { example: { success: false, message: 'Social login not implemented yet' } }, description: 'Social login not implemented yet.' })
     async socialLogin() {
       return { success: false, message: 'Social login not implemented yet' };
     }
@@ -325,6 +394,8 @@ import {
      * Audit logs (stub)
      */
     @Get('/audit-logs')
+    @ApiOperation({ summary: 'Get audit logs (not implemented).', description: 'This endpoint is a stub and does not return audit logs.' })
+    @ApiOkResponse({ schema: { example: { success: false, message: 'Audit logs not implemented yet' } }, description: 'Audit logs not implemented yet.' })
     async auditLogs() {
       return { success: false, message: 'Audit logs not implemented yet' };
     }

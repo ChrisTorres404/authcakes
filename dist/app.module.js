@@ -31,7 +31,6 @@ const all_exceptions_filter_1 = require("./common/filters/all-exceptions.filter"
 const roles_guard_1 = require("./common/guards/roles.guard");
 const logging_middleware_1 = require("./common/middleware/logging.middleware");
 const performance_interceptor_1 = require("./common/interceptors/performance.interceptor");
-const seed_command_1 = require("./commands/seed.command");
 let AppModule = class AppModule {
     configure(consumer) {
         consumer.apply(logging_middleware_1.LoggingMiddleware).forRoutes('*');
@@ -94,7 +93,6 @@ exports.AppModule = AppModule = __decorate([
         controllers: [app_controller_1.AppController],
         providers: [
             app_service_1.AppService,
-            seed_command_1.SeedCommand,
             {
                 provide: core_2.APP_GUARD,
                 useClass: throttler_2.ThrottlerGuard,

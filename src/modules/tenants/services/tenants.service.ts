@@ -298,8 +298,16 @@ export class TenantsService {
     return this.findById(id);
   }
 
-  async listTenants(): Promise<Tenant[]> {
-    return this.findAll();
+  async listTenants(params?: { page?: number; limit?: number; search?: string }): Promise<Tenant[]> {
+    const page = params?.page ?? 1;
+    const limit = params?.limit ?? 10;
+    const search = params?.search;
+    const query = this.tenantRepository.createQueryBuilder('tenant').where('tenant.active = :active', { active: true });
+    if (search) {
+      query.andWhere('tenant.name ILIKE :search OR tenant.slug ILIKE :search', { search: `%${search}%` });
+    }
+    query.skip((page - 1) * limit).take(limit);
+    return query.getMany();
   }
 
   async updateTenant(id: string, data: any): Promise<Tenant> {

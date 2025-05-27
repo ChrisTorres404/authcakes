@@ -2,11 +2,15 @@ import { Repository } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import * as bcrypt from 'bcrypt';
 import { Logger } from '@nestjs/common';
+import { SeederOptions } from './seeder.service';
 
-export async function seedUsers(userRepository: Repository<User>) {
+export async function seedUsers(userRepository: Repository<User>, options: SeederOptions = {}) {
   const logger = new Logger('UsersSeeder');
   const usersCount = await userRepository.count();
-  if (usersCount === 0) {
+  if (usersCount === 0 || options.force) {
+    if (usersCount > 0 && options.force) {
+      logger.log('Force option enabled - seeding users even though users already exist');
+    }
     logger.log('Seeding users...');
     const passwordHash = await bcrypt.hash('StrongP@ssw0rd!', 10);
     const adminUser = userRepository.create({
@@ -35,4 +39,4 @@ export async function seedUsers(userRepository: Repository<User>) {
   } else {
     logger.log('Users already exist, skipping seeding');
   }
-} 
+}

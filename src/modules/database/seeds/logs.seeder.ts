@@ -3,15 +3,20 @@ import { Log } from '../../logs/entities/log.entity';
 import { User } from '../../users/entities/user.entity';
 import { Tenant } from '../../tenants/entities/tenant.entity';
 import { Logger } from '@nestjs/common';
+import { SeederOptions } from './seeder.service';
 
 export async function seedLogs(
   logRepository: Repository<Log>,
   userRepository: Repository<User>,
   tenantRepository: Repository<Tenant>,
+  options: SeederOptions = {},
 ) {
   const logger = new Logger('LogsSeeder');
   const count = await logRepository.count();
-  if (count === 0) {
+  if (count === 0 || options.force) {
+    if (count > 0 && options.force) {
+      logger.log('Force option enabled - seeding logs even though logs already exist');
+    }
     logger.log('Seeding logs...');
     const adminUser = await userRepository.findOne({ where: { email: 'admin@example.com' } });
     const demoTenant = await tenantRepository.findOne({ where: { slug: 'demo-org' } });
@@ -33,4 +38,4 @@ export async function seedLogs(
   } else {
     logger.log('Logs already exist, skipping seeding');
   }
-} 
+}

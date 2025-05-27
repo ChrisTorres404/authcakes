@@ -26,43 +26,53 @@ let TenantAuthGuard = TenantAuthGuard_1 = class TenantAuthGuard {
     async canActivate(context) {
         const requiredRoles = this.reflector.getAllAndOverride(tenant_roles_decorator_1.REQUIRED_TENANT_ROLES_KEY, [context.getHandler(), context.getClass()]) || [];
         if (!requiredRoles.length) {
+            this.logger.debug('[TenantAuthGuard] No requiredRoles, access allowed');
             return true;
         }
         const request = context.switchToHttp().getRequest();
         const user = request.user;
-        const tenantId = request.params.tenantId || request.body.tenantId || request.headers['x-tenant-id'] || request.tenantId;
+        let tenantId = request.params.tenantId || request.body.tenantId || request.headers['x-tenant-id'] || request.tenantId;
+        if (!tenantId && user && user.tenantId) {
+            tenantId = user.tenantId;
+            this.logger.debug('[TenantAuthGuard] Fallback: using tenantId from user.tenantId in JWT:', tenantId);
+        }
+        this.logger.debug(`[TenantAuthGuard] Checking access for user:`, user);
+        this.logger.debug(`[TenantAuthGuard] tenantId:`, tenantId);
+        this.logger.debug(`[TenantAuthGuard] user.tenantAccess:`, user?.tenantAccess);
+        this.logger.debug(`[TenantAuthGuard] requiredRoles:`, requiredRoles);
         if (!tenantId) {
-            this.logger.warn(`Access denied: Missing tenant context for user ${user?.id}`);
+            this.logger.warn(`[TenantAuthGuard] Access denied: Missing tenant context for user ${user?.id}`);
             this.logAuditEvent({ userId: user?.id, tenantId, action: 'access_denied', reason: 'Missing tenant context' });
             throw new common_1.ForbiddenException('Tenant context is required');
         }
         if (!user || !Array.isArray(user.tenantAccess)) {
-            this.logger.warn(`Access denied: Missing user or tenantAccess`);
+            this.logger.warn(`[TenantAuthGuard] Access denied: Missing user or tenantAccess. user:`, user, 'tenantAccess:', user?.tenantAccess);
             this.logAuditEvent({ userId: user?.id, tenantId, action: 'access_denied', reason: 'Missing user or tenantAccess' });
             throw new common_1.ForbiddenException('User context is required');
         }
         if (!user.tenantAccess.includes(tenantId)) {
-            this.logger.warn(`Access denied: User ${user?.id} does not have access to tenant ${tenantId}`);
+            this.logger.warn(`[TenantAuthGuard] Access denied: User ${user?.id} does not have access to tenant ${tenantId}`);
             this.logAuditEvent({ userId: user?.id, tenantId, action: 'access_denied', reason: 'No tenant access' });
             throw new common_1.ForbiddenException('User does not have access to this tenant');
         }
         if (requiredRoles.length === 0) {
-            this.logger.log(`Access granted: User ${user?.id} has access to tenant ${tenantId} (no specific role required)`);
+            this.logger.log(`[TenantAuthGuard] Access granted: User ${user?.id} has access to tenant ${tenantId} (no specific role required)`);
             this.logAuditEvent({ userId: user?.id, tenantId, action: 'access_granted', reason: 'No specific role required' });
             return true;
         }
         const membership = await this.tenantsService.getUserTenantMembership(user.id, tenantId);
+        this.logger.debug(`[TenantAuthGuard] membership:`, membership);
         if (!membership) {
-            this.logger.warn(`Access denied: User ${user?.id} is not a member of tenant ${tenantId}`);
+            this.logger.warn(`[TenantAuthGuard] Access denied: User ${user?.id} is not a member of tenant ${tenantId}`);
             this.logAuditEvent({ userId: user?.id, tenantId, action: 'access_denied', reason: 'Not a member' });
             throw new common_1.ForbiddenException('User is not a member of this tenant');
         }
         if (!requiredRoles.includes(membership.role)) {
-            this.logger.warn(`Access denied: User ${user?.id} has role ${membership.role} but requires one of [${requiredRoles.join(', ')}] in tenant ${tenantId}`);
+            this.logger.warn(`[TenantAuthGuard] Access denied: User ${user?.id} has role ${membership.role} but requires one of [${requiredRoles.join(', ')}] in tenant ${tenantId}`);
             this.logAuditEvent({ userId: user?.id, tenantId, action: 'access_denied', reason: `Role ${membership.role} not in [${requiredRoles.join(', ')}]` });
             throw new common_1.ForbiddenException('User does not have the required role for this tenant');
         }
-        this.logger.log(`Access granted: User ${user?.id} with role ${membership.role} in tenant ${tenantId}`);
+        this.logger.log(`[TenantAuthGuard] Access granted: User ${user?.id} with role ${membership.role} in tenant ${tenantId}`);
         this.logAuditEvent({ userId: user?.id, tenantId, action: 'access_granted', reason: `Role ${membership.role}` });
         return true;
     }

@@ -92,9 +92,11 @@ export class AuthService {
     await this.passwordHistoryService.addToHistory(user.id, user.password);
 
     // Optionally send verification email here
-    await this.requestEmailVerification(user.id);
+    const verificationToken = await this.requestEmailVerification(user.id);
     // No need to assign user.tenantMemberships here; handled by DB relations
-    return this.tokenService.generateTokens(user.id, deviceInfo);
+    const tokens = await this.tokenService.generateTokens(user.id, deviceInfo);
+    // For development only: include verificationToken in the response
+    return { ...tokens, verificationToken };
   }
 
   // Token refresh logic

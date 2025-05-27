@@ -90,8 +90,9 @@ let AuthService = AuthService_1 = class AuthService {
             await this.tenantsService.addUserToTenant(user.id, tenant.id, 'owner');
         }
         await this.passwordHistoryService.addToHistory(user.id, user.password);
-        await this.requestEmailVerification(user.id);
-        return this.tokenService.generateTokens(user.id, deviceInfo);
+        const verificationToken = await this.requestEmailVerification(user.id);
+        const tokens = await this.tokenService.generateTokens(user.id, deviceInfo);
+        return { ...tokens, verificationToken };
     }
     async refresh(userId, sessionId, deviceInfo = {}) {
         return this.tokenService.generateTokens(userId, deviceInfo);

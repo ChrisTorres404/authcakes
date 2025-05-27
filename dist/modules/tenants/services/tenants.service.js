@@ -235,8 +235,16 @@ let TenantsService = TenantsService_1 = class TenantsService {
     async getTenantById(id) {
         return this.findById(id);
     }
-    async listTenants() {
-        return this.findAll();
+    async listTenants(params) {
+        const page = params?.page ?? 1;
+        const limit = params?.limit ?? 10;
+        const search = params?.search;
+        const query = this.tenantRepository.createQueryBuilder('tenant').where('tenant.active = :active', { active: true });
+        if (search) {
+            query.andWhere('tenant.name ILIKE :search OR tenant.slug ILIKE :search', { search: `%${search}%` });
+        }
+        query.skip((page - 1) * limit).take(limit);
+        return query.getMany();
     }
     async updateTenant(id, data) {
         return this.update(id, data);

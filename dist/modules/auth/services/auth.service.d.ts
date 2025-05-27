@@ -24,13 +24,18 @@ export declare class AuthService {
     constructor(usersService: UsersService, tokenService: TokenService, sessionService: SessionService, jwtService: JwtService, auditLogService: AuditLogService, notificationService: NotificationService, passwordHistoryService: PasswordHistoryService, settingsService: SettingsService, configService: ConfigService, tenantsService: TenantsService);
     validateUser(email: string, password: string): Promise<import("../../users/entities/user.entity").User>;
     register(registerDto: any, deviceInfo?: any): Promise<{
+        verificationToken: string;
         accessToken: string;
         refreshToken: string;
         sessionId: string;
         user: {
             id: string;
             email: string;
+            firstName: string;
+            lastName: string;
             role: string;
+            avatar: string;
+            emailVerified: boolean;
         };
     }>;
     refresh(userId: string, sessionId: string, deviceInfo?: any): Promise<{
@@ -40,7 +45,11 @@ export declare class AuthService {
         user: {
             id: string;
             email: string;
+            firstName: string;
+            lastName: string;
             role: string;
+            avatar: string;
+            emailVerified: boolean;
         };
     }>;
     requestEmailVerification(userId: string): Promise<string>;

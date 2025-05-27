@@ -12,7 +12,7 @@ import {
   import { User } from '../../users/entities/user.entity';
   import { Tenant } from './tenant.entity';
   
-  @Entity('organization_invitations')
+  @Entity('tenant_invitations')
   export class TenantInvitation {
     @PrimaryGeneratedColumn('uuid')
     id: string;

@@ -2,10 +2,13 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.seedMfaRecoveryCodes = seedMfaRecoveryCodes;
 const common_1 = require("@nestjs/common");
-async function seedMfaRecoveryCodes(mfaRecoveryCodeRepository, userRepository) {
+async function seedMfaRecoveryCodes(mfaRecoveryCodeRepository, userRepository, options = {}) {
     const logger = new common_1.Logger('MfaRecoveryCodesSeeder');
     const count = await mfaRecoveryCodeRepository.count();
-    if (count === 0) {
+    if (count === 0 || options.force) {
+        if (count > 0 && options.force) {
+            logger.log('Force option enabled - seeding MFA recovery codes even though codes already exist');
+        }
         logger.log('Seeding MFA recovery codes...');
         const adminUser = await userRepository.findOne({ where: { email: 'admin@example.com' } });
         if (adminUser) {

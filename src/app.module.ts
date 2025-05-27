@@ -94,7 +94,7 @@ import { SeedCommand } from './commands/seed.command';
   controllers: [AppController],
   providers: [
     AppService,
-    SeedCommand,
+    // SeedCommand removed to avoid DI conflicts with CliModule
 
     // Global Guards - Order matters! Throttler should be first
     {

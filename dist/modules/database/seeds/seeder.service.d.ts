@@ -1,4 +1,7 @@
 import { Repository } from 'typeorm';
+export interface SeederOptions {
+    force?: boolean;
+}
 import { SystemSetting } from '../../settings/entities/system-setting.entity';
 import { User } from '../../users/entities/user.entity';
 import { Tenant } from '../../tenants/entities/tenant.entity';
@@ -22,5 +25,5 @@ export declare class SeederService {
     private readonly invitationRepository;
     private readonly logger;
     constructor(systemSettingsRepository: Repository<SystemSetting>, userRepository: Repository<User>, tenantRepository: Repository<Tenant>, tenantMembershipRepository: Repository<TenantMembership>, logRepository: Repository<Log>, apiKeyRepository: Repository<ApiKey>, mfaRecoveryCodeRepository: Repository<MfaRecoveryCode>, webauthnCredentialRepository: Repository<WebauthnCredential>, userDeviceRepository: Repository<UserDevice>, invitationRepository: Repository<TenantInvitation>);
-    seed(): Promise<void>;
+    seed(options?: SeederOptions): Promise<void>;
 }

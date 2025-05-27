@@ -3,6 +3,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+
+export interface SeederOptions {
+  force?: boolean;
+}
 import { SystemSetting } from '../../settings/entities/system-setting.entity';
 import { User } from '../../users/entities/user.entity';
 import { Tenant } from '../../tenants/entities/tenant.entity';
@@ -22,7 +26,7 @@ import { seedApiKeys } from './api-keys.seeder';
 import { seedMfaRecoveryCodes } from './mfa-recovery-codes.seeder';
 import { seedWebauthnCredentials } from './webauthn-credentials.seeder';
 import { seedUserDevices } from './user-devices.seeder';
-import { seedOrganizationInvitations } from './organization-invitations.seeder';
+import { seedTenantInvitations } from './tenant-invitations.seeder';
 
 @Injectable()
 export class SeederService {
@@ -53,41 +57,51 @@ export class SeederService {
     Logger.log('SeederService constructed');
   }
 
-  async seed() {
-    await seedSystemSettings(this.systemSettingsRepository);
-    await seedUsers(this.userRepository);
-    await seedTenants(this.tenantRepository);
+  async seed(options: SeederOptions = {}) {
+    console.log('SeederService.seed() called with options:', options);
+    this.logger.log('SeederService.seed() called with options: ' + JSON.stringify(options));
+    
+    await seedSystemSettings(this.systemSettingsRepository, options);
+    await seedUsers(this.userRepository, options);
+    await seedTenants(this.tenantRepository, options);
     await seedTenantMemberships(
       this.tenantMembershipRepository,
       this.userRepository,
       this.tenantRepository,
+      options,
     );
     await seedLogs(
       this.logRepository,
       this.userRepository,
       this.tenantRepository,
+      options,
     );
     await seedApiKeys(
       this.apiKeyRepository,
       this.userRepository,
       this.tenantRepository,
+      options,
     );
     await seedMfaRecoveryCodes(
       this.mfaRecoveryCodeRepository,
       this.userRepository,
+      options,
     );
     await seedWebauthnCredentials(
       this.webauthnCredentialRepository,
       this.userRepository,
+      options,
     );
     await seedUserDevices(
       this.userDeviceRepository,
       this.userRepository,
+      options,
     );
-    await seedOrganizationInvitations(
+    await seedTenantInvitations(
       this.invitationRepository,
       this.userRepository,
       this.tenantRepository,
+      options,
     );
     this.logger.log('Database seeding completed');
   }

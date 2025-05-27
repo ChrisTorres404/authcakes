@@ -14,6 +14,7 @@ const users_service_1 = require("./services/users.service");
 const users_controller_1 = require("./controllers/users.controller");
 const auth_module_1 = require("../auth/auth.module");
 const audit_log_service_1 = require("../auth/services/audit-log.service");
+const tenants_module_1 = require("../tenants/tenants.module");
 let UsersModule = class UsersModule {
 };
 exports.UsersModule = UsersModule;
@@ -22,6 +23,7 @@ exports.UsersModule = UsersModule = __decorate([
         imports: [
             typeorm_1.TypeOrmModule.forFeature([user_entity_1.User]),
             (0, common_1.forwardRef)(() => auth_module_1.AuthModule),
+            tenants_module_1.TenantsModule,
         ],
         controllers: [users_controller_1.UsersController],
         providers: [users_service_1.UsersService, audit_log_service_1.AuditLogService],

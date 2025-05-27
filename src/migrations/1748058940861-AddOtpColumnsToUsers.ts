@@ -16,9 +16,9 @@ export class AddOtpColumnsToUsers1748058940861 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "logs" DROP CONSTRAINT "FK_logs_tenant"`);
         await queryRunner.query(`ALTER TABLE "tenant_memberships" DROP CONSTRAINT "FK_tenant_memberships_user"`);
         await queryRunner.query(`ALTER TABLE "tenant_memberships" DROP CONSTRAINT "FK_tenant_memberships_tenant"`);
-        await queryRunner.query(`ALTER TABLE "organization_invitations" DROP CONSTRAINT "FK_org_invite_tenant"`);
-        await queryRunner.query(`ALTER TABLE "organization_invitations" DROP CONSTRAINT "FK_org_invite_invitedBy"`);
-        await queryRunner.query(`ALTER TABLE "organization_invitations" DROP CONSTRAINT "FK_org_invite_acceptedBy"`);
+        await queryRunner.query(`ALTER TABLE "tenant_invitations" DROP CONSTRAINT "FK_org_invite_tenant"`);
+        await queryRunner.query(`ALTER TABLE "tenant_invitations" DROP CONSTRAINT "FK_org_invite_invitedBy"`);
+        await queryRunner.query(`ALTER TABLE "tenant_invitations" DROP CONSTRAINT "FK_org_invite_acceptedBy"`);
         await queryRunner.query(`DROP INDEX "public"."IDX_refresh_tokens_userId"`);
         await queryRunner.query(`DROP INDEX "public"."IDX_refresh_tokens_sessionId"`);
         await queryRunner.query(`DROP INDEX "public"."IDX_refresh_tokens_expiresAt"`);
@@ -44,9 +44,9 @@ export class AddOtpColumnsToUsers1748058940861 implements MigrationInterface {
         await queryRunner.query(`DROP INDEX "public"."IDX_users_email"`);
         await queryRunner.query(`DROP INDEX "public"."IDX_tenant_memberships_user_id"`);
         await queryRunner.query(`DROP INDEX "public"."IDX_tenant_memberships_tenant_id"`);
-        await queryRunner.query(`DROP INDEX "public"."IDX_org_invite_tenantId"`);
-        await queryRunner.query(`DROP INDEX "public"."IDX_org_invite_email"`);
-        await queryRunner.query(`DROP INDEX "public"."IDX_org_invite_token"`);
+        await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_org_invite_tenantId"`);
+        await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_org_invite_email"`);
+        await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_org_invite_token"`);
         await queryRunner.query(`DROP INDEX "public"."IDX_tenants_slug"`);
         await queryRunner.query(`DROP INDEX "public"."IDX_system_settings_type"`);
         await queryRunner.query(`ALTER TABLE "refresh_tokens" DROP CONSTRAINT "CHK_refresh_tokens_expires"`);
@@ -87,8 +87,8 @@ export class AddOtpColumnsToUsers1748058940861 implements MigrationInterface {
         await queryRunner.query(`CREATE INDEX "IDX_be2025ac9c82bdadcf340b3dfc" ON "webauthn_credentials" ("credentialId") `);
         await queryRunner.query(`CREATE INDEX "IDX_807abb1f01d751e24c2a5fda8e" ON "logs" ("action") `);
         await queryRunner.query(`CREATE INDEX "IDX_682897ba764db30ef8836c9b74" ON "logs" ("timestamp") `);
-        await queryRunner.query(`CREATE INDEX "IDX_c1d63ed5127c053e50abcdbce5" ON "organization_invitations" ("email") `);
-        await queryRunner.query(`CREATE INDEX "IDX_7dfa5b36a9305efc5b7e9f369a" ON "organization_invitations" ("token") `);
+        await queryRunner.query(`CREATE INDEX "IDX_c1d63ed5127c053e50abcdbce5" ON "tenant_invitations" ("email") `);
+        await queryRunner.query(`CREATE INDEX "IDX_7dfa5b36a9305efc5b7e9f369a" ON "tenant_invitations" ("token") `);
         await queryRunner.query(`ALTER TABLE "refresh_tokens" ADD CONSTRAINT "CHK_6d668d5831681657a7029ee87a" CHECK (("isRevoked" = false) OR ("isRevoked" = true AND "revokedAt" IS NOT NULL))`);
         await queryRunner.query(`ALTER TABLE "refresh_tokens" ADD CONSTRAINT "CHK_b2902f12bf1a3f5e6d32e97eb3" CHECK ("expiresAt" > "createdAt")`);
         await queryRunner.query(`ALTER TABLE "sessions" ADD CONSTRAINT "CHK_28e3764c2f42fae67c1e20bcc5" CHECK (("revoked" = false) OR ("revoked" = true AND "revokedAt" IS NOT NULL))`);
@@ -106,15 +106,15 @@ export class AddOtpColumnsToUsers1748058940861 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "logs" ADD CONSTRAINT "FK_cbffea25c132854fe6017804645" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "tenant_memberships" ADD CONSTRAINT "FK_7427b391abdef33b40124c15822" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "tenant_memberships" ADD CONSTRAINT "FK_d22937ebccd641b5090849e51f7" FOREIGN KEY ("tenant_id") REFERENCES "tenants"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "organization_invitations" ADD CONSTRAINT "FK_2088360151a394f86567f3798c9" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "organization_invitations" ADD CONSTRAINT "FK_9d9887246251d5e24acef860bcb" FOREIGN KEY ("invitedBy") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "organization_invitations" ADD CONSTRAINT "FK_991c21099dfe1d19fae93076a43" FOREIGN KEY ("acceptedBy") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "tenant_invitations" ADD CONSTRAINT "FK_2088360151a394f86567f3798c9" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "tenant_invitations" ADD CONSTRAINT "FK_9d9887246251d5e24acef860bcb" FOREIGN KEY ("invitedBy") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "tenant_invitations" ADD CONSTRAINT "FK_991c21099dfe1d19fae93076a43" FOREIGN KEY ("acceptedBy") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`ALTER TABLE "organization_invitations" DROP CONSTRAINT "FK_991c21099dfe1d19fae93076a43"`);
-        await queryRunner.query(`ALTER TABLE "organization_invitations" DROP CONSTRAINT "FK_9d9887246251d5e24acef860bcb"`);
-        await queryRunner.query(`ALTER TABLE "organization_invitations" DROP CONSTRAINT "FK_2088360151a394f86567f3798c9"`);
+        await queryRunner.query(`ALTER TABLE "tenant_invitations" DROP CONSTRAINT "FK_991c21099dfe1d19fae93076a43"`);
+        await queryRunner.query(`ALTER TABLE "tenant_invitations" DROP CONSTRAINT "FK_9d9887246251d5e24acef860bcb"`);
+        await queryRunner.query(`ALTER TABLE "tenant_invitations" DROP CONSTRAINT "FK_2088360151a394f86567f3798c9"`);
         await queryRunner.query(`ALTER TABLE "tenant_memberships" DROP CONSTRAINT "FK_d22937ebccd641b5090849e51f7"`);
         await queryRunner.query(`ALTER TABLE "tenant_memberships" DROP CONSTRAINT "FK_7427b391abdef33b40124c15822"`);
         await queryRunner.query(`ALTER TABLE "logs" DROP CONSTRAINT "FK_cbffea25c132854fe6017804645"`);
@@ -174,9 +174,9 @@ export class AddOtpColumnsToUsers1748058940861 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "refresh_tokens" ADD CONSTRAINT "CHK_refresh_tokens_expires" CHECK (("expiresAt" > "createdAt"))`);
         await queryRunner.query(`CREATE INDEX "IDX_system_settings_type" ON "system_settings" ("type") `);
         await queryRunner.query(`CREATE UNIQUE INDEX "IDX_tenants_slug" ON "tenants" ("slug") `);
-        await queryRunner.query(`CREATE INDEX "IDX_org_invite_token" ON "organization_invitations" ("token") `);
-        await queryRunner.query(`CREATE INDEX "IDX_org_invite_email" ON "organization_invitations" ("email") `);
-        await queryRunner.query(`CREATE INDEX "IDX_org_invite_tenantId" ON "organization_invitations" ("tenantId") `);
+        await queryRunner.query(`CREATE INDEX "IDX_tenant_invite_token" ON "tenant_invitations" ("token") `);
+        await queryRunner.query(`CREATE INDEX "IDX_tenant_invite_email" ON "tenant_invitations" ("email") `);
+        await queryRunner.query(`CREATE INDEX "IDX_tenant_invite_tenantId" ON "tenant_invitations" ("tenantId") `);
         await queryRunner.query(`CREATE INDEX "IDX_tenant_memberships_tenant_id" ON "tenant_memberships" ("tenant_id") `);
         await queryRunner.query(`CREATE INDEX "IDX_tenant_memberships_user_id" ON "tenant_memberships" ("user_id") `);
         await queryRunner.query(`CREATE UNIQUE INDEX "IDX_users_email" ON "users" ("email") `);
@@ -202,9 +202,9 @@ export class AddOtpColumnsToUsers1748058940861 implements MigrationInterface {
         await queryRunner.query(`CREATE INDEX "IDX_refresh_tokens_expiresAt" ON "refresh_tokens" ("expiresAt") `);
         await queryRunner.query(`CREATE INDEX "IDX_refresh_tokens_sessionId" ON "refresh_tokens" ("sessionId") `);
         await queryRunner.query(`CREATE INDEX "IDX_refresh_tokens_userId" ON "refresh_tokens" ("userId") `);
-        await queryRunner.query(`ALTER TABLE "organization_invitations" ADD CONSTRAINT "FK_org_invite_acceptedBy" FOREIGN KEY ("acceptedBy") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "organization_invitations" ADD CONSTRAINT "FK_org_invite_invitedBy" FOREIGN KEY ("invitedBy") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "organization_invitations" ADD CONSTRAINT "FK_org_invite_tenant" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "tenant_invitations" ADD CONSTRAINT "FK_org_invite_acceptedBy" FOREIGN KEY ("acceptedBy") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "tenant_invitations" ADD CONSTRAINT "FK_org_invite_invitedBy" FOREIGN KEY ("invitedBy") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "tenant_invitations" ADD CONSTRAINT "FK_org_invite_tenant" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "tenant_memberships" ADD CONSTRAINT "FK_tenant_memberships_tenant" FOREIGN KEY ("tenant_id") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "tenant_memberships" ADD CONSTRAINT "FK_tenant_memberships_user" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "logs" ADD CONSTRAINT "FK_logs_tenant" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);

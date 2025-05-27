@@ -1,8 +1,13 @@
 import { CommandRunner } from 'nest-commander';
 import { SeederService } from '../modules/database/seeds/seeder.service';
+interface SeedCommandOptions {
+    force?: boolean;
+}
 export declare class SeedCommand extends CommandRunner {
     private readonly seederService;
     private readonly logger;
     constructor(seederService: SeederService);
-    run(): Promise<void>;
+    parseForceOption(val: boolean): boolean;
+    run(passedParams: string[], options: SeedCommandOptions): Promise<void>;
 }
+export {};

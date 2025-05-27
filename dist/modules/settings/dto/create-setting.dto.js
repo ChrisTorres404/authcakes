@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateSettingDto = void 0;
 const class_validator_1 = require("class-validator");
+const swagger_1 = require("@nestjs/swagger");
 class CreateSettingDto {
     key;
     value;
@@ -19,20 +20,24 @@ class CreateSettingDto {
 }
 exports.CreateSettingDto = CreateSettingDto;
 __decorate([
+    (0, swagger_1.ApiProperty)({ example: 'siteName' }),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], CreateSettingDto.prototype, "key", void 0);
 __decorate([
+    (0, swagger_1.ApiProperty)({ example: 'My App' }),
     (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", Object)
 ], CreateSettingDto.prototype, "value", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'string', default: 'string' }),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateSettingDto.prototype, "type", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'The name of the site' }),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)

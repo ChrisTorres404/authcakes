@@ -1,10 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CreateOrganizationInvitationsTable1685601100000 = void 0;
-class CreateOrganizationInvitationsTable1685601100000 {
+exports.CreateTenantInvitationsTable1685601100000 = void 0;
+class CreateTenantInvitationsTable1685601100000 {
     async up(queryRunner) {
         await queryRunner.query(`
-      CREATE TABLE IF NOT EXISTS "organization_invitations" (
+      CREATE TABLE IF NOT EXISTS "tenant_invitations" (
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         "tenantId" uuid NOT NULL,
         "invitedBy" uuid NOT NULL,
@@ -20,14 +20,14 @@ class CreateOrganizationInvitationsTable1685601100000 {
         CONSTRAINT "FK_org_invite_invitedBy" FOREIGN KEY ("invitedBy") REFERENCES "users"("id") ON DELETE SET NULL,
         CONSTRAINT "FK_org_invite_acceptedBy" FOREIGN KEY ("acceptedBy") REFERENCES "users"("id") ON DELETE SET NULL
       );
-      CREATE INDEX IF NOT EXISTS "IDX_org_invite_tenantId" ON "organization_invitations" ("tenantId");
-      CREATE INDEX IF NOT EXISTS "IDX_org_invite_email" ON "organization_invitations" ("email");
-      CREATE INDEX IF NOT EXISTS "IDX_org_invite_token" ON "organization_invitations" ("token");
+      CREATE INDEX IF NOT EXISTS "IDX_tenant_invite_tenantId" ON "tenant_invitations" ("tenantId");
+      CREATE INDEX IF NOT EXISTS "IDX_tenant_invite_email" ON "tenant_invitations" ("email");
+      CREATE INDEX IF NOT EXISTS "IDX_tenant_invite_token" ON "tenant_invitations" ("token");
     `);
     }
     async down(queryRunner) {
-        await queryRunner.query('DROP TABLE IF EXISTS "organization_invitations"');
+        await queryRunner.query('DROP TABLE IF EXISTS "tenant_invitations"');
     }
 }
-exports.CreateOrganizationInvitationsTable1685601100000 = CreateOrganizationInvitationsTable1685601100000;
+exports.CreateTenantInvitationsTable1685601100000 = CreateTenantInvitationsTable1685601100000;
 //# sourceMappingURL=1685601100000-CreateOrganizationInvitationsTable.js.map

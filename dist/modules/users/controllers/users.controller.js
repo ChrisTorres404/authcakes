@@ -22,6 +22,7 @@ const roles_decorator_1 = require("../../../common/decorators/roles.decorator");
 const roles_guard_1 = require("../../../common/guards/roles.guard");
 const current_user_decorator_1 = require("../../../common/decorators/current-user.decorator");
 const public_decorator_1 = require("../../../common/decorators/public.decorator");
+const tenant_auth_guard_1 = require("../../../common/guards/tenant-auth.guard");
 let UsersController = class UsersController {
     usersService;
     constructor(usersService) {
@@ -55,7 +56,7 @@ let UsersController = class UsersController {
         return this.usersService.verifyPhone(token);
     }
     async listDevices(user) {
-        console.log('[DeviceManagement] listDevices called. Current user:', user);
+        console.log('[Audit] DeviceManagement: listDevices', { userId: user.id, tenantId: user.tenantId, action: 'listDevices' });
         const devices = await this.usersService.listActiveSessions(user.id);
         console.log('[DeviceManagement] Active sessions:', devices);
         return {
@@ -63,7 +64,7 @@ let UsersController = class UsersController {
         };
     }
     async revokeDevice(user, sessionId) {
-        console.log('[DeviceManagement] revokeDevice called. Current user:', user, 'Session ID:', sessionId);
+        console.log('[Audit] DeviceManagement: revokeDevice', { userId: user.id, tenantId: user.tenantId, action: 'revokeDevice', sessionId });
         await this.usersService.revokeSession(user.id, sessionId);
         return { success: true };
     }
@@ -150,7 +151,7 @@ __decorate([
 ], UsersController.prototype, "verifyPhone", null);
 __decorate([
     (0, common_1.Get)('devices'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, tenant_auth_guard_1.TenantAuthGuard),
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -158,7 +159,7 @@ __decorate([
 ], UsersController.prototype, "listDevices", null);
 __decorate([
     (0, common_1.Post)('devices/:id/revoke'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, tenant_auth_guard_1.TenantAuthGuard),
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),

@@ -26,7 +26,7 @@ let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(pas
             jwtFromRequest: passport_jwt_1.ExtractJwt.fromExtractors([
                 passport_jwt_1.ExtractJwt.fromAuthHeaderAsBearerToken(),
                 (request) => {
-                    console.log('[JWTStrategy] Custom extractor, request.headers:', request?.headers);
+                    console.log('[JWTStrategy] Custom extractor, request.url:', request?.url, 'headers:', request?.headers);
                     const token = request?.cookies?.access_token;
                     if (!token)
                         return null;
@@ -42,7 +42,7 @@ let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(pas
         this.sessionService = sessionService;
     }
     async validate(request, payload) {
-        console.log('[JWTStrategy] validate called. Request headers:', request.headers);
+        console.log('[JWTStrategy] validate called. Request url:', request.url, 'headers:', request.headers);
         console.log('[JWTStrategy] Request cookies:', request.cookies);
         console.log('[JWTStrategy] Decoded JWT payload:', payload);
         const user = await this.usersService.findById(payload.sub);

@@ -1,11 +1,15 @@
 import { Repository } from 'typeorm';
 import { SystemSetting } from '../../settings/entities/system-setting.entity';
 import { Logger } from '@nestjs/common';
+import { SeederOptions } from './seeder.service';
 
-export async function seedSystemSettings(systemSettingsRepository: Repository<SystemSetting>) {
+export async function seedSystemSettings(systemSettingsRepository: Repository<SystemSetting>, options: SeederOptions = {}) {
   const logger = new Logger('SystemSettingsSeeder');
   const settingsCount = await systemSettingsRepository.count();
-  if (settingsCount === 0) {
+  if (settingsCount === 0 || options.force) {
+    if (settingsCount > 0 && options.force) {
+      logger.log('Force option enabled - seeding system settings even though settings already exist');
+    }
     logger.log('Seeding system settings...');
     const settings = [
       // ... (copy all settings from original SeederService)
@@ -72,4 +76,4 @@ export async function seedSystemSettings(systemSettingsRepository: Repository<Sy
   } else {
     logger.log('System settings already exist, skipping seeding');
   }
-} 
+}

@@ -2,6 +2,7 @@ import { SettingsService } from '../services/settings.service';
 import { SystemSetting } from '../entities/system-setting.entity';
 import { CreateSettingDto } from '../dto/create-setting.dto';
 import { UpdateSettingDto } from '../dto/update-setting.dto';
+import { BulkSettingDto } from '../dto/bulk-setting.dto';
 export declare class SettingsController {
     private readonly settingsService;
     constructor(settingsService: SettingsService);
@@ -40,10 +41,5 @@ export declare class SettingsController {
         refreshTokenDuration: number;
         accessTokenDuration: number;
     }>;
-    upsertBulkSettings(settings: Array<{
-        key: string;
-        value: any;
-        type?: string;
-        description?: string;
-    }>): Promise<SystemSetting[]>;
+    upsertBulkSettings(settings: BulkSettingDto[]): Promise<SystemSetting[]>;
 }

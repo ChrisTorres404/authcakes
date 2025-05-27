@@ -36,7 +36,7 @@ const api_keys_seeder_1 = require("./api-keys.seeder");
 const mfa_recovery_codes_seeder_1 = require("./mfa-recovery-codes.seeder");
 const webauthn_credentials_seeder_1 = require("./webauthn-credentials.seeder");
 const user_devices_seeder_1 = require("./user-devices.seeder");
-const organization_invitations_seeder_1 = require("./organization-invitations.seeder");
+const tenant_invitations_seeder_1 = require("./tenant-invitations.seeder");
 let SeederService = SeederService_1 = class SeederService {
     systemSettingsRepository;
     userRepository;
@@ -62,17 +62,19 @@ let SeederService = SeederService_1 = class SeederService {
         this.invitationRepository = invitationRepository;
         common_1.Logger.log('SeederService constructed');
     }
-    async seed() {
-        await (0, system_settings_seeder_1.seedSystemSettings)(this.systemSettingsRepository);
-        await (0, users_seeder_1.seedUsers)(this.userRepository);
-        await (0, tenants_seeder_1.seedTenants)(this.tenantRepository);
-        await (0, tenant_memberships_seeder_1.seedTenantMemberships)(this.tenantMembershipRepository, this.userRepository, this.tenantRepository);
-        await (0, logs_seeder_1.seedLogs)(this.logRepository, this.userRepository, this.tenantRepository);
-        await (0, api_keys_seeder_1.seedApiKeys)(this.apiKeyRepository, this.userRepository, this.tenantRepository);
-        await (0, mfa_recovery_codes_seeder_1.seedMfaRecoveryCodes)(this.mfaRecoveryCodeRepository, this.userRepository);
-        await (0, webauthn_credentials_seeder_1.seedWebauthnCredentials)(this.webauthnCredentialRepository, this.userRepository);
-        await (0, user_devices_seeder_1.seedUserDevices)(this.userDeviceRepository, this.userRepository);
-        await (0, organization_invitations_seeder_1.seedOrganizationInvitations)(this.invitationRepository, this.userRepository, this.tenantRepository);
+    async seed(options = {}) {
+        console.log('SeederService.seed() called with options:', options);
+        this.logger.log('SeederService.seed() called with options: ' + JSON.stringify(options));
+        await (0, system_settings_seeder_1.seedSystemSettings)(this.systemSettingsRepository, options);
+        await (0, users_seeder_1.seedUsers)(this.userRepository, options);
+        await (0, tenants_seeder_1.seedTenants)(this.tenantRepository, options);
+        await (0, tenant_memberships_seeder_1.seedTenantMemberships)(this.tenantMembershipRepository, this.userRepository, this.tenantRepository, options);
+        await (0, logs_seeder_1.seedLogs)(this.logRepository, this.userRepository, this.tenantRepository, options);
+        await (0, api_keys_seeder_1.seedApiKeys)(this.apiKeyRepository, this.userRepository, this.tenantRepository, options);
+        await (0, mfa_recovery_codes_seeder_1.seedMfaRecoveryCodes)(this.mfaRecoveryCodeRepository, this.userRepository, options);
+        await (0, webauthn_credentials_seeder_1.seedWebauthnCredentials)(this.webauthnCredentialRepository, this.userRepository, options);
+        await (0, user_devices_seeder_1.seedUserDevices)(this.userDeviceRepository, this.userRepository, options);
+        await (0, tenant_invitations_seeder_1.seedTenantInvitations)(this.invitationRepository, this.userRepository, this.tenantRepository, options);
         this.logger.log('Database seeding completed');
     }
 };

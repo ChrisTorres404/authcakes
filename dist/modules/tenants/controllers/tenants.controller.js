@@ -25,6 +25,7 @@ const tenant_auth_guard_1 = require("../../../common/guards/tenant-auth.guard");
 const api_response_dto_1 = require("../dto/api-response.dto");
 const tenant_member_dto_1 = require("../dto/tenant-member.dto");
 const jwt_auth_guard_1 = require("../../auth/guards/jwt-auth.guard");
+const success_response_dto_1 = require("../dto/success-response.dto");
 function toTenantResponseDto(tenant) {
     return {
         ...tenant,
@@ -52,8 +53,8 @@ let TenantsController = class TenantsController {
             });
         }
     }
-    async listTenants() {
-        const tenants = await this.tenantsService.listTenants();
+    async listTenants(page = 1, limit = 10, search) {
+        const tenants = await this.tenantsService.listTenants({ page, limit, search });
         return { success: true, data: tenants.map(toTenantResponseDto) };
     }
     async getTenantById(id) {
@@ -72,7 +73,8 @@ let TenantsController = class TenantsController {
         }
     }
     async updateTenant(id, dto) {
-        return this.tenantsService.updateTenant(id, dto);
+        await this.tenantsService.updateTenant(id, dto);
+        return { success: true };
     }
     async deleteTenant(id) {
         await this.tenantsService.deleteTenant(id);
@@ -153,9 +155,17 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiOperation)({ summary: 'List all tenants' }),
     (0, swagger_1.ApiOkResponse)({ type: api_response_dto_1.ApiResponseDto, description: 'List of tenants.' }),
+    (0, swagger_1.ApiBadRequestResponse)({ type: api_response_dto_1.ApiErrorResponseDto, description: 'Bad request error.' }),
+    (0, swagger_1.ApiForbiddenResponse)({ description: 'Forbidden.' }),
+    (0, swagger_1.ApiQuery)({ name: 'page', required: false, type: Number, description: 'Page number for pagination (default: 1)' }),
+    (0, swagger_1.ApiQuery)({ name: 'limit', required: false, type: Number, description: 'Number of items per page (default: 10)' }),
+    (0, swagger_1.ApiQuery)({ name: 'search', required: false, type: String, description: 'Search term for tenant name or other fields' }),
     (0, common_1.Get)(),
+    __param(0, (0, common_1.Query)('page')),
+    __param(1, (0, common_1.Query)('limit')),
+    __param(2, (0, common_1.Query)('search')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [Number, Number, String]),
     __metadata("design:returntype", Promise)
 ], TenantsController.prototype, "listTenants", null);
 __decorate([
@@ -173,7 +183,10 @@ __decorate([
     (0, swagger_1.ApiOperation)({ summary: 'Update tenant' }),
     (0, swagger_1.ApiParam)({ name: 'id', type: 'string' }),
     (0, swagger_1.ApiBody)({ type: update_tenant_dto_1.UpdateTenantDto }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: 'Tenant updated.' }),
+    (0, swagger_1.ApiOkResponse)({ type: success_response_dto_1.SuccessResponseDto, description: 'Tenant updated.' }),
+    (0, swagger_1.ApiBadRequestResponse)({ type: api_response_dto_1.ApiErrorResponseDto, description: 'Bad request error.' }),
+    (0, swagger_1.ApiNotFoundResponse)({ type: api_response_dto_1.ApiErrorResponseDto, description: 'Tenant not found.' }),
+    (0, swagger_1.ApiForbiddenResponse)({ description: 'Forbidden.' }),
     (0, common_1.Patch)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
@@ -184,7 +197,10 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiOperation)({ summary: 'Delete tenant' }),
     (0, swagger_1.ApiParam)({ name: 'id', type: 'string' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: 'Tenant deleted.' }),
+    (0, swagger_1.ApiOkResponse)({ type: success_response_dto_1.SuccessResponseDto, description: 'Tenant deleted.' }),
+    (0, swagger_1.ApiBadRequestResponse)({ type: api_response_dto_1.ApiErrorResponseDto, description: 'Bad request error.' }),
+    (0, swagger_1.ApiNotFoundResponse)({ type: api_response_dto_1.ApiErrorResponseDto, description: 'Tenant not found.' }),
+    (0, swagger_1.ApiForbiddenResponse)({ description: 'Forbidden.' }),
     (0, common_1.Delete)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
@@ -318,6 +334,7 @@ __decorate([
 exports.TenantsController = TenantsController = __decorate([
     (0, swagger_1.ApiTags)('tenants'),
     (0, swagger_1.ApiBearerAuth)(),
+    (0, swagger_1.ApiUnauthorizedResponse)({ description: 'Authentication required or invalid/missing token.' }),
     (0, common_1.Controller)('tenants'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [tenants_service_1.TenantsService])

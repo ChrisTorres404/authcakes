@@ -22,7 +22,11 @@ export declare class TokenService {
         user: {
             id: string;
             email: string;
+            firstName: string;
+            lastName: string;
             role: string;
+            avatar: string;
+            emailVerified: boolean;
         };
     }>;
     generateAccessToken(payload: JwtPayload): string;

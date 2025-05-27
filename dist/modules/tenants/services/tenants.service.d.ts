@@ -28,7 +28,11 @@ export declare class TenantsService {
     cancelInvitation(id: string): Promise<void>;
     createTenant(data: any): Promise<Tenant>;
     getTenantById(id: string): Promise<Tenant>;
-    listTenants(): Promise<Tenant[]>;
+    listTenants(params?: {
+        page?: number;
+        limit?: number;
+        search?: string;
+    }): Promise<Tenant[]>;
     updateTenant(id: string, data: any): Promise<Tenant>;
     deleteTenant(id: string): Promise<void>;
     getMembers(tenantId: string): Promise<TenantMembership[]>;

@@ -10,9 +10,10 @@ import {
     UseGuards,
     NotFoundException,
     BadRequestException,
-    ParseUUIDPipe
+    ParseUUIDPipe,
+    Query
   } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiBearerAuth, ApiOkResponse, ApiNotFoundResponse, ApiBadRequestResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiBearerAuth, ApiOkResponse, ApiNotFoundResponse, ApiBadRequestResponse, ApiForbiddenResponse, ApiUnauthorizedResponse, ApiQuery } from '@nestjs/swagger';
 import { TenantsService } from '../services/tenants.service';
 import { CreateTenantDto } from '../dto/create-tenant.dto';
 import { UpdateTenantDto } from '../dto/update-tenant.dto';
@@ -26,6 +27,7 @@ import { ApiResponseDto, ApiErrorResponseDto } from '../dto/api-response.dto';
 import { Tenant } from '../entities/tenant.entity';
 import { InviteTenantMemberDto, UpdateTenantMemberRoleDto } from '../dto/tenant-member.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { SuccessResponseDto } from '../dto/success-response.dto';
   
 function toTenantResponseDto(tenant: Tenant): TenantResponseDto {
   return {
@@ -37,6 +39,7 @@ function toTenantResponseDto(tenant: Tenant): TenantResponseDto {
   
 @ApiTags('tenants')
 @ApiBearerAuth()
+@ApiUnauthorizedResponse({ description: 'Authentication required or invalid/missing token.' })
 @Controller('tenants')
 @UseGuards(JwtAuthGuard)
 export class TenantsController {
@@ -64,9 +67,18 @@ export class TenantsController {
   
   @ApiOperation({ summary: 'List all tenants' })
   @ApiOkResponse({ type: ApiResponseDto, description: 'List of tenants.' })
+  @ApiBadRequestResponse({ type: ApiErrorResponseDto, description: 'Bad request error.' })
+  @ApiForbiddenResponse({ description: 'Forbidden.' })
+  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number for pagination (default: 1)' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Number of items per page (default: 10)' })
+  @ApiQuery({ name: 'search', required: false, type: String, description: 'Search term for tenant name or other fields' })
   @Get()
-  async listTenants(): Promise<ApiResponseDto<TenantResponseDto[]>> {
-    const tenants = await this.tenantsService.listTenants();
+  async listTenants(
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+    @Query('search') search?: string
+  ): Promise<ApiResponseDto<TenantResponseDto[]>> {
+    const tenants = await this.tenantsService.listTenants({ page, limit, search });
     return { success: true, data: tenants.map(toTenantResponseDto) };
   }
   
@@ -93,17 +105,24 @@ export class TenantsController {
   @ApiOperation({ summary: 'Update tenant' })
   @ApiParam({ name: 'id', type: 'string' })
   @ApiBody({ type: UpdateTenantDto })
-  @ApiResponse({ status: 200, description: 'Tenant updated.' })
+  @ApiOkResponse({ type: SuccessResponseDto, description: 'Tenant updated.' })
+  @ApiBadRequestResponse({ type: ApiErrorResponseDto, description: 'Bad request error.' })
+  @ApiNotFoundResponse({ type: ApiErrorResponseDto, description: 'Tenant not found.' })
+  @ApiForbiddenResponse({ description: 'Forbidden.' })
   @Patch(':id')
-  async updateTenant(@Param('id') id: string, @Body() dto: UpdateTenantDto) {
-    return this.tenantsService.updateTenant(id, dto);
+  async updateTenant(@Param('id') id: string, @Body() dto: UpdateTenantDto): Promise<SuccessResponseDto> {
+    await this.tenantsService.updateTenant(id, dto);
+    return { success: true };
   }
   
   @ApiOperation({ summary: 'Delete tenant' })
   @ApiParam({ name: 'id', type: 'string' })
-  @ApiResponse({ status: 200, description: 'Tenant deleted.' })
+  @ApiOkResponse({ type: SuccessResponseDto, description: 'Tenant deleted.' })
+  @ApiBadRequestResponse({ type: ApiErrorResponseDto, description: 'Bad request error.' })
+  @ApiNotFoundResponse({ type: ApiErrorResponseDto, description: 'Tenant not found.' })
+  @ApiForbiddenResponse({ description: 'Forbidden.' })
   @Delete(':id')
-  async deleteTenant(@Param('id') id: string) {
+  async deleteTenant(@Param('id') id: string): Promise<SuccessResponseDto> {
     await this.tenantsService.deleteTenant(id);
     return { success: true };
   }
