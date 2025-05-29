@@ -10,9 +10,15 @@ async function seedTenantMemberships(tenantMembershipRepository, userRepository,
             logger.log('Force option enabled - seeding tenant memberships even though memberships already exist');
         }
         logger.log('Seeding tenant memberships...');
-        const adminUser = await userRepository.findOne({ where: { email: 'admin@example.com' } });
-        const demoUser = await userRepository.findOne({ where: { email: 'demo@example.com' } });
-        const demoTenant = await tenantRepository.findOne({ where: { slug: 'demo-org' } });
+        const adminUser = await userRepository.findOne({
+            where: { email: 'admin@example.com' },
+        });
+        const demoUser = await userRepository.findOne({
+            where: { email: 'demo@example.com' },
+        });
+        const demoTenant = await tenantRepository.findOne({
+            where: { slug: 'demo-org' },
+        });
         if (adminUser && demoUser && demoTenant) {
             const adminMembership = tenantMembershipRepository.create({
                 userId: adminUser.id,

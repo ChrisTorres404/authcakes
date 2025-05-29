@@ -15,11 +15,17 @@ export async function seedApiKeys(
   const count = await apiKeyRepository.count();
   if (count === 0 || options.force) {
     if (count > 0 && options.force) {
-      logger.log('Force option enabled - seeding API keys even though keys already exist');
+      logger.log(
+        'Force option enabled - seeding API keys even though keys already exist',
+      );
     }
     logger.log('Seeding API keys...');
-    const adminUser = await userRepository.findOne({ where: { email: 'admin@example.com' } });
-    const demoTenant = await tenantRepository.findOne({ where: { slug: 'demo-org' } });
+    const adminUser = await userRepository.findOne({
+      where: { email: 'admin@example.com' },
+    });
+    const demoTenant = await tenantRepository.findOne({
+      where: { slug: 'demo-org' },
+    });
     if (adminUser && demoTenant) {
       const apiKey = apiKeyRepository.create({
         userId: adminUser.id,
@@ -32,7 +38,9 @@ export async function seedApiKeys(
       await apiKeyRepository.save(apiKey);
       logger.log('Demo API key seeded for admin user and demo tenant');
     } else {
-      logger.warn('Admin user or demo tenant not found, skipping API keys seeding');
+      logger.warn(
+        'Admin user or demo tenant not found, skipping API keys seeding',
+      );
     }
   } else {
     logger.log('API keys already exist, skipping seeding');

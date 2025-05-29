@@ -40,11 +40,11 @@ let LocalStrategy = class LocalStrategy extends (0, passport_1.PassportStrategy)
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
         if (user.mfaEnabled) {
-            const mfaCode = req.body.mfaCode || req.headers['x-mfa-code'];
+            const mfaCode = req.body.mfaCode ?? req.headers['x-mfa-code'];
             if (!mfaCode) {
                 throw new common_1.UnauthorizedException('MFA code required.');
             }
-            const mfaValid = await this.authService.validateMfaCode(user, mfaCode);
+            const mfaValid = this.authService.validateMfaCode(user, mfaCode);
             if (!mfaValid) {
                 throw new common_1.UnauthorizedException('Invalid MFA code.');
             }

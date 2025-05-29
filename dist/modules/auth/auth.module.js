@@ -28,6 +28,7 @@ const user_device_entity_1 = require("./entities/user-device.entity");
 const mfa_recovery_code_entity_1 = require("./entities/mfa-recovery-code.entity");
 const webauthn_credential_entity_1 = require("./entities/webauthn-credential.entity");
 const password_history_entity_1 = require("./entities/password-history.entity");
+const log_entity_1 = require("../logs/entities/log.entity");
 const jwt_auth_guard_1 = require("./guards/jwt-auth.guard");
 const jwt_refresh_guard_1 = require("./guards/jwt-refresh.guard");
 const local_auth_guard_1 = require("./guards/local-auth.guard");
@@ -58,6 +59,7 @@ exports.AuthModule = AuthModule = __decorate([
                 mfa_recovery_code_entity_1.MfaRecoveryCode,
                 webauthn_credential_entity_1.WebauthnCredential,
                 password_history_entity_1.PasswordHistory,
+                log_entity_1.Log,
             ]),
             users_module_1.UsersModule,
             tenants_module_1.TenantsModule,

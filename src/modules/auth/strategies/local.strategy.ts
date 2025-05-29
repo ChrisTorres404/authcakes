@@ -1,8 +1,21 @@
 import { Strategy } from 'passport-local';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Request } from 'express';
 import { AuthService } from '../services/auth.service';
 import { UsersService } from '../../users/services/users.service';
+import { User } from '../../users/entities/user.entity';
+
+interface AuthRequest extends Request {
+  body: {
+    email: string;
+    password: string;
+    mfaCode?: string;
+  };
+  headers: {
+    'x-mfa-code'?: string;
+  } & Request['headers'];
+}
 
 @Injectable()
 export class LocalStrategy extends PassportStrategy(Strategy) {
@@ -13,7 +26,11 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
     super({ usernameField: 'email', passReqToCallback: true }); // use 'email' instead of 'username', pass req
   }
 
-  async validate(req: any, email: string, password: string): Promise<any> {
+  async validate(
+    req: AuthRequest,
+    email: string,
+    password: string,
+  ): Promise<User> {
     const user = await this.usersService.findByEmail(email);
     if (!user) {
       // Optionally record failed attempt for non-existent user (do nothing for security)
@@ -21,7 +38,9 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
     }
     // Check if account is locked
     if (user.lockedUntil && user.lockedUntil > new Date()) {
-      throw new UnauthorizedException('Account is locked due to too many failed login attempts.');
+      throw new UnauthorizedException(
+        'Account is locked due to too many failed login attempts.',
+      );
     }
     // Check if account is active
     if (user.active === false) {
@@ -36,11 +55,11 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
     }
     // MFA check
     if (user.mfaEnabled) {
-      const mfaCode = req.body.mfaCode || req.headers['x-mfa-code'];
+      const mfaCode = req.body.mfaCode ?? req.headers['x-mfa-code'];
       if (!mfaCode) {
         throw new UnauthorizedException('MFA code required.');
       }
-      const mfaValid = await this.authService.validateMfaCode(user, mfaCode);
+      const mfaValid = this.authService.validateMfaCode(user, mfaCode);
       if (!mfaValid) {
         throw new UnauthorizedException('Invalid MFA code.');
       }
@@ -49,4 +68,4 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
     await this.usersService.resetFailedLoginAttempts(user.id);
     return validUser;
   }
-} 
+}

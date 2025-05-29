@@ -1,6 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreateRefreshTokensTable1685600400000 implements MigrationInterface {
+export class CreateRefreshTokensTable1685600400000
+  implements MigrationInterface
+{
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS "refresh_tokens" (
@@ -32,4 +34,4 @@ export class CreateRefreshTokensTable1685600400000 implements MigrationInterface
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query('DROP TABLE IF EXISTS "refresh_tokens"');
   }
-} 
+}

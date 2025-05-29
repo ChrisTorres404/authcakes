@@ -6,9 +6,7 @@ import { LogsService } from './services/logs.service';
 import { LogsController } from './controllers/logs.controller';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Log]),
-  ],
+  imports: [TypeOrmModule.forFeature([Log])],
   controllers: [LogsController],
   providers: [LogsService],
   exports: [LogsService],

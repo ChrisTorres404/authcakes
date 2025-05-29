@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var ApiKeysService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ApiKeysService = void 0;
 const common_1 = require("@nestjs/common");
@@ -18,14 +19,15 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const uuid_1 = require("uuid");
 const api_key_entity_1 = require("../entities/api-key.entity");
-let ApiKeysService = class ApiKeysService {
+let ApiKeysService = ApiKeysService_1 = class ApiKeysService {
     apiKeysRepository;
+    logger = new common_1.Logger(ApiKeysService_1.name);
     constructor(apiKeysRepository) {
         this.apiKeysRepository = apiKeysRepository;
     }
     async create(userId, tenantId, name, permissions = {}) {
         if (!tenantId) {
-            console.warn('[ApiKeysService] Warning: tenantId is missing in create');
+            this.logger.warn('tenantId is missing in create');
             throw new common_1.BadRequestException('Tenant ID is required');
         }
         const key = this.generateApiKey();
@@ -41,13 +43,10 @@ let ApiKeysService = class ApiKeysService {
     }
     async findAll(userId, tenantId) {
         if (!tenantId) {
-            console.warn('[ApiKeysService] Warning: tenantId is missing in findAll');
+            this.logger.warn('tenantId is missing in findAll');
             throw new common_1.BadRequestException('Tenant ID is required');
         }
-        const query = { userId };
-        if (tenantId) {
-            query.tenantId = tenantId;
-        }
+        const query = { userId, tenantId };
         return this.apiKeysRepository.find({
             where: query,
             order: { createdAt: 'DESC' },
@@ -55,7 +54,7 @@ let ApiKeysService = class ApiKeysService {
     }
     async findOne(id, userId) {
         const apiKey = await this.apiKeysRepository.findOne({
-            where: { id, userId }
+            where: { id, userId },
         });
         if (!apiKey) {
             throw new common_1.NotFoundException('API key not found');
@@ -64,7 +63,7 @@ let ApiKeysService = class ApiKeysService {
     }
     async findByKey(key) {
         return this.apiKeysRepository.findOne({
-            where: { key, active: true }
+            where: { key, active: true },
         });
     }
     async update(id, userId, updates) {
@@ -78,11 +77,13 @@ let ApiKeysService = class ApiKeysService {
     async revoke(id, userId) {
         const apiKey = await this.findOne(id, userId);
         apiKey.active = false;
-        await this.apiKeysRepository.save(apiKey);
+        return this.apiKeysRepository.save(apiKey);
     }
     async delete(id, userId) {
         const apiKey = await this.findOne(id, userId);
+        const deletedKey = { ...apiKey };
         await this.apiKeysRepository.remove(apiKey);
+        return deletedKey;
     }
     generateApiKey() {
         const uuid = (0, uuid_1.v4)().replace(/-/g, '');
@@ -102,7 +103,7 @@ let ApiKeysService = class ApiKeysService {
     }
 };
 exports.ApiKeysService = ApiKeysService;
-exports.ApiKeysService = ApiKeysService = __decorate([
+exports.ApiKeysService = ApiKeysService = ApiKeysService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(api_key_entity_1.ApiKey)),
     __metadata("design:paramtypes", [typeorm_2.Repository])

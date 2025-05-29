@@ -12,4 +12,4 @@ export class BulkSettingDto {
 
   @ApiPropertyOptional({ example: 'The name of the site' })
   description?: string;
-} 
+}

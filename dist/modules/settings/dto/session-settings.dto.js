@@ -22,31 +22,52 @@ class SessionSettingsDto {
 }
 exports.SessionSettingsDto = SessionSettingsDto;
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: 30, description: 'Global session timeout in minutes.' }),
+    (0, swagger_1.ApiProperty)({
+        example: 30,
+        description: 'Global session timeout in minutes.',
+    }),
     __metadata("design:type", Number)
 ], SessionSettingsDto.prototype, "globalTimeoutMinutes", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: 60, description: 'Time in seconds before session timeout to show warning.' }),
+    (0, swagger_1.ApiProperty)({
+        example: 60,
+        description: 'Time in seconds before session timeout to show warning.',
+    }),
     __metadata("design:type", Number)
 ], SessionSettingsDto.prototype, "warningTimeSeconds", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: true, description: 'Whether to show session timeout warning.' }),
+    (0, swagger_1.ApiProperty)({
+        example: true,
+        description: 'Whether to show session timeout warning.',
+    }),
     __metadata("design:type", Boolean)
 ], SessionSettingsDto.prototype, "showWarning", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: '/login', description: 'URL to redirect to after session timeout.' }),
+    (0, swagger_1.ApiProperty)({
+        example: '/login',
+        description: 'URL to redirect to after session timeout.',
+    }),
     __metadata("design:type", String)
 ], SessionSettingsDto.prototype, "redirectUrl", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: 'Your session is about to expire. Would you like to continue?', description: 'Warning message to display before session timeout.' }),
+    (0, swagger_1.ApiProperty)({
+        example: 'Your session is about to expire. Would you like to continue?',
+        description: 'Warning message to display before session timeout.',
+    }),
     __metadata("design:type", String)
 ], SessionSettingsDto.prototype, "warningMessage", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: 5, description: 'Maximum number of sessions per user.' }),
+    (0, swagger_1.ApiProperty)({
+        example: 5,
+        description: 'Maximum number of sessions per user.',
+    }),
     __metadata("design:type", Number)
 ], SessionSettingsDto.prototype, "maxSessionsPerUser", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: false, description: 'Whether to enforce single session per user.' }),
+    (0, swagger_1.ApiProperty)({
+        example: false,
+        description: 'Whether to enforce single session per user.',
+    }),
     __metadata("design:type", Boolean)
 ], SessionSettingsDto.prototype, "enforceSingleSession", void 0);
 //# sourceMappingURL=session-settings.dto.js.map

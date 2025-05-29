@@ -7,7 +7,7 @@ import {
   ManyToOne,
   OneToMany,
   Index,
-  Check
+  Check,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { RefreshToken } from './refresh-token.entity';
@@ -23,7 +23,10 @@ export class Session {
   @Index()
   userId: string;
 
-  @ManyToOne(() => User, (user) => user.sessions, { onDelete: 'CASCADE', nullable: false })
+  @ManyToOne(() => User, (user) => user.sessions, {
+    onDelete: 'CASCADE',
+    nullable: false,
+  })
   @Index()
   user: User;
 
@@ -68,4 +71,4 @@ export class Session {
 
   @UpdateDateColumn()
   updatedAt: Date;
-} 
+}

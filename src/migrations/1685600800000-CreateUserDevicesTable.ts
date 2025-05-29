@@ -23,4 +23,4 @@ export class CreateUserDevicesTable1685600800000 implements MigrationInterface {
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query('DROP TABLE IF EXISTS "user_devices"');
   }
-} 
+}

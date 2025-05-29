@@ -4,13 +4,40 @@ import { Logger, Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
+import {
+  isDatabaseError,
+  DatabaseConfig,
+  isSupportedDatabase,
+} from './types/database.types';
+import { executeProcess, ProcessError } from './utils/process.utils';
 
-interface ResetDatabaseCommandOptions {
+/** Options for the database reset command */
+export interface ResetDatabaseCommandOptions {
   confirm?: boolean;
   migrate?: boolean;
   seed?: boolean;
 }
 
+/**
+ * Command to reset the database.
+ * Drops and recreates the database, optionally running migrations and seeders.
+ *
+ * @example
+ * ```bash
+ * # Reset database with confirmation
+ * npm run cli db:reset --confirm
+ *
+ * # Reset and run migrations
+ * npm run cli db:reset --confirm --migrate
+ *
+ * # Reset, run migrations, and seed data
+ * npm run cli db:reset --confirm --migrate --seed
+ * ```
+ *
+ * @throws {Error} If database type is not supported
+ * @throws {Error} If database operations fail
+ * @throws {Error} If migrations or seeding fails
+ */
 @Injectable()
 @Command({
   name: 'db:reset',
@@ -56,13 +83,23 @@ export class ResetDatabaseCommand extends CommandRunner {
   ): Promise<void> {
     try {
       const dbName = this.configService.get<string>('DB_NAME');
-      const dbType = this.configService.get<string>('DB_TYPE');
+      const dbType = this.configService.get<string>('DB_TYPE', 'postgres');
+
+      if (!dbName) {
+        throw new Error('Database name is required');
+      }
+
+      if (!isSupportedDatabase(dbType)) {
+        throw new Error(`Unsupported database type: ${dbType}`);
+      }
 
       if (!options.confirm) {
         this.logger.warn(
           `⚠️ WARNING: This operation will COMPLETELY RESET the "${dbName}" database, DELETING ALL DATA. ⚠️`,
         );
-        this.logger.warn('Use --confirm to bypass this warning and proceed with the operation.');
+        this.logger.warn(
+          'Use --confirm to bypass this warning and proceed with the operation.',
+        );
         this.logger.log('');
         this.logger.log('Usage:');
         this.logger.log('  db:reset --confirm [--migrate] [--seed]');
@@ -72,11 +109,13 @@ export class ResetDatabaseCommand extends CommandRunner {
       this.logger.log(`Resetting database "${dbName}"...`);
 
       // Get connection details for reconnecting later
-      const connectionOptions = {
-        host: this.configService.get<string>('DB_HOST'),
-        port: this.configService.get<number>('DB_PORT'),
-        username: this.configService.get<string>('DB_USERNAME'),
-        password: this.configService.get<string>('DB_PASSWORD'),
+      const connectionOptions: DatabaseConfig = {
+        type: this.configService.get<string>('DB_TYPE', 'postgres'),
+        host: this.configService.get<string>('DB_HOST', 'localhost'),
+        port: this.configService.get<number>('DB_PORT', 5432),
+        username: this.configService.get<string>('DB_USERNAME', ''),
+        password: this.configService.get<string>('DB_PASSWORD', ''),
+        database: this.configService.get<string>('DB_NAME', ''),
       };
 
       // Close the current connection
@@ -87,35 +126,22 @@ export class ResetDatabaseCommand extends CommandRunner {
       // For PostgreSQL, connect to 'postgres'
       // For MySQL, there's no need to specify a different database as we can drop a database while connected to it
       const defaultDbName = dbType === 'postgres' ? 'postgres' : dbName;
-      
-      let masterConnection: DataSource;
-      
-      if (dbType === 'postgres') {
-        masterConnection = new DataSource({
-          type: 'postgres',
-          host: connectionOptions.host,
-          port: connectionOptions.port,
-          username: connectionOptions.username,
-          password: connectionOptions.password,
-          database: defaultDbName,
-        });
-      } else if (dbType === 'mysql') {
-        masterConnection = new DataSource({
-          type: 'mysql',
-          host: connectionOptions.host,
-          port: connectionOptions.port,
-          username: connectionOptions.username,
-          password: connectionOptions.password,
-        });
-      } else {
-        throw new Error(`Unsupported database type: ${dbType}`);
-      }
+
+      const masterConnection = new DataSource({
+        type: dbType,
+        host: connectionOptions.host,
+        port: connectionOptions.port,
+        username: connectionOptions.username,
+        password: connectionOptions.password,
+        database: dbType === 'postgres' ? defaultDbName : undefined,
+      });
 
       await masterConnection.initialize();
       this.logger.log(`Connected to ${dbType} server`);
 
       // Drop the database if it exists
       try {
+        // We've already validated dbType with isSupportedDatabase
         if (dbType === 'postgres') {
           // Terminate all connections to the database before dropping
           await masterConnection.query(
@@ -156,58 +182,61 @@ export class ResetDatabaseCommand extends CommandRunner {
       // If migrate option is provided, run migrations
       if (options.migrate) {
         this.logger.log('Running migrations...');
-        // We need to spawn a new process as we can't easily reinitialize the connection within this process
-        const { spawn } = require('child_process');
-        
-        const migrateProcess = spawn('npm', ['run', 'migration:run'], {
-          stdio: 'inherit',
-          shell: true,
-        });
-
-        await new Promise<void>((resolve, reject) => {
-          migrateProcess.on('close', (code) => {
-            if (code === 0) {
-              this.logger.log('Migrations completed successfully');
-              resolve();
-            } else {
-              this.logger.error(`Migrations failed with exit code ${code}`);
-              reject(new Error(`Migrations failed with exit code ${code}`));
-            }
+        try {
+          await executeProcess({
+            command: 'npm',
+            args: ['run', 'migration:run'],
+            logger: this.logger,
           });
-        });
+          this.logger.log('Migrations completed successfully');
+        } catch (error) {
+          if (error instanceof ProcessError) {
+            throw new Error(`Migrations failed: ${error.message}`);
+          }
+          throw error;
+        }
       }
 
       // If seed option is provided, run seeders
       if (options.seed) {
         if (!options.migrate) {
-          this.logger.warn('Running seeders without migrations may cause errors if tables do not exist');
+          this.logger.warn(
+            'Running seeders without migrations may cause errors if tables do not exist',
+          );
         }
-        
-        this.logger.log('Running seeders...');
-        const { spawn } = require('child_process');
-        
-        const seedProcess = spawn('npm', ['run', 'seed'], {
-          stdio: 'inherit',
-          shell: true,
-        });
 
-        await new Promise<void>((resolve, reject) => {
-          seedProcess.on('close', (code) => {
-            if (code === 0) {
-              this.logger.log('Seeding completed successfully');
-              resolve();
-            } else {
-              this.logger.error(`Seeding failed with exit code ${code}`);
-              reject(new Error(`Seeding failed with exit code ${code}`));
-            }
+        this.logger.log('Running seeders...');
+        try {
+          await executeProcess({
+            command: 'npm',
+            args: ['run', 'seed'],
+            logger: this.logger,
           });
-        });
+          this.logger.log('Seeding completed successfully');
+        } catch (error) {
+          if (error instanceof ProcessError) {
+            throw new Error(`Seeding failed: ${error.message}`);
+          }
+          throw error;
+        }
       }
 
       this.logger.log('Database reset process completed');
       process.exit(0);
-    } catch (error) {
-      this.logger.error(`Error resetting database: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      if (isDatabaseError(error)) {
+        this.logger.error(
+          `Error resetting database: ${error.message}`,
+          error.stack,
+        );
+      } else if (error instanceof Error) {
+        this.logger.error(
+          `Error resetting database: ${error.message}`,
+          error.stack,
+        );
+      } else {
+        this.logger.error('Unknown error during database reset');
+      }
       process.exit(1);
     }
   }

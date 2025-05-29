@@ -10,7 +10,7 @@ export class SessionRepository extends Repository<Session> {
         isActive: true,
         revoked: false,
         expiresAt: MoreThan(new Date()),
-      }
+      },
     });
   }
-} 
+}

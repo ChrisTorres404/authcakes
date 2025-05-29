@@ -14,6 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LogsController = void 0;
 const common_1 = require("@nestjs/common");
+const swagger_1 = require("@nestjs/swagger");
 const logs_service_1 = require("../services/logs.service");
 const jwt_auth_guard_1 = require("../../auth/guards/jwt-auth.guard");
 const roles_decorator_1 = require("../../../common/decorators/roles.decorator");
@@ -48,7 +49,11 @@ let LogsController = class LogsController {
 exports.LogsController = LogsController;
 __decorate([
     (0, common_1.Get)('me'),
-    __param(0, (0, common_1.Request)()),
+    (0, swagger_1.ApiOperation)({ summary: 'Get current user logs' }),
+    (0, swagger_1.ApiQuery)({ name: 'page', type: Number, required: false, example: 1 }),
+    (0, swagger_1.ApiQuery)({ name: 'limit', type: Number, required: false, example: 20 }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'List of user logs' }),
+    __param(0, (0, common_1.Req)()),
     __param(1, (0, common_1.Query)('page')),
     __param(2, (0, common_1.Query)('limit')),
     __metadata("design:type", Function),
@@ -59,6 +64,11 @@ __decorate([
     (0, common_1.Get)('tenant/:tenantId'),
     (0, common_1.UseGuards)(tenant_auth_guard_1.TenantAuthGuard),
     (0, tenant_roles_decorator_1.TenantRoles)('admin'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get tenant logs' }),
+    (0, swagger_1.ApiParam)({ name: 'tenantId', type: String }),
+    (0, swagger_1.ApiQuery)({ name: 'page', type: Number, required: false, example: 1 }),
+    (0, swagger_1.ApiQuery)({ name: 'limit', type: Number, required: false, example: 20 }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'List of tenant logs' }),
     __param(0, (0, common_1.Param)('tenantId')),
     __param(1, (0, common_1.Query)('page')),
     __param(2, (0, common_1.Query)('limit')),
@@ -70,6 +80,13 @@ __decorate([
     (0, common_1.Get)('admin'),
     (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
     (0, roles_decorator_1.Roles)('admin'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get admin logs' }),
+    (0, swagger_1.ApiQuery)({ name: 'userId', type: String, required: false }),
+    (0, swagger_1.ApiQuery)({ name: 'tenantId', type: String, required: false }),
+    (0, swagger_1.ApiQuery)({ name: 'action', type: String, required: false }),
+    (0, swagger_1.ApiQuery)({ name: 'page', type: Number, required: false, example: 1 }),
+    (0, swagger_1.ApiQuery)({ name: 'limit', type: Number, required: false, example: 20 }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'List of admin logs' }),
     __param(0, (0, common_1.Query)('userId')),
     __param(1, (0, common_1.Query)('tenantId')),
     __param(2, (0, common_1.Query)('action')),
@@ -83,13 +100,16 @@ __decorate([
     (0, common_1.Post)('admin/log'),
     (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
     (0, roles_decorator_1.Roles)('admin'),
-    __param(0, (0, common_1.Request)()),
+    (0, swagger_1.ApiOperation)({ summary: 'Create admin log' }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: 'Admin log created' }),
+    __param(0, (0, common_1.Req)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], LogsController.prototype, "createAdminLog", null);
 exports.LogsController = LogsController = __decorate([
+    (0, swagger_1.ApiTags)('Logs'),
     (0, common_1.Controller)('logs'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [logs_service_1.LogsService])

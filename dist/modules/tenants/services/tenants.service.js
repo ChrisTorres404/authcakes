@@ -21,6 +21,7 @@ const crypto = require("crypto");
 const tenant_entity_1 = require("../entities/tenant.entity");
 const tenant_membership_entity_1 = require("../entities/tenant-membership.entity");
 const tenant_invitation_entity_1 = require("../entities/tenant-invitation.entity");
+const tenant_invitation_dto_1 = require("../dto/tenant-invitation.dto");
 let TenantsService = TenantsService_1 = class TenantsService {
     tenantRepository;
     tenantMembershipRepository;
@@ -88,7 +89,7 @@ let TenantsService = TenantsService_1 = class TenantsService {
         tenant.active = false;
         await this.tenantRepository.save(tenant);
     }
-    async addUserToTenant(userId, tenantId, role = 'member') {
+    async addUserToTenant(userId, tenantId, role = tenant_invitation_dto_1.TenantRole.MEMBER) {
         const existingMembership = await this.tenantMembershipRepository.findOne({
             where: { userId, tenantId },
         });
@@ -156,7 +157,7 @@ let TenantsService = TenantsService_1 = class TenantsService {
             relations: ['user'],
         });
     }
-    async inviteUserToTenant(tenantId, invitedBy, email, role = 'member') {
+    async inviteUserToTenant(tenantId, invitedBy, email, role = tenant_invitation_dto_1.TenantRole.MEMBER) {
         await this.findById(tenantId);
         const existingInvitation = await this.tenantInvitationRepository.findOne({
             where: {
@@ -239,9 +240,13 @@ let TenantsService = TenantsService_1 = class TenantsService {
         const page = params?.page ?? 1;
         const limit = params?.limit ?? 10;
         const search = params?.search;
-        const query = this.tenantRepository.createQueryBuilder('tenant').where('tenant.active = :active', { active: true });
+        const query = this.tenantRepository
+            .createQueryBuilder('tenant')
+            .where('tenant.active = :active', { active: true });
         if (search) {
-            query.andWhere('tenant.name ILIKE :search OR tenant.slug ILIKE :search', { search: `%${search}%` });
+            query.andWhere('tenant.name ILIKE :search OR tenant.slug ILIKE :search', {
+                search: `%${search}%`,
+            });
         }
         query.skip((page - 1) * limit).take(limit);
         return query.getMany();
@@ -316,7 +321,7 @@ let TenantsService = TenantsService_1 = class TenantsService {
         }
         tenant.settings = {
             ...(tenant.settings || {}),
-            ...settings
+            ...settings,
         };
         await this.tenantRepository.save(tenant);
         return tenant.settings;

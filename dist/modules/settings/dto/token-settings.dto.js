@@ -21,7 +21,10 @@ __decorate([
     __metadata("design:type", Number)
 ], TokenSettingsDto.prototype, "refreshTokenDuration", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: 15, description: 'Access token duration in minutes.' }),
+    (0, swagger_1.ApiProperty)({
+        example: 15,
+        description: 'Access token duration in minutes.',
+    }),
     __metadata("design:type", Number)
 ], TokenSettingsDto.prototype, "accessTokenDuration", void 0);
 //# sourceMappingURL=token-settings.dto.js.map

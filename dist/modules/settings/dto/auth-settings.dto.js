@@ -44,11 +44,17 @@ __decorate([
     __metadata("design:type", Boolean)
 ], AuthSettingsDto.prototype, "enableAppleAuth", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: true, description: 'Enable multi-factor authentication (MFA).' }),
+    (0, swagger_1.ApiProperty)({
+        example: true,
+        description: 'Enable multi-factor authentication (MFA).',
+    }),
     __metadata("design:type", Boolean)
 ], AuthSettingsDto.prototype, "enableMfa", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: true, description: 'Enable WebAuthn authentication.' }),
+    (0, swagger_1.ApiProperty)({
+        example: true,
+        description: 'Enable WebAuthn authentication.',
+    }),
     __metadata("design:type", Boolean)
 ], AuthSettingsDto.prototype, "enableWebauthn", void 0);
 __decorate([
@@ -56,11 +62,17 @@ __decorate([
     __metadata("design:type", Number)
 ], AuthSettingsDto.prototype, "passwordMinLength", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: true, description: 'Require uppercase letter in password.' }),
+    (0, swagger_1.ApiProperty)({
+        example: true,
+        description: 'Require uppercase letter in password.',
+    }),
     __metadata("design:type", Boolean)
 ], AuthSettingsDto.prototype, "passwordRequireUppercase", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: true, description: 'Require lowercase letter in password.' }),
+    (0, swagger_1.ApiProperty)({
+        example: true,
+        description: 'Require lowercase letter in password.',
+    }),
     __metadata("design:type", Boolean)
 ], AuthSettingsDto.prototype, "passwordRequireLowercase", void 0);
 __decorate([
@@ -68,15 +80,24 @@ __decorate([
     __metadata("design:type", Boolean)
 ], AuthSettingsDto.prototype, "passwordRequireNumber", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: true, description: 'Require special character in password.' }),
+    (0, swagger_1.ApiProperty)({
+        example: true,
+        description: 'Require special character in password.',
+    }),
     __metadata("design:type", Boolean)
 ], AuthSettingsDto.prototype, "passwordRequireSpecial", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: 5, description: 'Maximum login attempts before lockout.' }),
+    (0, swagger_1.ApiProperty)({
+        example: 5,
+        description: 'Maximum login attempts before lockout.',
+    }),
     __metadata("design:type", Number)
 ], AuthSettingsDto.prototype, "maxLoginAttempts", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: 30, description: 'Login lockout duration in minutes.' }),
+    (0, swagger_1.ApiProperty)({
+        example: 30,
+        description: 'Login lockout duration in minutes.',
+    }),
     __metadata("design:type", Number)
 ], AuthSettingsDto.prototype, "loginLockoutDuration", void 0);
 //# sourceMappingURL=auth-settings.dto.js.map

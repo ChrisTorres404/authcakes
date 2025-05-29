@@ -15,18 +15,22 @@ const users_controller_1 = require("./controllers/users.controller");
 const auth_module_1 = require("../auth/auth.module");
 const audit_log_service_1 = require("../auth/services/audit-log.service");
 const tenants_module_1 = require("../tenants/tenants.module");
+const settings_module_1 = require("../settings/settings.module");
+const profile_update_guard_1 = require("./guards/profile-update.guard");
+const log_entity_1 = require("../logs/entities/log.entity");
 let UsersModule = class UsersModule {
 };
 exports.UsersModule = UsersModule;
 exports.UsersModule = UsersModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forFeature([user_entity_1.User]),
+            typeorm_1.TypeOrmModule.forFeature([user_entity_1.User, log_entity_1.Log]),
             (0, common_1.forwardRef)(() => auth_module_1.AuthModule),
             tenants_module_1.TenantsModule,
+            settings_module_1.SettingsModule,
         ],
         controllers: [users_controller_1.UsersController],
-        providers: [users_service_1.UsersService, audit_log_service_1.AuditLogService],
+        providers: [users_service_1.UsersService, audit_log_service_1.AuditLogService, profile_update_guard_1.ProfileUpdateGuard],
         exports: [users_service_1.UsersService],
     })
 ], UsersModule);

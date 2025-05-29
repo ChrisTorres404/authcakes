@@ -21,4 +21,4 @@ export class CreateTenantsTable1685600100000 implements MigrationInterface {
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query('DROP TABLE IF EXISTS "tenants"');
   }
-} 
+}

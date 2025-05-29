@@ -19,6 +19,8 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const config_1 = require("@nestjs/config");
+const database_types_1 = require("./types/database.types");
+const process_utils_1 = require("./utils/process.utils");
 let ResetDatabaseCommand = ResetDatabaseCommand_1 = class ResetDatabaseCommand extends nest_commander_1.CommandRunner {
     dataSource;
     configService;
@@ -40,7 +42,13 @@ let ResetDatabaseCommand = ResetDatabaseCommand_1 = class ResetDatabaseCommand e
     async run(passedParams, options) {
         try {
             const dbName = this.configService.get('DB_NAME');
-            const dbType = this.configService.get('DB_TYPE');
+            const dbType = this.configService.get('DB_TYPE', 'postgres');
+            if (!dbName) {
+                throw new Error('Database name is required');
+            }
+            if (!(0, database_types_1.isSupportedDatabase)(dbType)) {
+                throw new Error(`Unsupported database type: ${dbType}`);
+            }
             if (!options.confirm) {
                 this.logger.warn(`⚠️ WARNING: This operation will COMPLETELY RESET the "${dbName}" database, DELETING ALL DATA. ⚠️`);
                 this.logger.warn('Use --confirm to bypass this warning and proceed with the operation.');
@@ -51,37 +59,24 @@ let ResetDatabaseCommand = ResetDatabaseCommand_1 = class ResetDatabaseCommand e
             }
             this.logger.log(`Resetting database "${dbName}"...`);
             const connectionOptions = {
-                host: this.configService.get('DB_HOST'),
-                port: this.configService.get('DB_PORT'),
-                username: this.configService.get('DB_USERNAME'),
-                password: this.configService.get('DB_PASSWORD'),
+                type: this.configService.get('DB_TYPE', 'postgres'),
+                host: this.configService.get('DB_HOST', 'localhost'),
+                port: this.configService.get('DB_PORT', 5432),
+                username: this.configService.get('DB_USERNAME', ''),
+                password: this.configService.get('DB_PASSWORD', ''),
+                database: this.configService.get('DB_NAME', ''),
             };
             await this.dataSource.destroy();
             this.logger.log('Database connection closed');
             const defaultDbName = dbType === 'postgres' ? 'postgres' : dbName;
-            let masterConnection;
-            if (dbType === 'postgres') {
-                masterConnection = new typeorm_2.DataSource({
-                    type: 'postgres',
-                    host: connectionOptions.host,
-                    port: connectionOptions.port,
-                    username: connectionOptions.username,
-                    password: connectionOptions.password,
-                    database: defaultDbName,
-                });
-            }
-            else if (dbType === 'mysql') {
-                masterConnection = new typeorm_2.DataSource({
-                    type: 'mysql',
-                    host: connectionOptions.host,
-                    port: connectionOptions.port,
-                    username: connectionOptions.username,
-                    password: connectionOptions.password,
-                });
-            }
-            else {
-                throw new Error(`Unsupported database type: ${dbType}`);
-            }
+            const masterConnection = new typeorm_2.DataSource({
+                type: dbType,
+                host: connectionOptions.host,
+                port: connectionOptions.port,
+                username: connectionOptions.username,
+                password: connectionOptions.password,
+                database: dbType === 'postgres' ? defaultDbName : undefined,
+            });
             await masterConnection.initialize();
             this.logger.log(`Connected to ${dbType} server`);
             try {
@@ -118,52 +113,54 @@ let ResetDatabaseCommand = ResetDatabaseCommand_1 = class ResetDatabaseCommand e
             this.logger.log('Database reset completed successfully');
             if (options.migrate) {
                 this.logger.log('Running migrations...');
-                const { spawn } = require('child_process');
-                const migrateProcess = spawn('npm', ['run', 'migration:run'], {
-                    stdio: 'inherit',
-                    shell: true,
-                });
-                await new Promise((resolve, reject) => {
-                    migrateProcess.on('close', (code) => {
-                        if (code === 0) {
-                            this.logger.log('Migrations completed successfully');
-                            resolve();
-                        }
-                        else {
-                            this.logger.error(`Migrations failed with exit code ${code}`);
-                            reject(new Error(`Migrations failed with exit code ${code}`));
-                        }
+                try {
+                    await (0, process_utils_1.executeProcess)({
+                        command: 'npm',
+                        args: ['run', 'migration:run'],
+                        logger: this.logger,
                     });
-                });
+                    this.logger.log('Migrations completed successfully');
+                }
+                catch (error) {
+                    if (error instanceof process_utils_1.ProcessError) {
+                        throw new Error(`Migrations failed: ${error.message}`);
+                    }
+                    throw error;
+                }
             }
             if (options.seed) {
                 if (!options.migrate) {
                     this.logger.warn('Running seeders without migrations may cause errors if tables do not exist');
                 }
                 this.logger.log('Running seeders...');
-                const { spawn } = require('child_process');
-                const seedProcess = spawn('npm', ['run', 'seed'], {
-                    stdio: 'inherit',
-                    shell: true,
-                });
-                await new Promise((resolve, reject) => {
-                    seedProcess.on('close', (code) => {
-                        if (code === 0) {
-                            this.logger.log('Seeding completed successfully');
-                            resolve();
-                        }
-                        else {
-                            this.logger.error(`Seeding failed with exit code ${code}`);
-                            reject(new Error(`Seeding failed with exit code ${code}`));
-                        }
+                try {
+                    await (0, process_utils_1.executeProcess)({
+                        command: 'npm',
+                        args: ['run', 'seed'],
+                        logger: this.logger,
                     });
-                });
+                    this.logger.log('Seeding completed successfully');
+                }
+                catch (error) {
+                    if (error instanceof process_utils_1.ProcessError) {
+                        throw new Error(`Seeding failed: ${error.message}`);
+                    }
+                    throw error;
+                }
             }
             this.logger.log('Database reset process completed');
             process.exit(0);
         }
         catch (error) {
-            this.logger.error(`Error resetting database: ${error.message}`, error.stack);
+            if ((0, database_types_1.isDatabaseError)(error)) {
+                this.logger.error(`Error resetting database: ${error.message}`, error.stack);
+            }
+            else if (error instanceof Error) {
+                this.logger.error(`Error resetting database: ${error.message}`, error.stack);
+            }
+            else {
+                this.logger.error('Unknown error during database reset');
+            }
             process.exit(1);
         }
     }

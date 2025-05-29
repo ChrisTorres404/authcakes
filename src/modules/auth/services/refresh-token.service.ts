@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { RefreshToken } from '../entities/refresh-token.entity';
+import { Session } from '../entities/session.entity';
+import { User } from '../../users/entities/user.entity';
 import { RefreshTokenRepository } from '../repositories/refresh-token.repository';
 import { CreateRefreshTokenDto } from '../dto/create-refresh-token.dto';
 import { RevokeRefreshTokenDto } from '../dto/revoke-refresh-token.dto';
@@ -14,8 +16,10 @@ export class RefreshTokenService {
 
   async createRefreshToken(dto: CreateRefreshTokenDto): Promise<RefreshToken> {
     const refreshToken = this.refreshTokenRepository.create({
-      user: { id: dto.userId } as any,
-      session: dto.sessionId ? { id: dto.sessionId } as any : undefined,
+      user: { id: dto.userId } as Partial<User>,
+      session: dto.sessionId
+        ? ({ id: dto.sessionId } as Partial<Session>)
+        : undefined,
       token: dto.token,
       expiresAt: new Date(dto.expiresAt),
       userAgent: dto.userAgent,
@@ -43,4 +47,4 @@ export class RefreshTokenService {
       order: { createdAt: 'DESC' },
     });
   }
-} 
+}

@@ -54,18 +54,9 @@ let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(pas
         if (payload.sessionId) {
             console.log('[JWTStrategy] Checking session validity for userId:', user.id, 'sessionId:', payload.sessionId);
             let sessionValid = false;
-            let session = null;
-            if (this.sessionService) {
-                session = await this.sessionService.getSessionById(payload.sessionId);
-                sessionValid = await this.sessionService.isSessionValid(user.id, payload.sessionId);
-            }
-            else {
-                const sessionService = this.sessionService || request.app?.get('SessionService');
-                if (sessionService) {
-                    session = await sessionService.getSessionById(payload.sessionId);
-                    sessionValid = await sessionService.isSessionValid(user.id, payload.sessionId);
-                }
-            }
+            const session = await this.sessionService?.getSessionById(payload.sessionId);
+            sessionValid =
+                (await this.sessionService?.isSessionValid(user.id, payload.sessionId)) ?? false;
             console.log('[JWTStrategy] Session lookup result:', session);
             if (!session) {
                 console.warn('[JWTStrategy] Session not found for sessionId:', payload.sessionId);
@@ -81,11 +72,12 @@ let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(pas
                 throw new common_1.UnauthorizedException('Session is revoked or expired');
             }
         }
-        request['tenantId'] = payload.tenantId;
-        request['tenantAccess'] = payload.tenantAccess;
-        request['sessionId'] = payload.sessionId;
-        return {
-            id: user.id,
+        const typedRequest = request;
+        typedRequest.tenantId = payload.tenantId ?? undefined;
+        typedRequest.tenantAccess = payload.tenantAccess;
+        typedRequest.sessionId = payload.sessionId;
+        const result = {
+            sub: user.id,
             email: user.email,
             role: user.role,
             tenantId: payload.tenantId,
@@ -93,6 +85,7 @@ let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(pas
             sessionId: payload.sessionId,
             type: payload.type,
         };
+        return result;
     }
 };
 exports.JwtStrategy = JwtStrategy;

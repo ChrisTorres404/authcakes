@@ -1,6 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AlterRefreshTokensColumnsToText1685601700000 implements MigrationInterface {
+export class AlterRefreshTokensColumnsToText1685601700000
+  implements MigrationInterface
+{
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
       ALTER TABLE "refresh_tokens"
@@ -16,4 +18,4 @@ export class AlterRefreshTokensColumnsToText1685601700000 implements MigrationIn
         ALTER COLUMN "replacedByToken" TYPE varchar(128);
     `);
   }
-} 
+}

@@ -4,12 +4,17 @@ import * as bcrypt from 'bcrypt';
 import { Logger } from '@nestjs/common';
 import { SeederOptions } from './seeder.service';
 
-export async function seedUsers(userRepository: Repository<User>, options: SeederOptions = {}) {
+export async function seedUsers(
+  userRepository: Repository<User>,
+  options: SeederOptions = {},
+) {
   const logger = new Logger('UsersSeeder');
   const usersCount = await userRepository.count();
   if (usersCount === 0 || options.force) {
     if (usersCount > 0 && options.force) {
-      logger.log('Force option enabled - seeding users even though users already exist');
+      logger.log(
+        'Force option enabled - seeding users even though users already exist',
+      );
     }
     logger.log('Seeding users...');
     const passwordHash = await bcrypt.hash('StrongP@ssw0rd!', 10);

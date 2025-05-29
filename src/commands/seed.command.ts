@@ -1,19 +1,40 @@
 // src/commands/seed.command.ts
 import { Command, CommandRunner, Option } from 'nest-commander';
 import { Logger } from '@nestjs/common';
-import { SeederService, SeederOptions } from '../modules/database/seeds/seeder.service';
+import {
+  SeederService,
+  SeederOptions,
+} from '../modules/database/seeds/seeder.service';
+import { isDatabaseError } from './types/database.types';
 
-interface SeedCommandOptions {
+/** Options for the database seed command */
+export interface SeedCommandOptions {
   force?: boolean;
 }
 
+/**
+ * Command to seed the database with initial data.
+ * Executes seeding operations using the SeederService to populate
+ * the database with initial records for testing or development.
+ *
+ * @example
+ * ```bash
+ * # Seed database with initial data
+ * npm run cli seed
+ *
+ * # Force seed even if tables have data
+ * npm run cli seed --force
+ * ```
+ *
+ * @throws {Error} If seeding operations fail
+ * @throws {Error} If database is not accessible
+ */
 @Command({ name: 'seed', description: 'Seed the database with initial data' })
 export class SeedCommand extends CommandRunner {
   private readonly logger = new Logger(SeedCommand.name);
 
   constructor(private readonly seederService: SeederService) {
     super();
-    Logger.log('SeedCommand constructed');
   }
 
   @Option({
@@ -28,19 +49,24 @@ export class SeedCommand extends CommandRunner {
     passedParams: string[],
     options: SeedCommandOptions,
   ): Promise<void> {
-    console.log('SeedCommand.run() called with options:', options);
-    this.logger.log('SeedCommand.run() called with options: ' + JSON.stringify(options));
-    
     try {
+      this.logger.log('Starting database seeding...');
       const seederOptions: SeederOptions = {
         force: options.force,
       };
-      
+
       await this.seederService.seed(seederOptions);
       this.logger.log('Database seeding completed successfully!');
       process.exit(0);
-    } catch (error) {
-      this.logger.error(`Error during database seeding: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      const dbError = isDatabaseError(error)
+        ? error
+        : { message: 'Unknown error during seeding' };
+
+      this.logger.error(
+        `Error during database seeding: ${dbError.message}`,
+        dbError.stack,
+      );
       process.exit(1);
     }
   }

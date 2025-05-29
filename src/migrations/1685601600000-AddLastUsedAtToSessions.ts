@@ -1,6 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddLastUsedAtToSessions1685601600000 implements MigrationInterface {
+export class AddLastUsedAtToSessions1685601600000
+  implements MigrationInterface
+{
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
       ALTER TABLE "sessions"
@@ -14,4 +16,4 @@ export class AddLastUsedAtToSessions1685601600000 implements MigrationInterface 
       DROP COLUMN IF EXISTS "lastUsedAt";
     `);
   }
-} 
+}

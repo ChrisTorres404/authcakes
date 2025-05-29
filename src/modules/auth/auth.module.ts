@@ -28,6 +28,7 @@ import { UserDevice } from './entities/user-device.entity';
 import { MfaRecoveryCode } from './entities/mfa-recovery-code.entity';
 import { WebauthnCredential } from './entities/webauthn-credential.entity';
 import { PasswordHistory } from './entities/password-history.entity';
+import { Log } from '../logs/entities/log.entity';
 
 // Guards
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -59,6 +60,7 @@ import { SettingsModule } from '../settings/settings.module';
       MfaRecoveryCode,
       WebauthnCredential,
       PasswordHistory,
+      Log,
     ]),
     UsersModule,
     TenantsModule,

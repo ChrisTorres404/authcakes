@@ -13,6 +13,7 @@ exports.TenantInvitation = void 0;
 const typeorm_1 = require("typeorm");
 const user_entity_1 = require("../../users/entities/user.entity");
 const tenant_entity_1 = require("./tenant.entity");
+const tenant_invitation_dto_1 = require("../dto/tenant-invitation.dto");
 let TenantInvitation = class TenantInvitation {
     id;
     tenantId;
@@ -48,7 +49,7 @@ __decorate([
     __metadata("design:type", String)
 ], TenantInvitation.prototype, "email", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ default: 'member' }),
+    (0, typeorm_1.Column)({ type: 'varchar', default: tenant_invitation_dto_1.TenantRole.MEMBER }),
     __metadata("design:type", String)
 ], TenantInvitation.prototype, "role", void 0);
 __decorate([

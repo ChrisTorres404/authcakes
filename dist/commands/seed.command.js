@@ -14,21 +14,20 @@ exports.SeedCommand = void 0;
 const nest_commander_1 = require("nest-commander");
 const common_1 = require("@nestjs/common");
 const seeder_service_1 = require("../modules/database/seeds/seeder.service");
+const database_types_1 = require("./types/database.types");
 let SeedCommand = SeedCommand_1 = class SeedCommand extends nest_commander_1.CommandRunner {
     seederService;
     logger = new common_1.Logger(SeedCommand_1.name);
     constructor(seederService) {
         super();
         this.seederService = seederService;
-        common_1.Logger.log('SeedCommand constructed');
     }
     parseForceOption(val) {
         return !!val;
     }
     async run(passedParams, options) {
-        console.log('SeedCommand.run() called with options:', options);
-        this.logger.log('SeedCommand.run() called with options: ' + JSON.stringify(options));
         try {
+            this.logger.log('Starting database seeding...');
             const seederOptions = {
                 force: options.force,
             };
@@ -37,7 +36,10 @@ let SeedCommand = SeedCommand_1 = class SeedCommand extends nest_commander_1.Com
             process.exit(0);
         }
         catch (error) {
-            this.logger.error(`Error during database seeding: ${error.message}`, error.stack);
+            const dbError = (0, database_types_1.isDatabaseError)(error)
+                ? error
+                : { message: 'Unknown error during seeding' };
+            this.logger.error(`Error during database seeding: ${dbError.message}`, dbError.stack);
             process.exit(1);
         }
     }

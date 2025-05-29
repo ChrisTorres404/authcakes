@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { RefreshToken } from '../entities/refresh-token.entity';
 import { Session } from '../entities/session.entity';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
+import { DeviceInfo, AuthTokenResponse } from '../interfaces/auth.interfaces';
 import { UsersService } from '../../users/services/users.service';
 import { TenantsService } from '../../tenants/services/tenants.service';
 import { SessionService } from './session.service';
@@ -15,23 +16,10 @@ export declare class TokenService {
     private readonly sessionService;
     private readonly refreshTokenRepository;
     constructor(jwtService: JwtService, configService: ConfigService, usersService: UsersService, tenantsService: TenantsService, sessionService: SessionService, refreshTokenRepository: Repository<RefreshToken>);
-    generateTokens(userId: string, deviceInfo?: any): Promise<{
-        accessToken: string;
-        refreshToken: string;
-        sessionId: string;
-        user: {
-            id: string;
-            email: string;
-            firstName: string;
-            lastName: string;
-            role: string;
-            avatar: string;
-            emailVerified: boolean;
-        };
-    }>;
+    generateTokens(userId: string, deviceInfo?: DeviceInfo): Promise<AuthTokenResponse>;
     generateAccessToken(payload: JwtPayload): string;
     generateRefreshToken(payload: JwtPayload): Promise<string>;
-    verifyToken(token: string): any;
+    verifyToken(token: string): JwtPayload;
     isRefreshTokenValid(token: string): Promise<boolean>;
     revokeRefreshToken(token: string, revokedBy?: string, revocationReason?: string): Promise<void>;
     revokeSession(sessionId: string, revokedBy?: string, revocationReason?: string): Promise<void>;

@@ -1,6 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddMissingColumnsToUserDevicesTable1685601500000 implements MigrationInterface {
+export class AddMissingColumnsToUserDevicesTable1685601500000
+  implements MigrationInterface
+{
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
       ALTER TABLE "user_devices"
@@ -26,4 +28,4 @@ export class AddMissingColumnsToUserDevicesTable1685601500000 implements Migrati
         DROP COLUMN IF EXISTS "lastLogin";
     `);
   }
-} 
+}

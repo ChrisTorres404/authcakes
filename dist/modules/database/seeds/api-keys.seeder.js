@@ -10,8 +10,12 @@ async function seedApiKeys(apiKeyRepository, userRepository, tenantRepository, o
             logger.log('Force option enabled - seeding API keys even though keys already exist');
         }
         logger.log('Seeding API keys...');
-        const adminUser = await userRepository.findOne({ where: { email: 'admin@example.com' } });
-        const demoTenant = await tenantRepository.findOne({ where: { slug: 'demo-org' } });
+        const adminUser = await userRepository.findOne({
+            where: { email: 'admin@example.com' },
+        });
+        const demoTenant = await tenantRepository.findOne({
+            where: { slug: 'demo-org' },
+        });
         if (adminUser && demoTenant) {
             const apiKey = apiKeyRepository.create({
                 userId: adminUser.id,

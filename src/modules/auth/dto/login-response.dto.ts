@@ -16,7 +16,10 @@ export class LoginUserDto {
   @ApiProperty({ example: 'user', enum: ['user', 'admin'] })
   role: string;
 
-  @ApiProperty({ example: 'https://cdn.example.com/avatar.jpg', nullable: true })
+  @ApiProperty({
+    example: 'https://cdn.example.com/avatar.jpg',
+    nullable: true,
+  })
   avatar?: string;
 
   @ApiProperty({ example: true })
@@ -39,6 +42,10 @@ export class LoginResponseDto {
   @ApiProperty({ example: 'refresh.jwt.token' })
   refreshToken: string;
 
-  @ApiProperty({ example: 'dev-verification-token', required: false, description: 'For development use only. Do not expose in production.' })
+  @ApiProperty({
+    example: 'dev-verification-token',
+    required: false,
+    description: 'For development use only. Do not expose in production.',
+  })
   verificationToken?: string;
-} 
+}

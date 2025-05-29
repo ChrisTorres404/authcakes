@@ -20,7 +20,7 @@ export class PasswordHistoryService {
    */
   async addToHistory(userId: string, passwordHash: string): Promise<void> {
     this.logger.debug(`Adding password to history for user ${userId}`);
-    
+
     // Create a new password history entry
     await this.passwordHistoryRepository.save({
       userId,
@@ -36,9 +36,15 @@ export class PasswordHistoryService {
    * @param historyCount Number of passwords to check in history
    * @returns Boolean indicating if password exists in history
    */
-  async isPasswordInHistory(userId: string, newPassword: string, historyCount = 5): Promise<boolean> {
-    this.logger.debug(`Checking if password exists in history for user ${userId}`);
-    
+  async isPasswordInHistory(
+    userId: string,
+    newPassword: string,
+    historyCount = 5,
+  ): Promise<boolean> {
+    this.logger.debug(
+      `Checking if password exists in history for user ${userId}`,
+    );
+
     // Get the most recent password history entries for the user
     const passwordHistory = await this.passwordHistoryRepository.find({
       where: { userId },
@@ -68,8 +74,10 @@ export class PasswordHistoryService {
    * @param keepCount Number of recent passwords to keep
    */
   async pruneHistory(userId: string, keepCount: number): Promise<void> {
-    this.logger.debug(`Pruning password history for user ${userId}, keeping ${keepCount}`);
-    
+    this.logger.debug(
+      `Pruning password history for user ${userId}, keeping ${keepCount}`,
+    );
+
     // Find the timestamp of the Nth most recent entry
     const entries = await this.passwordHistoryRepository.find({
       where: { userId },

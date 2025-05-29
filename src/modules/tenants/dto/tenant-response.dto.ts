@@ -16,7 +16,11 @@ export class TenantResponseDto {
   @ApiProperty({ example: true })
   active: boolean;
 
-  @ApiPropertyOptional({ type: 'object', example: { timezone: 'UTC' }, additionalProperties: true })
+  @ApiPropertyOptional({
+    type: 'object',
+    example: { timezone: 'UTC' },
+    additionalProperties: true,
+  })
   settings?: Record<string, any>;
 
   @ApiProperty({ type: 'string', format: 'date-time' })
@@ -24,4 +28,4 @@ export class TenantResponseDto {
 
   @ApiProperty({ type: 'string', format: 'date-time' })
   updatedAt: string;
-} 
+}

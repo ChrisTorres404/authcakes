@@ -17,7 +17,7 @@ let SessionRepository = class SessionRepository extends typeorm_1.Repository {
                 isActive: true,
                 revoked: false,
                 expiresAt: (0, typeorm_1.MoreThan)(new Date()),
-            }
+            },
         });
     }
 };

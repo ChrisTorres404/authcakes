@@ -99,16 +99,22 @@ let SessionService = SessionService_1 = class SessionService {
         });
     }
     async revokeSession(dto) {
-        await this.sessionRepository.update({ id: dto.sessionId }, { revoked: true, revokedAt: new Date(), revokedBy: dto.revokedBy ?? '', isActive: false });
+        await this.sessionRepository.update({ id: dto.sessionId }, {
+            revoked: true,
+            revokedAt: new Date(),
+            revokedBy: dto.revokedBy ?? '',
+            isActive: false,
+        });
     }
     async revokeAllUserSessions(userId, exceptSessionId) {
-        const query = this.sessionRepository.createQueryBuilder()
+        const query = this.sessionRepository
+            .createQueryBuilder()
             .update(session_entity_1.Session)
             .set({
             revoked: true,
             revokedAt: new Date(),
             revokedBy: '',
-            isActive: false
+            isActive: false,
         })
             .where('userId = :userId', { userId })
             .andWhere('revoked = :revoked', { revoked: false });

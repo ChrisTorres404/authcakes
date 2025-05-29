@@ -26,7 +26,7 @@ import { validationSchema } from './config/validation.schema';
         abortEarly: true,
       },
     }),
-    
+
     // Database connection - same as in AppModule
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -43,7 +43,7 @@ import { validationSchema } from './config/validation.schema';
         logging: configService.get<boolean>('database.logging'),
       }),
     }),
-    
+
     DatabaseModule,
   ],
   providers: [

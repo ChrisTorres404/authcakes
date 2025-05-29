@@ -1,82 +1,25 @@
-declare const _default: (() => {
-    default: {
-        ttl: number;
-        limit: number;
-    };
-    auth: {
-        login: {
-            ttl: number;
-            limit: number;
-        };
-        register: {
-            ttl: number;
-            limit: number;
-        };
-        passwordReset: {
-            ttl: number;
-            limit: number;
-        };
-        refresh: {
-            ttl: number;
-            limit: number;
-        };
-    };
-    api: {
-        read: {
-            ttl: number;
-            limit: number;
-        };
-        write: {
-            ttl: number;
-            limit: number;
-        };
-    };
-    admin: {
-        ttl: number;
-        limit: number;
-    };
+export interface RateLimitConfig {
+    ttl: number;
+    limit: number;
+}
+export interface AuthRateLimits {
+    login: RateLimitConfig;
+    register: RateLimitConfig;
+    passwordReset: RateLimitConfig;
+    refresh: RateLimitConfig;
+}
+export interface ApiRateLimits {
+    read: RateLimitConfig;
+    write: RateLimitConfig;
+}
+export interface ThrottlerConfig {
+    default: RateLimitConfig;
+    auth: AuthRateLimits;
+    api: ApiRateLimits;
+    admin: RateLimitConfig;
     skipIf: {
         ips: string[];
     };
-}) & import("@nestjs/config").ConfigFactoryKeyHost<{
-    default: {
-        ttl: number;
-        limit: number;
-    };
-    auth: {
-        login: {
-            ttl: number;
-            limit: number;
-        };
-        register: {
-            ttl: number;
-            limit: number;
-        };
-        passwordReset: {
-            ttl: number;
-            limit: number;
-        };
-        refresh: {
-            ttl: number;
-            limit: number;
-        };
-    };
-    api: {
-        read: {
-            ttl: number;
-            limit: number;
-        };
-        write: {
-            ttl: number;
-            limit: number;
-        };
-    };
-    admin: {
-        ttl: number;
-        limit: number;
-    };
-    skipIf: {
-        ips: string[];
-    };
-}>;
+}
+declare const _default: (() => ThrottlerConfig) & import("@nestjs/config").ConfigFactoryKeyHost<ThrottlerConfig>;
 export default _default;

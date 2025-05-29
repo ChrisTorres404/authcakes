@@ -16,9 +16,17 @@ async function bootstrap() {
         process.exit(0);
     }
     catch (error) {
-        common_1.Logger.error(`Error during database seeding: ${error.message}`, error.stack);
+        if (error instanceof Error) {
+            common_1.Logger.error(`Error during database seeding: ${error.message}`, error.stack);
+        }
+        else {
+            common_1.Logger.error('Unknown error during database seeding');
+        }
         process.exit(1);
     }
 }
-bootstrap();
+bootstrap().catch((error) => {
+    common_1.Logger.error('Bootstrap failed', error);
+    process.exit(1);
+});
 //# sourceMappingURL=seed.js.map

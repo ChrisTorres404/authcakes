@@ -17,4 +17,4 @@ class SessionDto {
 export class SessionListResponseDto {
   @ApiProperty({ type: [SessionDto] })
   sessions: SessionDto[];
-} 
+}

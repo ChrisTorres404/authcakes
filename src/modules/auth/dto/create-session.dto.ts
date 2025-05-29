@@ -15,4 +15,4 @@ export class CreateSessionDto {
   @IsOptional()
   @IsObject()
   deviceInfo?: Record<string, any>;
-} 
+}

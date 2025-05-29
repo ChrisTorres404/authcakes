@@ -7,15 +7,19 @@ import { UsersController } from './controllers/users.controller';
 import { AuthModule } from '../auth/auth.module';
 import { AuditLogService } from '../auth/services/audit-log.service';
 import { TenantsModule } from '../tenants/tenants.module';
+import { SettingsModule } from '../settings/settings.module';
+import { ProfileUpdateGuard } from './guards/profile-update.guard';
+import { Log } from '../logs/entities/log.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User, Log]),
     forwardRef(() => AuthModule),
     TenantsModule,
+    SettingsModule,
   ],
   controllers: [UsersController],
-  providers: [UsersService, AuditLogService],
+  providers: [UsersService, AuditLogService, ProfileUpdateGuard],
   exports: [UsersService],
 })
 export class UsersModule {}

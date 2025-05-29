@@ -54,7 +54,9 @@ describe('Auth Session Management E2E', () => {
     dataSource = app.get(DataSource);
     authService = moduleFixture.get<AuthService>(AuthService);
     usersService = moduleFixture.get<UsersService>(UsersService);
-    userRepository = moduleFixture.get<Repository<User>>(getRepositoryToken(User));
+    userRepository = moduleFixture.get<Repository<User>>(
+      getRepositoryToken(User),
+    );
   }, 30000);
 
   afterAll(async () => {
@@ -67,27 +69,31 @@ describe('Auth Session Management E2E', () => {
       const email = uniqueEmail('expireflow');
       const password = 'Test1234!';
       const uniqueOrgName = `TestOrg-${Date.now()}`;
-      
+
       await request(app.getHttpServer())
         .post('/api/auth/register')
-        .send({ 
-          email, 
-          password, 
-          firstName: 'Test', 
-          lastName: 'User', 
-          organizationName: uniqueOrgName 
+        .send({
+          email,
+          password,
+          firstName: 'Test',
+          lastName: 'User',
+          organizationName: uniqueOrgName,
         })
         .expect(200);
-      
+
       const loginRes = await request(app.getHttpServer())
         .post('/api/auth/login')
         .send({ email, password })
         .expect(200);
-      
-      const loginCookies = Array.isArray(loginRes.headers['set-cookie']) ? loginRes.headers['set-cookie'] : [loginRes.headers['set-cookie']];
+
+      const loginCookies = Array.isArray(loginRes.headers['set-cookie'])
+        ? loginRes.headers['set-cookie']
+        : [loginRes.headers['set-cookie']];
       // Extract session_id from cookie
       const sessionId = (() => {
-        const cookieHeader = loginCookies.find((c) => c.startsWith('session_id='));
+        const cookieHeader = loginCookies.find((c) =>
+          c.startsWith('session_id='),
+        );
         if (!cookieHeader) throw new Error('session_id cookie not found');
         return cookieHeader.split(';')[0].split('=')[1];
       })();
@@ -109,53 +115,57 @@ describe('Auth Session Management E2E', () => {
       const email = uniqueEmail('sessiontimeout');
       const password = 'Test1234!';
       const uniqueOrgName = `TestOrg-${Date.now()}`;
-      
+
       await request(app.getHttpServer())
         .post('/api/auth/register')
-        .send({ 
-          email, 
-          password, 
-          firstName: 'Test', 
-          lastName: 'User', 
-          organizationName: uniqueOrgName 
+        .send({
+          email,
+          password,
+          firstName: 'Test',
+          lastName: 'User',
+          organizationName: uniqueOrgName,
         })
         .expect(200);
-      
+
       const loginRes = await request(app.getHttpServer())
         .post('/api/auth/login')
         .send({ email, password })
         .expect(200);
-      
-      const loginCookies = Array.isArray(loginRes.headers['set-cookie']) ? loginRes.headers['set-cookie'] : [loginRes.headers['set-cookie']];
-      
+
+      const loginCookies = Array.isArray(loginRes.headers['set-cookie'])
+        ? loginRes.headers['set-cookie']
+        : [loginRes.headers['set-cookie']];
+
       // Get the session ID
       const sessionsRes = await request(app.getHttpServer())
         .get('/api/auth/sessions')
         .set('Cookie', loginCookies)
         .expect(200);
-      
+
       if (!sessionsRes.body?.sessions?.length) {
         console.warn('Skipping session timeout test: no sessions found');
         return;
       }
-      
+
       const sessionId = sessionsRes.body.sessions[0].id;
-      
+
       try {
         // Try to simulate session expiration by directly modifying the database
         // In a real scenario, we'd wait for the timeout, but that's impractical for tests
         await dataSource.getRepository('Session').update(
           { id: sessionId },
-          { lastUsedAt: new Date(Date.now() - 24 * 60 * 60 * 1000) } // 1 day ago
+          { lastUsedAt: new Date(Date.now() - 24 * 60 * 60 * 1000) }, // 1 day ago
         );
-        
+
         // Try to access protected route (should fail if session expired)
         await request(app.getHttpServer())
           .get('/api/users/profile')
           .set('Cookie', loginCookies)
           .expect(401);
       } catch (err) {
-        console.warn('Could not simulate session expiration, skipping this check');
+        console.warn(
+          'Could not simulate session expiration, skipping this check',
+        );
       }
     });
 
@@ -164,57 +174,65 @@ describe('Auth Session Management E2E', () => {
       const email = uniqueEmail('multidevice');
       const password = 'Test1234!';
       const uniqueOrgName = `TestOrg-${Date.now()}`;
-      
+
       await request(app.getHttpServer())
         .post('/api/auth/register')
-        .send({ 
-          email, 
-          password, 
-          firstName: 'Test', 
-          lastName: 'User', 
-          organizationName: uniqueOrgName 
+        .send({
+          email,
+          password,
+          firstName: 'Test',
+          lastName: 'User',
+          organizationName: uniqueOrgName,
         })
         .expect(200);
-      
+
       const loginRes1 = await request(app.getHttpServer())
         .post('/api/auth/login')
         .send({ email, password })
         .expect(200);
-      
+
       const cookies1 = loginRes1.headers['set-cookie'];
-      
+
       // Login from device 2 (simulate different user-agent)
       const loginRes2 = await request(app.getHttpServer())
         .post('/api/auth/login')
         .send({ email, password })
         .set('User-Agent', 'Different Browser Simulation')
         .expect(200);
-      
+
       const cookies2 = loginRes2.headers['set-cookie'];
-      
+
       // List sessions
       const sessionsRes = await request(app.getHttpServer())
         .get('/api/auth/sessions')
         .set('Cookie', cookies1)
         .expect(200);
-      
+
       if (sessionsRes.body?.sessions?.length < 2) {
-        console.warn('Skipping multi-device test: could not create multiple sessions');
+        console.warn(
+          'Skipping multi-device test: could not create multiple sessions',
+        );
         return;
       }
-      
+
       // Find the second session (should be the one we just created with different user agent)
-      const session2 = sessionsRes.body.sessions.find((s: any) => 
-        s.deviceInfo && s.deviceInfo.userAgent === 'Different Browser Simulation'
+      const session2 = sessionsRes.body.sessions.find(
+        (s: any) =>
+          s.deviceInfo &&
+          s.deviceInfo.userAgent === 'Different Browser Simulation',
       );
-      
+
       if (!session2) {
-        const fallbackSession = sessionsRes.body.sessions.find((s: any) => s.id);
+        const fallbackSession = sessionsRes.body.sessions.find(
+          (s: any) => s.id,
+        );
         if (!fallbackSession) {
-          console.warn('Skipping multi-device test: could not identify sessions');
+          console.warn(
+            'Skipping multi-device test: could not identify sessions',
+          );
           return;
         }
-        
+
         // Revoke the fallback session
         await request(app.getHttpServer())
           .post('/api/auth/revoke-session')
@@ -228,13 +246,13 @@ describe('Auth Session Management E2E', () => {
           .set('Cookie', cookies1)
           .send({ sessionId: session2.id })
           .expect(200);
-        
+
         // Device 2 should now be logged out
         await request(app.getHttpServer())
           .get('/api/users/profile')
           .set('Cookie', cookies2)
           .expect(401);
-        
+
         // Device 1 should still be logged in
         await request(app.getHttpServer())
           .get('/api/users/profile')
@@ -250,15 +268,15 @@ describe('Auth Session Management E2E', () => {
       const email = uniqueEmail('deviceflow');
       const password = 'Test1234!';
       const uniqueOrgName = `TestOrg-${Date.now()}`;
-      
+
       await request(app.getHttpServer())
         .post('/api/auth/register')
-        .send({ 
-          email, 
-          password, 
-          firstName: 'Test', 
-          lastName: 'User', 
-          organizationName: uniqueOrgName 
+        .send({
+          email,
+          password,
+          firstName: 'Test',
+          lastName: 'User',
+          organizationName: uniqueOrgName,
         })
         .expect(200);
 
@@ -266,20 +284,29 @@ describe('Auth Session Management E2E', () => {
         .post('/api/auth/login')
         .send({ email, password })
         .expect(201);
-      
+
       const loginCookies = loginRes.headers['set-cookie'];
       const accessToken = extractAccessToken(loginCookies);
       // Debug: print JWT payload
       const jwtPayload = decodeJwt(accessToken);
-      console.log('[E2E DEBUG] JWT payload before /api/users/devices:', jwtPayload);
+      console.log(
+        '[E2E DEBUG] JWT payload before /api/users/devices:',
+        jwtPayload,
+      );
       // Debug: fetch user from DB
       const userRes = await request(app.getHttpServer())
         .get('/api/users/profile')
         .set('Cookie', loginCookies)
         .expect(200);
-      console.log('[E2E DEBUG] User from DB before /api/users/devices:', userRes.body);
+      console.log(
+        '[E2E DEBUG] User from DB before /api/users/devices:',
+        userRes.body,
+      );
       // Debug: print tenant memberships
-      console.log('[E2E DEBUG] User tenantMemberships:', userRes.body.tenantMemberships);
+      console.log(
+        '[E2E DEBUG] User tenantMemberships:',
+        userRes.body.tenantMemberships,
+      );
 
       // List devices
       const devicesRes = await request(app.getHttpServer())
@@ -304,37 +331,42 @@ describe('Auth Session Management E2E', () => {
       const email = uniqueEmail('auditflow');
       const password = 'Test1234!';
       const uniqueOrgName = `TestOrg-${Date.now()}`;
-      
+
       await request(app.getHttpServer())
         .post('/api/auth/register')
-        .send({ 
-          email, 
-          password, 
-          firstName: 'Test', 
-          lastName: 'User', 
-          organizationName: uniqueOrgName 
+        .send({
+          email,
+          password,
+          firstName: 'Test',
+          lastName: 'User',
+          organizationName: uniqueOrgName,
         })
         .expect(200);
-      
+
       const loginRes = await request(app.getHttpServer())
         .post('/api/auth/login')
         .send({ email, password })
         .expect(200);
-      
-      const loginCookies = Array.isArray(loginRes.headers['set-cookie']) ? loginRes.headers['set-cookie'] : [loginRes.headers['set-cookie']];
-      
+
+      const loginCookies = Array.isArray(loginRes.headers['set-cookie'])
+        ? loginRes.headers['set-cookie']
+        : [loginRes.headers['set-cookie']];
+
       // Access audit logs
       try {
         const logsRes = await request(app.getHttpServer())
           .get('/api/audit-logs')
           .set('Cookie', loginCookies);
-        
+
         // Not checking status - implementation may vary
         if (logsRes.status === 200) {
           expect(Array.isArray(logsRes.body)).toBe(true);
         }
       } catch (err) {
-        if (err.response && (err.response.status === 404 || err.response.status === 501)) {
+        if (
+          err.response &&
+          (err.response.status === 404 || err.response.status === 501)
+        ) {
           console.warn('Skipping audit logs test: endpoint not implemented');
           return;
         }

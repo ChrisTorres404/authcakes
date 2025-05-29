@@ -1,19 +1,35 @@
-// auth-password.e2e-spec.ts
+/**
+ * @fileoverview E2E Tests for Password Management
+ * Tests password reset, change, and validation flows
+ */
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import * as request from 'supertest';
-import * as cookieParser from 'cookie-parser';
+import request from 'supertest';
+import cookieParser from 'cookie-parser';
 import { AppModule } from '../../src/app.module';
 import { DataSource, Repository } from 'typeorm';
 import { User } from '../../src/modules/users/entities/user.entity';
 import { AuthService } from '../../src/modules/auth/services/auth.service';
 import { UsersService } from '../../src/modules/users/services/users.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import {
+  AuthTestResponse,
+  TestUser,
+  ForgotPasswordPayload,
+  ResetPasswordPayload,
+  PasswordResetResponse,
+  PasswordChangePayload,
+  AccountStatusInfo,
+  AccountStatusError,
+  PasswordValidationError,
+} from './types/auth.types';
 
 /**
- * Generates a unique email for tests
+ * Generates a unique email for test isolation
+ * @param prefix - Optional prefix for the email
+ * @returns Unique email address
  */
-function uniqueEmail(prefix = 'user') {
+function uniqueEmail(prefix = 'user'): string {
   return `${prefix}+${Date.now()}@example.com`;
 }
 
@@ -45,7 +61,9 @@ describe('Auth Password Management E2E', () => {
     dataSource = app.get(DataSource);
     authService = moduleFixture.get<AuthService>(AuthService);
     usersService = moduleFixture.get<UsersService>(UsersService);
-    userRepository = moduleFixture.get<Repository<User>>(getRepositoryToken(User));
+    userRepository = moduleFixture.get<Repository<User>>(
+      getRepositoryToken(User),
+    );
   }, 30000);
 
   afterAll(async () => {
@@ -57,47 +75,51 @@ describe('Auth Password Management E2E', () => {
       // Register user
       const email = uniqueEmail('resetflow');
       const password = 'Test1234!';
-      
+
       await request(app.getHttpServer())
         .post('/api/auth/register')
-        .send({ 
-          email, 
-          password, 
-          firstName: 'Test', 
-          lastName: 'User', 
-          organizationName: 'TestOrg' 
+        .send({
+          email,
+          password,
+          firstName: 'Test',
+          lastName: 'User',
+          organizationName: 'TestOrg',
         })
         .expect(200);
-      
+
       // Request password reset
-      await request(app.getHttpServer())
+      const forgotPasswordPayload: ForgotPasswordPayload = { email };
+      const forgotPasswordRes = await request(app.getHttpServer())
         .post('/api/auth/forgot-password')
-        .send({ email })
+        .send(forgotPasswordPayload)
         .expect(200);
-      
+
+      const resetResponse = forgotPasswordRes.body as PasswordResetResponse;
+      expect(resetResponse.success).toBe(true);
+
       // Fetch the reset token from the database
       const user = await userRepository.findOneByOrFail({ email });
       const resetToken = user.resetToken;
       const otp = user.otp; // Fetch the OTP
-      
+
       expect(resetToken).toBeTruthy();
-      
+
       // Happy path: Reset password with valid token and OTP if available
-      const resetPayload = { 
-        token: resetToken, 
-        password: 'NewPass123!' 
+      const resetPayload = {
+        token: resetToken,
+        password: 'NewPass123!',
       };
-      
+
       // Add OTP if it exists
       if (otp) {
         resetPayload['otp'] = otp;
       }
-      
+
       await request(app.getHttpServer())
         .post('/api/auth/reset-password')
         .send(resetPayload)
         .expect(200);
-      
+
       // Login with new password should succeed
       await request(app.getHttpServer())
         .post('/api/auth/login')
@@ -109,38 +131,49 @@ describe('Auth Password Management E2E', () => {
       // Register user
       const email = uniqueEmail('resetexpired');
       const password = 'Test1234!';
-      
+
       await request(app.getHttpServer())
         .post('/api/auth/register')
-        .send({ 
-          email, 
-          password, 
-          firstName: 'Test', 
-          lastName: 'User', 
-          organizationName: 'TestOrg' 
+        .send({
+          email,
+          password,
+          firstName: 'Test',
+          lastName: 'User',
+          organizationName: 'TestOrg',
         })
         .expect(200);
-      
+
       // Request password reset
       await request(app.getHttpServer())
         .post('/api/auth/forgot-password')
         .send({ email })
         .expect(200);
-      
+
       // Fetch the reset token from the database
       const user = await userRepository.findOneByOrFail({ email });
-      const resetToken = user.resetToken;
-      
+      if (!user.resetToken) {
+        throw new Error('Reset token not found');
+      }
+
       // Manually expire the token
-      await userRepository.update(user.id, { 
-        resetTokenExpiry: new Date(Date.now() - 1000) 
+      await userRepository.update(user.id, {
+        resetTokenExpiry: new Date(Date.now() - 1000),
       });
-      
+
       // Try to reset password with expired token
-      await request(app.getHttpServer())
+      const resetPayload: ResetPasswordPayload = {
+        token: user.resetToken,
+        password: 'NewPass123!',
+      };
+
+      const resetRes = await request(app.getHttpServer())
         .post('/api/auth/reset-password')
-        .send({ token: resetToken, password: 'NewPass123!' })
+        .send(resetPayload)
         .expect(400);
+
+      const errorResponse = resetRes.body as PasswordValidationError;
+      expect(errorResponse.statusCode).toBe(400);
+      expect(errorResponse.message).toContain('expired');
     });
 
     it('should not reset password with invalid token (sad path)', async () => {
@@ -154,71 +187,85 @@ describe('Auth Password Management E2E', () => {
       // Register user
       const email = uniqueEmail('resetdeactivated');
       const password = 'Test1234!';
-      
+
       await request(app.getHttpServer())
         .post('/api/auth/register')
-        .send({ 
-          email, 
-          password, 
-          firstName: 'Test', 
-          lastName: 'User', 
-          organizationName: 'TestOrg' 
+        .send({
+          email,
+          password,
+          firstName: 'Test',
+          lastName: 'User',
+          organizationName: 'TestOrg',
         })
         .expect(200);
-      
+
       // Deactivate user
       const user = await userRepository.findOneByOrFail({ email });
-      await userRepository.update(user.id, { active: false });
-      
+      const accountStatus: AccountStatusInfo = {
+        active: false,
+        emailVerified: user.emailVerified,
+        mfaEnabled: user.mfaEnabled,
+      };
+      await userRepository.update(user.id, accountStatus);
+
       // Request password reset
       await request(app.getHttpServer())
         .post('/api/auth/forgot-password')
         .send({ email })
         .expect(200);
-      
+
       // Fetch the reset token from the database
       const deactivatedUser = await userRepository.findOneByOrFail({ email });
-      const resetToken = deactivatedUser.resetToken;
-      
+      if (!deactivatedUser.resetToken) {
+        throw new Error('Reset token not found');
+      }
+
       // Try to reset password for deactivated account
-      await request(app.getHttpServer())
+      const resetPayload: ResetPasswordPayload = {
+        token: deactivatedUser.resetToken,
+        password: 'NewPass123!',
+      };
+      const resetRes = await request(app.getHttpServer())
         .post('/api/auth/reset-password')
-        .send({ token: resetToken, password: 'NewPass123!' })
+        .send(resetPayload)
         .expect(400);
+
+      const errorResponse = resetRes.body as AccountStatusError;
+      expect(errorResponse.status.isDeactivated).toBe(true);
     });
 
     it('should not reset password for locked account (sad path)', async () => {
       // Register user
       const email = uniqueEmail('resetlocked');
       const password = 'Test1234!';
-      
+
       await request(app.getHttpServer())
         .post('/api/auth/register')
-        .send({ 
-          email, 
-          password, 
-          firstName: 'Test', 
-          lastName: 'User', 
-          organizationName: 'TestOrg' 
+        .send({
+          email,
+          password,
+          firstName: 'Test',
+          lastName: 'User',
+          organizationName: 'TestOrg',
         })
         .expect(200);
-      
+
       // Lock user
       const user = await userRepository.findOneByOrFail({ email });
-      await userRepository.update(user.id, { 
-        lockedUntil: new Date(Date.now() + 60 * 60 * 1000) // lock for 1 hour
+      await userRepository.update(user.id, {
+        lockedUntil: new Date(Date.now() + 60 * 60 * 1000), // lock for 1 hour
       });
-      
+
       // Request password reset
       await request(app.getHttpServer())
         .post('/api/auth/forgot-password')
         .send({ email })
         .expect(200);
-      
+
       // Fetch the reset token from the database
       const lockedUser = await userRepository.findOneByOrFail({ email });
       const resetToken = lockedUser.resetToken;
-      
+
       // Try to reset password for locked account
       await request(app.getHttpServer())
         .post('/api/auth/reset-password')
@@ -233,25 +280,25 @@ describe('Auth Password Management E2E', () => {
       const email = uniqueEmail('changepass');
       const password = 'Test1234!';
       const newPassword = 'Changed123!';
-      
+
       await request(app.getHttpServer())
         .post('/api/auth/register')
-        .send({ 
-          email, 
-          password, 
-          firstName: 'Test', 
-          lastName: 'User', 
-          organizationName: 'TestOrg' 
+        .send({
+          email,
+          password,
+          firstName: 'Test',
+          lastName: 'User',
+          organizationName: 'TestOrg',
         })
         .expect(200);
-      
+
       const loginRes = await request(app.getHttpServer())
         .post('/api/auth/login')
         .send({ email, password })
         .expect(200);
-      
+
       const loginCookies = loginRes.headers['set-cookie'];
-      
+
       // Change password
       await request(app.getHttpServer())
         .post('/api/auth/change-password')
@@ -260,25 +307,34 @@ describe('Auth Password Management E2E', () => {
         .expect(200);
 
       // Wait for session revocation to complete
-      await new Promise(res => setTimeout(res, 100));
+      await new Promise((res) => setTimeout(res, 100));
 
       // Debug: Fetch and log all sessions for the user after password change
       const userAfterChange = await userRepository.findOneByOrFail({ email });
-      const sessions = await dataSource.getRepository('Session').find({ where: { user: { id: userAfterChange.id } } });
-      // eslint-disable-next-line no-console
-      console.log('Sessions after password change:', sessions);
-      // eslint-disable-next-line no-console
-      console.log('Session cookie used for profile request:', loginCookies);
+      const sessions = await dataSource
+        .getRepository('Session')
+        .find({ where: { user: { id: userAfterChange.id } } });
+
+      // Use structured logging
+      const debugInfo = {
+        sessions,
+        cookies: loginCookies,
+        userId: userAfterChange.id,
+        timestamp: new Date().toISOString(),
+      };
+      console.log('Password change debug info:', debugInfo);
 
       // Try to use old session/token (should be revoked)
       await request(app.getHttpServer())
         .get('/api/users/profile')
         .set('Cookie', loginCookies)
         .expect(401);
-      
+
       // Login with new password should succeed
-      const userBeforeNewLogin = await userRepository.findOneByOrFail({ email });
-      // eslint-disable-next-line no-console
+      const userBeforeNewLogin = await userRepository.findOneByOrFail({
+        email,
+      });
+
       console.log('User before new login:', userBeforeNewLogin);
       const newLogin = await request(app.getHttpServer())
         .post('/api/auth/login')
@@ -291,30 +347,33 @@ describe('Auth Password Management E2E', () => {
       // Register and login
       const email = uniqueEmail('changepasswrong');
       const password = 'Test1234!';
-      
+
       await request(app.getHttpServer())
         .post('/api/auth/register')
-        .send({ 
-          email, 
-          password, 
-          firstName: 'Test', 
-          lastName: 'User', 
-          organizationName: 'TestOrg' 
+        .send({
+          email,
+          password,
+          firstName: 'Test',
+          lastName: 'User',
+          organizationName: 'TestOrg',
         })
         .expect(200);
-      
+
       const loginRes = await request(app.getHttpServer())
         .post('/api/auth/login')
         .send({ email, password })
         .expect(200);
-      
+
       const loginCookies = loginRes.headers['set-cookie'];
-      
+
       // Try to change password with wrong old password
       await request(app.getHttpServer())
         .post('/api/auth/change-password')
         .set('Cookie', loginCookies)
-        .send({ oldPassword: 'WrongOldPassword!', newPassword: 'NewPassword123!' })
+        .send({
+          oldPassword: 'WrongOldPassword!',
+          newPassword: 'NewPassword123!',
+        })
         .expect(401);
     });
 

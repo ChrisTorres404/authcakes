@@ -1,5 +1,6 @@
+type SupportedDatabaseType = 'postgres' | 'mysql' | 'sqlite' | 'mariadb' | 'mongodb';
 export interface DatabaseConfig {
-    type: 'postgres' | 'mysql' | 'sqlite' | 'mariadb' | 'mongodb';
+    type: SupportedDatabaseType;
     host: string;
     port: number;
     username: string;

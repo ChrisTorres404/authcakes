@@ -9,4 +9,4 @@ export class SessionStatusResponseDto {
 
   @ApiProperty({ example: 'uuid-of-session' })
   sessionId: string;
-} 
+}

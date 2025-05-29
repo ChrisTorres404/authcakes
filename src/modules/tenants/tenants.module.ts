@@ -9,11 +9,7 @@ import { TenantsController } from './controllers/tenants.controller';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      Tenant,
-      TenantMembership,
-      TenantInvitation,
-    ]),
+    TypeOrmModule.forFeature([Tenant, TenantMembership, TenantInvitation]),
   ],
   controllers: [TenantsController],
   providers: [TenantsService],

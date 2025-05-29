@@ -25,7 +25,9 @@ let RefreshTokenService = class RefreshTokenService {
     async createRefreshToken(dto) {
         const refreshToken = this.refreshTokenRepository.create({
             user: { id: dto.userId },
-            session: dto.sessionId ? { id: dto.sessionId } : undefined,
+            session: dto.sessionId
+                ? { id: dto.sessionId }
+                : undefined,
             token: dto.token,
             expiresAt: new Date(dto.expiresAt),
             userAgent: dto.userAgent,

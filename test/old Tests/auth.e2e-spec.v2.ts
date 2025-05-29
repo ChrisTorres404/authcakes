@@ -25,16 +25,16 @@ describe('Auth E2E v2', () => {
     // Set NODE_ENV to test to potentially disable throttling
     process.env.NODE_ENV = 'test';
     process.env.THROTTLE_SKIP = 'true'; // Add env var to skip throttling in tests
-    
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    
+
     // Configure app similar to main.ts for E2E tests
     app.use(cookieParser());
-    
+
     // Enable CORS with Authorization header support
     app.enableCors({
       origin: ['http://localhost:3000', 'https://your-frontend.com'],
@@ -42,15 +42,15 @@ describe('Auth E2E v2', () => {
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
       allowedHeaders: 'Content-Type,Authorization',
     });
-    
+
     app.setGlobalPrefix('api');
     app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
-    
+
     await app.init();
 
     // Attach DataSource to app for later use
     global.__testDataSource = app.get(DataSource);
-    
+
     console.log('[E2E Test] App initialized with cookieParser and CORS');
   }, 30000);
 
@@ -70,7 +70,7 @@ describe('Auth E2E v2', () => {
           password: 'Test1234!',
           firstName: 'Test',
           lastName: 'User',
-          organizationName: 'TestOrg'
+          organizationName: 'TestOrg',
         })
         .expect(200);
     } catch (err) {
@@ -85,7 +85,7 @@ describe('Auth E2E v2', () => {
         expect.stringContaining('access_token'),
         expect.stringContaining('refresh_token'),
         expect.stringContaining('session_id'),
-      ])
+      ]),
     );
     const cookies = registerRes.headers['set-cookie'];
 
@@ -110,14 +110,16 @@ describe('Auth E2E v2', () => {
     expect(loginRes.body).toHaveProperty('user');
     const loginCookiesRaw = loginRes.headers['set-cookie'];
     // Ensure loginCookies is always an array
-    const loginCookies = Array.isArray(loginCookiesRaw) ? loginCookiesRaw : [loginCookiesRaw];
+    const loginCookies = Array.isArray(loginCookiesRaw)
+      ? loginCookiesRaw
+      : [loginCookiesRaw];
     // Log cookies for debugging
     console.log('Login cookies:', loginCookies);
     // Extract access_token from cookies
     const accessToken = loginCookies
-      .map(cookie => cookie.match(/access_token=([^;]+)/))
+      .map((cookie) => cookie.match(/access_token=([^;]+)/))
       .filter(Boolean)
-      .map(match => match[1])[0];
+      .map((match) => match[1])[0];
     expect(accessToken).toBeTruthy();
 
     // Print decoded JWT payload
@@ -129,12 +131,18 @@ describe('Auth E2E v2', () => {
     console.log('User lookup result:', userFromDb);
 
     // Access protected route using Bearer token (Authorization header only)
-    console.log('Requesting /api/users/profile with Authorization header:', `Bearer ${accessToken}`);
+    console.log(
+      'Requesting /api/users/profile with Authorization header:',
+      `Bearer ${accessToken}`,
+    );
     const profileRes = await request(app.getHttpServer())
       .get('/api/users/profile')
       .set('Authorization', `Bearer ${accessToken}`)
       .expect(200);
-    console.log('Response from /api/users/profile (Authorization header):', profileRes.body);
+    console.log(
+      'Response from /api/users/profile (Authorization header):',
+      profileRes.body,
+    );
     expect(profileRes.body).toHaveProperty('id');
     expect(profileRes.body).toHaveProperty('email');
 
@@ -144,7 +152,10 @@ describe('Auth E2E v2', () => {
       .get('/api/users/profile')
       .set('Cookie', [`access_token=${accessToken}`])
       .expect(200);
-    console.log('Response from /api/users/profile (access_token cookie):', profileResCookie.body);
+    console.log(
+      'Response from /api/users/profile (access_token cookie):',
+      profileResCookie.body,
+    );
 
     // Refresh token
     const refreshRes = await request(app.getHttpServer())
@@ -168,9 +179,7 @@ describe('Auth E2E v2', () => {
   });
 
   it('should not access protected route without token', async () => {
-    await request(app.getHttpServer())
-      .get('/api/users/profile')
-      .expect(401);
+    await request(app.getHttpServer()).get('/api/users/profile').expect(401);
   });
 
   it('should not refresh with revoked token (after logout)', async () => {
@@ -178,7 +187,13 @@ describe('Auth E2E v2', () => {
     const email = uniqueEmail();
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
     const loginRes = await request(app.getHttpServer())
       .post('/api/auth/login')
@@ -203,11 +218,23 @@ describe('Auth E2E v2', () => {
     const email = uniqueEmail('dupe');
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(400);
   });
 
@@ -215,7 +242,13 @@ describe('Auth E2E v2', () => {
     const email = uniqueEmail('brute');
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
     // Simulate failed logins (assuming max 5 attempts)
     for (let i = 0; i < 5; i++) {
@@ -235,11 +268,18 @@ describe('Auth E2E v2', () => {
     // Register and login to get a valid token
     const loginRes = await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email: uniqueEmail('expiretoken'), password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email: uniqueEmail('expiretoken'),
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
     const { accessToken } = loginRes.body;
     // Simulate expired token by using a clearly invalid/expired JWT
-    const expiredToken = accessToken.split('.').slice(0, 2).join('.') + '.expiredsig';
+    const expiredToken =
+      accessToken.split('.').slice(0, 2).join('.') + '.expiredsig';
     await request(app.getHttpServer())
       .get('/api/users/profile')
       .set('Authorization', `Bearer ${expiredToken}`)
@@ -251,7 +291,13 @@ describe('Auth E2E v2', () => {
     const email = uniqueEmail('resetflow');
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
     // Request password reset
     await request(app.getHttpServer())
@@ -284,7 +330,13 @@ describe('Auth E2E v2', () => {
     const email = uniqueEmail('resetexpired');
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
     // Request password reset
     await request(app.getHttpServer())
@@ -297,7 +349,9 @@ describe('Auth E2E v2', () => {
     const user = await userRepo.findOneByOrFail({ email });
     const resetToken = user.resetToken;
     // Manually expire the token
-    await userRepo.update(user.id, { resetTokenExpiry: new Date(Date.now() - 1000) });
+    await userRepo.update(user.id, {
+      resetTokenExpiry: new Date(Date.now() - 1000),
+    });
     // Try to reset password with expired token
     await request(app.getHttpServer())
       .post('/api/auth/reset-password')
@@ -317,7 +371,13 @@ describe('Auth E2E v2', () => {
     const email = uniqueEmail('resetdeactivated');
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
     // Deactivate user
     const dataSource = app.get(DataSource);
@@ -344,13 +404,21 @@ describe('Auth E2E v2', () => {
     const email = uniqueEmail('resetlocked');
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
     // Lock user
     const dataSource = app.get(DataSource);
     const userRepo = dataSource.getRepository(User);
     const user = await userRepo.findOneByOrFail({ email });
-    await userRepo.update(user.id, { lockedUntil: new Date(Date.now() + 60 * 60 * 1000) }); // lock for 1 hour
+    await userRepo.update(user.id, {
+      lockedUntil: new Date(Date.now() + 60 * 60 * 1000),
+    }); // lock for 1 hour
     // Request password reset
     await request(app.getHttpServer())
       .post('/api/auth/forgot-password')
@@ -371,7 +439,13 @@ describe('Auth E2E v2', () => {
     const email = uniqueEmail('verifyflow');
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
     // Fetch the verification token from the database
     const dataSource = app.get(DataSource);
@@ -392,26 +466,35 @@ describe('Auth E2E v2', () => {
     const email = uniqueEmail('phoneflow');
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', phoneNumber: '+1234567890', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        phoneNumber: '+1234567890',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
-    
+
     // Fetch the phone verification token from the database
     const dataSource = app.get(DataSource);
     const userRepo = dataSource.getRepository(User);
     const user = await userRepo.findOneByOrFail({ email });
     const phoneToken = user.phoneVerificationToken;
-    
+
     // If no phone verification token was generated, skip the test
     if (!phoneToken) {
-      console.warn('Skipping phone verification test: no phone verification token generated');
+      console.warn(
+        'Skipping phone verification test: no phone verification token generated',
+      );
       return;
     }
-    
+
     // Verify phone
-      await request(app.getHttpServer())
-        .post('/api/users/verify-phone')
-        .send({ token: phoneToken })
-        .expect(200);
+    await request(app.getHttpServer())
+      .post('/api/users/verify-phone')
+      .send({ token: phoneToken })
+      .expect(200);
   });
 
   it('should handle MFA enrollment and verification flow', async () => {
@@ -419,7 +502,13 @@ describe('Auth E2E v2', () => {
     const email = uniqueEmail('mfauser');
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
     const loginRes = await request(app.getHttpServer())
       .post('/api/auth/login')
@@ -452,7 +541,12 @@ describe('Auth E2E v2', () => {
         .send({ provider, token: socialToken })
         .expect(200);
     } catch (err) {
-      if (err.response && (err.response.status === 401 || err.response.status === 404 || err.response.status === 501)) {
+      if (
+        err.response &&
+        (err.response.status === 401 ||
+          err.response.status === 404 ||
+          err.response.status === 501)
+      ) {
         console.warn('Skipping social login test: endpoint not implemented');
         return;
       }
@@ -465,36 +559,42 @@ describe('Auth E2E v2', () => {
     const email = uniqueEmail('recoveryflow');
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
-    
+
     // Check if account recovery endpoints are implemented
     const checkRes = await request(app.getHttpServer())
-        .post('/api/auth/request-account-recovery')
+      .post('/api/auth/request-account-recovery')
       .send({ email });
-    
+
     if (checkRes.status === 404 || checkRes.status === 501) {
       console.warn('Skipping account recovery test: endpoint not implemented');
       return;
     }
-    
+
     // If we get here, the endpoint exists, so continue with the test
     expect(checkRes.status).toBe(200);
-    
-      // Simulate receiving a recovery token (mock or extract from service in real test)
+
+    // Simulate receiving a recovery token (mock or extract from service in real test)
     const recoveryToken = checkRes.body?.recoveryToken || 'mock-recovery-token';
-    
-      // Complete account recovery
-      await request(app.getHttpServer())
-        .post('/api/auth/complete-account-recovery')
-        .send({ token: recoveryToken, newPassword: 'RecoveredPass123!' })
-        .expect(200);
-    
-      // Login with new password should succeed
-      await request(app.getHttpServer())
-        .post('/api/auth/login')
-        .send({ email, password: 'RecoveredPass123!' })
-        .expect(200);
+
+    // Complete account recovery
+    await request(app.getHttpServer())
+      .post('/api/auth/complete-account-recovery')
+      .send({ token: recoveryToken, newPassword: 'RecoveredPass123!' })
+      .expect(200);
+
+    // Login with new password should succeed
+    await request(app.getHttpServer())
+      .post('/api/auth/login')
+      .send({ email, password: 'RecoveredPass123!' })
+      .expect(200);
   });
 
   it('should handle device management flow', async () => {
@@ -502,7 +602,13 @@ describe('Auth E2E v2', () => {
     const email = uniqueEmail('deviceflow');
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
     const loginRes = await request(app.getHttpServer())
       .post('/api/auth/login')
@@ -527,7 +633,13 @@ describe('Auth E2E v2', () => {
     const email = uniqueEmail('expireflow');
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
     const loginRes = await request(app.getHttpServer())
       .post('/api/auth/login')
@@ -558,7 +670,13 @@ describe('Auth E2E v2', () => {
     const email = uniqueEmail('auditflow');
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
     const loginRes = await request(app.getHttpServer())
       .post('/api/auth/login')
@@ -573,7 +691,10 @@ describe('Auth E2E v2', () => {
         .expect(200);
       expect(Array.isArray(logsRes.body)).toBe(true);
     } catch (err) {
-      if (err.response && (err.response.status === 404 || err.response.status === 501)) {
+      if (
+        err.response &&
+        (err.response.status === 404 || err.response.status === 501)
+      ) {
         console.warn('Skipping audit logs test: endpoint not implemented');
         return;
       }
@@ -588,7 +709,13 @@ describe('Auth E2E v2', () => {
     const email = uniqueEmail('sessionintegrity');
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
     const loginRes = await request(app.getHttpServer())
       .post('/api/auth/login')
@@ -619,7 +746,13 @@ describe('Auth E2E v2', () => {
     const email = uniqueEmail('sessiontimeout');
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
     const loginRes = await request(app.getHttpServer())
       .post('/api/auth/login')
@@ -640,7 +773,13 @@ describe('Auth E2E v2', () => {
     const email = uniqueEmail('changepass');
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
     const loginRes = await request(app.getHttpServer())
       .post('/api/auth/login')
@@ -671,7 +810,13 @@ describe('Auth E2E v2', () => {
     const email = uniqueEmail('multidevice');
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
     const loginRes1 = await request(app.getHttpServer())
       .post('/api/auth/login')
@@ -689,7 +834,9 @@ describe('Auth E2E v2', () => {
       .get('/api/auth/sessions')
       .set('Cookie', cookies1)
       .expect(200);
-    const sessionId2 = sessionsRes.body?.sessions?.find((s: any) => s.id && s.id !== undefined)?.id;
+    const sessionId2 = sessionsRes.body?.sessions?.find(
+      (s: any) => s.id && s.id !== undefined,
+    )?.id;
     // Revoke session 2 from device 1
     await request(app.getHttpServer())
       .post('/api/auth/revoke-session')
@@ -713,7 +860,13 @@ describe('Auth E2E v2', () => {
     const email = uniqueEmail('forgedtoken');
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
     // Use a forged JWT
     const forgedToken = 'forged.jwt.token';
@@ -750,7 +903,13 @@ describe('Auth E2E v2', () => {
     const email = uniqueEmail('minimal');
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
     // Activate the account
     const dataSource = app.get(DataSource);
@@ -767,12 +926,17 @@ describe('Auth E2E v2', () => {
       .send({ email, password: 'Test1234!' })
       .expect(200);
     const loginCookiesRaw = loginRes.headers['set-cookie'];
-    const loginCookies = Array.isArray(loginCookiesRaw) ? loginCookiesRaw : [loginCookiesRaw];
+    const loginCookies = Array.isArray(loginCookiesRaw)
+      ? loginCookiesRaw
+      : [loginCookiesRaw];
     const accessToken = loginCookies
-      .map(cookie => cookie.match(/access_token=([^;]+)/))
+      .map((cookie) => cookie.match(/access_token=([^;]+)/))
       .filter(Boolean)
-      .map(match => match[1])[0];
-    console.log('Minimal test: Sending Authorization header:', `Bearer ${accessToken}`);
+      .map((match) => match[1])[0];
+    console.log(
+      'Minimal test: Sending Authorization header:',
+      `Bearer ${accessToken}`,
+    );
     const res = await request(app.getHttpServer())
       .get('/api/users/profile')
       .set('Authorization', `Bearer ${accessToken}`)

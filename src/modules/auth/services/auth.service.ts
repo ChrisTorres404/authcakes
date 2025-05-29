@@ -1,4 +1,11 @@
-import { Injectable, UnauthorizedException, BadRequestException, ForbiddenException, ConflictException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+  ForbiddenException,
+  ConflictException,
+  Logger,
+} from '@nestjs/common';
 import { UsersService } from '../../users/services/users.service';
 import { TokenService } from './token.service';
 import { SessionService } from './session.service';
@@ -12,6 +19,40 @@ import { SettingsService } from '../../settings/services/settings.service';
 import { ConfigService } from '@nestjs/config';
 import { TenantsService } from '../../tenants/services/tenants.service';
 import { Tenant } from '../../tenants/entities/tenant.entity';
+import { User } from '../../users/entities/user.entity';
+import { RegisterDto } from '../dto/register.dto';
+import { TenantRole } from '../../tenants/dto/tenant-invitation.dto';
+import { DeviceInfo, AuthTokenResponse } from '../interfaces/auth.interfaces';
+
+type MfaType = 'totp' | 'sms';
+
+interface MfaFields {
+  mfaEnabled: boolean;
+  mfaSecret: string | null;
+  mfaType: MfaType | null;
+  smsMfaCode?: string;
+}
+
+type UserWithMfa = User & Partial<MfaFields>;
+
+interface AccountRecoveryResponse {
+  success: boolean;
+  recoveryToken?: string;
+  message?: string;
+}
+
+/**
+ * Type guard to check if user has valid MFA configuration
+ * @param user - The user to check MFA configuration for
+ * @returns True if user has valid MFA configuration
+ */
+function hasValidMfaConfig(user: User): user is UserWithMfa {
+  return (
+    user.mfaEnabled &&
+    user.mfaType !== null &&
+    (user.mfaType === 'totp' || user.mfaType === 'sms')
+  );
+}
 
 @Injectable()
 export class AuthService {
@@ -30,46 +71,65 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly tenantsService: TenantsService,
   ) {
-    this.isProduction = this.configService.get<string>('NODE_ENV') === 'production';
+    this.isProduction =
+      this.configService.get<string>('NODE_ENV') === 'production';
   }
 
-  // User login with local strategy, with account lock and failed attempt tracking
-  async validateUser(email: string, password: string) {
+  /**
+   * Validates user credentials and handles account locking
+   * @param email - User's email address
+   * @param password - User's password
+   * @returns Validated user object
+   * @throws UnauthorizedException for invalid credentials
+   * @throws ForbiddenException if account is locked
+   */
+  async validateUser(email: string, password: string): Promise<User> {
     const user = await this.usersService.findByEmail(email);
-    // eslint-disable-next-line no-console
+
     console.log('[validateUser] Lookup for email:', email, 'Result:', user);
     if (!user) {
       // Track failed attempt (do not reveal user existence)
       await this.usersService.recordFailedLoginAttempt(email);
-      // eslint-disable-next-line no-console
+
       console.log('[validateUser] Login failed: user not found');
       throw new UnauthorizedException('Invalid credentials');
     }
     // Check if account is locked
     if (user.lockedUntil && user.lockedUntil > new Date()) {
-      // eslint-disable-next-line no-console
-      console.log('[validateUser] Login failed: account locked until', user.lockedUntil);
+      console.log(
+        '[validateUser] Login failed: account locked until',
+        user.lockedUntil,
+      );
       throw new ForbiddenException('Account is locked. Try again later.');
     }
     const isMatch = await bcrypt.compare(password, user.password);
-    // eslint-disable-next-line no-console
+
     console.log('[validateUser] Password match:', isMatch);
     if (!isMatch) {
       await this.usersService.recordFailedLoginAttempt(user.id);
-      // eslint-disable-next-line no-console
+
       console.log('[validateUser] Login failed: password mismatch');
       throw new UnauthorizedException('Invalid credentials');
     }
     // Reset failed attempts and update last login
     await this.usersService.resetFailedLoginAttempts(user.id);
     await this.usersService.updateLastLogin(user.id);
-    // eslint-disable-next-line no-console
+
     console.log('[validateUser] Login success for user:', user.id);
     return user;
   }
 
-  // Registration flow
-  async register(registerDto: any, deviceInfo: any = {}) {
+  /**
+   * Handles user registration and initial setup
+   * @param registerDto - Registration data
+   * @param deviceInfo - Device information for token generation
+   * @returns Authentication tokens and user information
+   * @throws BadRequestException if email is already in use
+   */
+  async register(
+    registerDto: RegisterDto,
+    deviceInfo: DeviceInfo = { ip: '', userAgent: '' },
+  ): Promise<AuthTokenResponse> {
     const existing = await this.usersService.findByEmail(registerDto.email);
     if (existing) throw new BadRequestException('Email already in use');
     const user = await this.usersService.create(registerDto);
@@ -78,14 +138,21 @@ export class AuthService {
     let tenant: Tenant | null = null;
     if (registerDto.organizationName) {
       // Generate slug from organizationName
-      const slug = registerDto.organizationName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const slug = registerDto.organizationName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
       tenant = await this.tenantsService.create({
         name: registerDto.organizationName,
         slug,
         active: true,
       });
-      // Add user as owner
-      await this.tenantsService.addUserToTenant(user.id, tenant.id, 'owner');
+      // Add user as admin (highest role)
+      await this.tenantsService.addUserToTenant(
+        user.id,
+        tenant.id,
+        TenantRole.ADMIN,
+      );
     }
 
     // Add the initial password to history
@@ -99,26 +166,52 @@ export class AuthService {
     return { ...tokens, verificationToken };
   }
 
-  // Token refresh logic
-  async refresh(userId: string, sessionId: string, deviceInfo: any = {}) {
+  /**
+   * Refreshes authentication tokens
+   * @param userId - User ID
+   * @param sessionId - Current session ID
+   * @param deviceInfo - Device information for token generation
+   * @returns New authentication tokens
+   */
+  async refresh(
+    userId: string,
+    sessionId: string,
+    deviceInfo: DeviceInfo = { ip: '', userAgent: '' },
+  ): Promise<AuthTokenResponse> {
     // Optionally validate session and user
-    return this.tokenService.generateTokens(userId, deviceInfo);
+    const tokens = await this.tokenService.generateTokens(userId, deviceInfo);
+    return tokens;
   }
 
-  // Request email verification
-  async requestEmailVerification(userId: string) {
-    const token = await this.usersService.generateEmailVerificationToken(userId);
+  /**
+   * Generates and sends email verification token
+   * @param userId - User ID to generate verification token for
+   * @returns Generated verification token (for development)
+   */
+  async requestEmailVerification(userId: string): Promise<string> {
+    const token =
+      await this.usersService.generateEmailVerificationToken(userId);
     // TODO: Send email with token (integrate with email service)
     return token;
   }
 
-  // Verify email
-  async verifyEmail(token: string) {
+  /**
+   * Verifies user's email using verification token
+   * @param token - Email verification token
+   * @returns Updated user object
+   * @throws BadRequestException for invalid/expired token
+   */
+  async verifyEmail(token: string): Promise<User> {
     return this.usersService.verifyEmail(token);
   }
 
-  // Password reset request (send token)
-  async requestPasswordReset(email: string) {
+  /**
+   * Initiates password reset process
+   * @param email - User's email address
+   * @returns Generated reset token (for development)
+   * @throws BadRequestException if user not found
+   */
+  async requestPasswordReset(email: string): Promise<string> {
     const user = await this.usersService.findByEmail(email);
     if (!user) throw new BadRequestException('User not found');
     // Generate and send password reset token (integrate with email service)
@@ -126,7 +219,10 @@ export class AuthService {
     // Send OTP to user
     const updatedUser = await this.usersService.findById(user.id);
     if (updatedUser.otp) {
-      this.notificationService.sendPasswordResetOtp(updatedUser.email, updatedUser.otp);
+      this.notificationService.sendPasswordResetOtp(
+        updatedUser.email,
+        updatedUser.otp,
+      );
     }
     return token;
   }
@@ -137,163 +233,265 @@ export class AuthService {
    * @param newPassword The plaintext new password to check
    * @returns Promise resolving to true if password exists in history
    */
-  private async isPasswordInHistory(userId: string, newPassword: string): Promise<boolean> {
-    const historyCount = await this.settingsService.getValue('account.password_history_count', 5);
-    return this.passwordHistoryService.isPasswordInHistory(userId, newPassword, historyCount);
+  private async isPasswordInHistory(
+    userId: string,
+    newPassword: string,
+  ): Promise<boolean> {
+    const historyCount = await this.settingsService.getValue(
+      'account.password_history_count',
+      5,
+    );
+    return this.passwordHistoryService.isPasswordInHistory(
+      userId,
+      newPassword,
+      historyCount,
+    );
   }
 
-  // Password reset (using token)
-  async resetPassword(token: string, newPassword: string, otp?: string) {
-    this.auditLogService.log('password_reset_attempt', { token });
-    
+  /**
+   * Resets user's password using reset token
+   * @param token - Password reset token
+   * @param newPassword - New password to set
+   * @param otp - Optional OTP code for verification
+   * @returns Updated user object
+   * @throws BadRequestException for invalid token
+   * @throws ConflictException for password reuse
+   */
+  async resetPassword(
+    token: string,
+    newPassword: string,
+    otp?: string,
+  ): Promise<User> {
+    await this.auditLogService.log('password_reset_attempt', { token });
+
     // First verify the token to get the user
     const user = await this.usersService.findByPasswordResetToken(token);
     if (!user) {
       throw new BadRequestException('Invalid or expired token');
     }
-    
+
     // Check if password exists in history
-    const passwordInHistory = await this.isPasswordInHistory(user.id, newPassword);
+    const passwordInHistory = await this.isPasswordInHistory(
+      user.id,
+      newPassword,
+    );
     if (passwordInHistory) {
       throw new ConflictException('Cannot reuse a previous password');
     }
-    
+
     // Reset the password
-    const updatedUser = await this.usersService.resetPassword(token, newPassword, otp);
-    
+    const updatedUser = await this.usersService.resetPassword(
+      token,
+      newPassword,
+      otp,
+    );
+
     // Add the new password to history
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await this.passwordHistoryService.addToHistory(updatedUser.id, hashedPassword);
-    
+    await this.passwordHistoryService.addToHistory(
+      updatedUser.id,
+      hashedPassword,
+    );
+
     await this.sessionService.revokeAllUserSessions(updatedUser.id);
     await this.tokenService.revokeAllUserTokens(updatedUser.id);
-    
-    this.auditLogService.log('password_reset_success', { userId: updatedUser.id });
-    this.notificationService.sendPasswordResetSuccess(updatedUser.email);
-    
+
+    await this.auditLogService.log('password_reset_success', {
+      userId: updatedUser.id,
+    });
+    await this.notificationService.sendPasswordResetSuccess(updatedUser.email);
+
     return updatedUser;
   }
 
-  // Account recovery request (send token)
-  async requestAccountRecovery(email: string) {
+  /**
+   * Initiates account recovery process
+   * @param email - User's email address
+   * @returns Account recovery response with token (in development)
+   */
+  async requestAccountRecovery(
+    email: string,
+  ): Promise<AccountRecoveryResponse> {
     const user = await this.usersService.findByEmail(email);
     let token: string | undefined;
     let accountExists = false;
-    
+
     // Don't reveal if user exists or not for security reasons
     if (user) {
       accountExists = true;
       // Generate account recovery token
       token = await this.usersService.generateAccountRecoveryToken(user.id);
-      this.auditLogService.log('account_recovery_requested', { userId: user.id });
+      await this.auditLogService.log('account_recovery_requested', {
+        userId: user.id,
+      });
     } else {
-      this.auditLogService.log('account_recovery_request_nonexistent', { email });
+      await this.auditLogService.log('account_recovery_request_nonexistent', {
+        email,
+      });
     }
-    
+
     // Send notification regardless of account existence
-    this.notificationService.sendRecoveryNotification(email, token, accountExists);
-    
+    await this.notificationService.sendRecoveryNotification({
+      email,
+      token,
+      accountExists,
+    });
+
     // Return token in development/test environments only
-    const isDev = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
-    return { 
+    const isDev =
+      process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
+    return {
       success: true,
-      ...(isDev && accountExists && { recoveryToken: token })
+      ...(isDev && accountExists && { recoveryToken: token }),
     };
   }
-  
-  // Complete account recovery (using token)
-  async completeAccountRecovery(token: string, newPassword: string, mfaCode?: string) {
-    this.auditLogService.log('account_recovery_attempt', { token });
-    
+
+  /**
+   * Completes account recovery process
+   * @param token - Recovery token
+   * @param newPassword - New password to set
+   * @param mfaCode - Optional MFA code for verification
+   * @returns Success response
+   * @throws BadRequestException for invalid token
+   * @throws UnauthorizedException for invalid MFA
+   * @throws ConflictException for password reuse
+   */
+  async completeAccountRecovery(
+    token: string,
+    newPassword: string,
+    mfaCode?: string,
+  ): Promise<{ success: boolean }> {
+    await this.auditLogService.log('account_recovery_attempt', { token });
+
     // First verify the token to get the user
     const user = await this.usersService.findByRecoveryToken(token);
     if (!user) {
       throw new BadRequestException('Invalid or expired token');
     }
-    
+
     // Check MFA if enabled and in production environment
     if (user.mfaEnabled) {
       // Only enforce MFA in production, or if explicitly set to enforce in development
-      const shouldEnforceMfa = this.isProduction || 
-                              await this.settingsService.getValue('security.enforce_mfa_in_dev', false);
-      
+      const shouldEnforceMfa =
+        this.isProduction ||
+        (await this.settingsService.getValue(
+          'security.enforce_mfa_in_dev',
+          false,
+        ));
+
       if (shouldEnforceMfa) {
         if (!mfaCode) {
-          throw new UnauthorizedException('MFA code is required for account recovery');
+          throw new UnauthorizedException(
+            'MFA code is required for account recovery',
+          );
         }
-        
+
         const isValidMfa = await this.validateMfaCode(user, mfaCode);
         if (!isValidMfa) {
-          this.auditLogService.log('account_recovery_mfa_failed', { 
-            userId: user.id, 
-            attempt: 'recovery' 
+          await this.auditLogService.log('account_recovery_mfa_failed', {
+            userId: user.id,
+            attempt: 'recovery',
           });
           throw new UnauthorizedException('Invalid MFA code');
         }
       }
     }
-    
+
     // Check if password exists in history
-    const passwordInHistory = await this.isPasswordInHistory(user.id, newPassword);
+    const passwordInHistory = await this.isPasswordInHistory(
+      user.id,
+      newPassword,
+    );
     if (passwordInHistory) {
       throw new ConflictException('Cannot reuse a previous password');
     }
-    
+
     // Complete the recovery process
-    const updatedUser = await this.usersService.completeAccountRecovery(token, newPassword);
-    
+    const updatedUser = await this.usersService.completeAccountRecovery(
+      token,
+      newPassword,
+    );
+
     // Add the new password to history
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await this.passwordHistoryService.addToHistory(updatedUser.id, hashedPassword);
-    
+    await this.passwordHistoryService.addToHistory(
+      updatedUser.id,
+      hashedPassword,
+    );
+
     // Revoke all sessions and tokens for security
     await this.sessionService.revokeAllUserSessions(updatedUser.id);
     await this.tokenService.revokeAllUserTokens(updatedUser.id);
-    
-    this.auditLogService.log('account_recovery_success', { userId: updatedUser.id });
-    this.notificationService.sendAccountRecoverySuccess(updatedUser.email);
-    
+
+    await this.auditLogService.log('account_recovery_success', {
+      userId: updatedUser.id,
+    });
+    await this.notificationService.sendAccountRecoverySuccess(
+      updatedUser.email,
+    );
+
     return { success: true };
   }
 
-  // Change password (authenticated)
-  async changePassword(userId: string, oldPassword: string, newPassword: string) {
+  /**
+   * Changes user's password (requires authentication)
+   * @param userId - User ID
+   * @param oldPassword - Current password
+   * @param newPassword - New password to set
+   * @returns Success message
+   * @throws UnauthorizedException for incorrect old password
+   * @throws ConflictException for password reuse
+   */
+  async changePassword(
+    userId: string,
+    oldPassword: string,
+    newPassword: string,
+  ): Promise<{ message: string }> {
     const user = await this.usersService.findById(userId);
     if (!user) throw new BadRequestException('User not found');
-    
+
     const isMatch = await bcrypt.compare(oldPassword, user.password);
     if (!isMatch) {
-      this.auditLogService.log('password_change_failed', { 
-        userId: user.id, 
-        reason: 'incorrect_old_password' 
+      await this.auditLogService.log('password_change_failed', {
+        userId: user.id,
+        reason: 'incorrect_old_password',
       });
       throw new UnauthorizedException('Old password is incorrect');
     }
-    
+
     // Check if password exists in history
-    const passwordInHistory = await this.isPasswordInHistory(userId, newPassword);
+    const passwordInHistory = await this.isPasswordInHistory(
+      userId,
+      newPassword,
+    );
     if (passwordInHistory) {
-      this.auditLogService.log('password_change_failed', { 
-        userId: user.id, 
-        reason: 'password_reuse' 
+      await this.auditLogService.log('password_change_failed', {
+        userId: user.id,
+        reason: 'password_reuse',
       });
       throw new ConflictException('Cannot reuse a previous password');
     }
-    
+
     // Hash new password and update
     await this.usersService.update(userId, { password: newPassword });
-    
+
     // Add the new password to history
     await this.passwordHistoryService.addToHistory(userId, newPassword);
-    
-    this.auditLogService.log('password_changed', { userId });
-    
+
+    await this.auditLogService.log('password_changed', { userId });
+
     return { message: 'Password changed successfully' };
   }
 
-  // MFA code validation (supports TOTP and SMS)
-  async validateMfaCode(user: any, code: string): Promise<boolean> {
-    if (!user.mfaEnabled) return false;
+  /**
+   * Validates MFA code (supports TOTP and SMS)
+   * @param user - User object with MFA configuration
+   * @param code - MFA code to validate
+   * @returns True if code is valid
+   */
+  validateMfaCode(user: User, code: string): boolean {
+    if (!hasValidMfaConfig(user)) return false;
+
     if (user.mfaType === 'totp') {
       if (!user.mfaSecret) return false;
       return speakeasy.totp.verify({
@@ -310,15 +508,36 @@ export class AuthService {
     return false;
   }
 
-  async setMfaSecret(userId: string, secret: string) {
-    await this.usersService.update(userId, { mfaSecret: secret, mfaEnabled: false, mfaType: 'totp' });
+  /**
+   * Sets MFA secret for a user
+   * @param userId - User ID
+   * @param secret - MFA secret to set
+   */
+  async setMfaSecret(userId: string, secret: string): Promise<void> {
+    await this.usersService.update(userId, {
+      mfaSecret: secret,
+      mfaEnabled: false,
+      mfaType: 'totp',
+    });
   }
 
-  async getUserById(userId: string) {
-    return this.usersService.findById(userId);
+  /**
+   * Retrieves user by ID
+   * @param userId - User ID to look up
+   * @returns User object
+   * @throws BadRequestException if user not found
+   */
+  async getUserById(userId: string): Promise<User> {
+    const user = await this.usersService.findById(userId);
+    if (!user) throw new BadRequestException('User not found');
+    return user;
   }
 
-  async enableMfa(userId: string) {
+  /**
+   * Enables MFA for a user
+   * @param userId - User ID
+   */
+  async enableMfa(userId: string): Promise<void> {
     await this.usersService.update(userId, { mfaEnabled: true });
   }
 }

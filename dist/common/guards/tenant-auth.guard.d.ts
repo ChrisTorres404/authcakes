@@ -7,10 +7,5 @@ export declare class TenantAuthGuard implements CanActivate {
     private readonly logger;
     constructor(reflector: Reflector, tenantsService: TenantsService);
     canActivate(context: ExecutionContext): Promise<boolean>;
-    protected logAuditEvent(event: {
-        userId: string;
-        tenantId: string;
-        action: string;
-        reason: string;
-    }): void;
+    protected logAuditEvent(): void;
 }

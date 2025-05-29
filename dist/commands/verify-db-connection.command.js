@@ -15,6 +15,12 @@ const nest_commander_1 = require("nest-commander");
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("typeorm");
 const config_1 = require("@nestjs/config");
+function isDatabaseError(error) {
+    return (typeof error === 'object' &&
+        error !== null &&
+        'message' in error &&
+        typeof error.message === 'string');
+}
 let VerifyDbConnectionCommand = VerifyDbConnectionCommand_1 = class VerifyDbConnectionCommand extends nest_commander_1.CommandRunner {
     configService;
     logger = new common_1.Logger(VerifyDbConnectionCommand_1.name);
@@ -26,12 +32,12 @@ let VerifyDbConnectionCommand = VerifyDbConnectionCommand_1 = class VerifyDbConn
         try {
             this.logger.log('Verifying database connection...');
             const dbConfig = {
-                type: this.configService.get('DB_TYPE'),
-                host: this.configService.get('DB_HOST'),
-                port: this.configService.get('DB_PORT'),
-                username: this.configService.get('DB_USERNAME'),
-                password: this.configService.get('DB_PASSWORD'),
-                database: this.configService.get('DB_NAME'),
+                type: this.configService.get('DB_TYPE', 'postgres'),
+                host: this.configService.get('DB_HOST', 'localhost'),
+                port: this.configService.get('DB_PORT', 5432),
+                username: this.configService.get('DB_USERNAME', ''),
+                password: this.configService.get('DB_PASSWORD', ''),
+                database: this.configService.get('DB_NAME', ''),
             };
             const missingVars = Object.entries(dbConfig)
                 .filter(([_, value]) => !value)
@@ -43,7 +49,7 @@ let VerifyDbConnectionCommand = VerifyDbConnectionCommand_1 = class VerifyDbConn
             }
             this.logger.log('Database configuration is valid. Attempting connection...');
             const dataSource = new typeorm_1.DataSource({
-                type: dbConfig.type,
+                type: 'postgres',
                 host: dbConfig.host,
                 port: dbConfig.port,
                 username: dbConfig.username,
@@ -55,14 +61,14 @@ let VerifyDbConnectionCommand = VerifyDbConnectionCommand_1 = class VerifyDbConn
             const queryRunner = dataSource.createQueryRunner();
             const tables = await queryRunner.getTables();
             await queryRunner.release();
-            const tableNames = tables.map(t => t.name).join(', ');
+            const tableNames = tables.map((table) => table.name).join(', ');
             if (tables.length === 0) {
                 this.logger.warn('No tables found in the database. You may need to run migrations.');
             }
             else {
                 this.logger.log(`Found ${tables.length} tables: ${tableNames}`);
                 const requiredTables = ['users', 'tenants', 'system_settings'];
-                const missingTables = requiredTables.filter(table => !tables.some(t => t.name === table));
+                const missingTables = requiredTables.filter((table) => !tables.some((t) => t.name === table));
                 if (missingTables.length > 0) {
                     this.logger.warn(`Missing key tables: ${missingTables.join(', ')}. You may need to run migrations.`);
                 }
@@ -85,16 +91,21 @@ let VerifyDbConnectionCommand = VerifyDbConnectionCommand_1 = class VerifyDbConn
             process.exit(0);
         }
         catch (error) {
-            this.logger.error(`Database connection failed: ${error.message}`);
+            const dbError = isDatabaseError(error)
+                ? error
+                : { message: 'Unknown database error', code: 'UNKNOWN' };
+            this.logger.error(`Database connection failed: ${dbError.message}`);
             this.logger.error('Please check your database configuration and ensure the database is running');
-            if (error.code === 'ECONNREFUSED') {
+            if (dbError.code === 'ECONNREFUSED') {
                 this.logger.error(`Could not connect to database at ${this.configService.get('DB_HOST')}:${this.configService.get('DB_PORT')}`);
                 this.logger.error('Make sure your database server is running and accessible');
             }
-            else if (error.code === 'ER_ACCESS_DENIED_ERROR' || error.code === '28P01') {
+            else if (dbError.code === 'ER_ACCESS_DENIED_ERROR' ||
+                dbError.code === '28P01') {
                 this.logger.error('Access denied. Check your DB_USERNAME and DB_PASSWORD');
             }
-            else if (error.code === 'ER_BAD_DB_ERROR' || error.code === '3D000') {
+            else if (dbError.code === 'ER_BAD_DB_ERROR' ||
+                dbError.code === '3D000') {
                 this.logger.error(`Database '${this.configService.get('DB_NAME')}' does not exist`);
                 this.logger.error('You may need to create the database first');
             }

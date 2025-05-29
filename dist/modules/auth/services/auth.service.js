@@ -24,6 +24,12 @@ const password_history_service_1 = require("./password-history.service");
 const settings_service_1 = require("../../settings/services/settings.service");
 const config_1 = require("@nestjs/config");
 const tenants_service_1 = require("../../tenants/services/tenants.service");
+const tenant_invitation_dto_1 = require("../../tenants/dto/tenant-invitation.dto");
+function hasValidMfaConfig(user) {
+    return (user.mfaEnabled &&
+        user.mfaType !== null &&
+        (user.mfaType === 'totp' || user.mfaType === 'sms'));
+}
 let AuthService = AuthService_1 = class AuthService {
     usersService;
     tokenService;
@@ -48,7 +54,8 @@ let AuthService = AuthService_1 = class AuthService {
         this.settingsService = settingsService;
         this.configService = configService;
         this.tenantsService = tenantsService;
-        this.isProduction = this.configService.get('NODE_ENV') === 'production';
+        this.isProduction =
+            this.configService.get('NODE_ENV') === 'production';
     }
     async validateUser(email, password) {
         const user = await this.usersService.findByEmail(email);
@@ -74,28 +81,32 @@ let AuthService = AuthService_1 = class AuthService {
         console.log('[validateUser] Login success for user:', user.id);
         return user;
     }
-    async register(registerDto, deviceInfo = {}) {
+    async register(registerDto, deviceInfo = { ip: '', userAgent: '' }) {
         const existing = await this.usersService.findByEmail(registerDto.email);
         if (existing)
             throw new common_1.BadRequestException('Email already in use');
         const user = await this.usersService.create(registerDto);
         let tenant = null;
         if (registerDto.organizationName) {
-            const slug = registerDto.organizationName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+            const slug = registerDto.organizationName
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/(^-|-$)/g, '');
             tenant = await this.tenantsService.create({
                 name: registerDto.organizationName,
                 slug,
                 active: true,
             });
-            await this.tenantsService.addUserToTenant(user.id, tenant.id, 'owner');
+            await this.tenantsService.addUserToTenant(user.id, tenant.id, tenant_invitation_dto_1.TenantRole.ADMIN);
         }
         await this.passwordHistoryService.addToHistory(user.id, user.password);
         const verificationToken = await this.requestEmailVerification(user.id);
         const tokens = await this.tokenService.generateTokens(user.id, deviceInfo);
         return { ...tokens, verificationToken };
     }
-    async refresh(userId, sessionId, deviceInfo = {}) {
-        return this.tokenService.generateTokens(userId, deviceInfo);
+    async refresh(userId, sessionId, deviceInfo = { ip: '', userAgent: '' }) {
+        const tokens = await this.tokenService.generateTokens(userId, deviceInfo);
+        return tokens;
     }
     async requestEmailVerification(userId) {
         const token = await this.usersService.generateEmailVerificationToken(userId);
@@ -120,7 +131,7 @@ let AuthService = AuthService_1 = class AuthService {
         return this.passwordHistoryService.isPasswordInHistory(userId, newPassword, historyCount);
     }
     async resetPassword(token, newPassword, otp) {
-        this.auditLogService.log('password_reset_attempt', { token });
+        await this.auditLogService.log('password_reset_attempt', { token });
         const user = await this.usersService.findByPasswordResetToken(token);
         if (!user) {
             throw new common_1.BadRequestException('Invalid or expired token');
@@ -134,8 +145,10 @@ let AuthService = AuthService_1 = class AuthService {
         await this.passwordHistoryService.addToHistory(updatedUser.id, hashedPassword);
         await this.sessionService.revokeAllUserSessions(updatedUser.id);
         await this.tokenService.revokeAllUserTokens(updatedUser.id);
-        this.auditLogService.log('password_reset_success', { userId: updatedUser.id });
-        this.notificationService.sendPasswordResetSuccess(updatedUser.email);
+        await this.auditLogService.log('password_reset_success', {
+            userId: updatedUser.id,
+        });
+        await this.notificationService.sendPasswordResetSuccess(updatedUser.email);
         return updatedUser;
     }
     async requestAccountRecovery(email) {
@@ -145,36 +158,44 @@ let AuthService = AuthService_1 = class AuthService {
         if (user) {
             accountExists = true;
             token = await this.usersService.generateAccountRecoveryToken(user.id);
-            this.auditLogService.log('account_recovery_requested', { userId: user.id });
+            await this.auditLogService.log('account_recovery_requested', {
+                userId: user.id,
+            });
         }
         else {
-            this.auditLogService.log('account_recovery_request_nonexistent', { email });
+            await this.auditLogService.log('account_recovery_request_nonexistent', {
+                email,
+            });
         }
-        this.notificationService.sendRecoveryNotification(email, token, accountExists);
+        await this.notificationService.sendRecoveryNotification({
+            email,
+            token,
+            accountExists,
+        });
         const isDev = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
         return {
             success: true,
-            ...(isDev && accountExists && { recoveryToken: token })
+            ...(isDev && accountExists && { recoveryToken: token }),
         };
     }
     async completeAccountRecovery(token, newPassword, mfaCode) {
-        this.auditLogService.log('account_recovery_attempt', { token });
+        await this.auditLogService.log('account_recovery_attempt', { token });
         const user = await this.usersService.findByRecoveryToken(token);
         if (!user) {
             throw new common_1.BadRequestException('Invalid or expired token');
         }
         if (user.mfaEnabled) {
             const shouldEnforceMfa = this.isProduction ||
-                await this.settingsService.getValue('security.enforce_mfa_in_dev', false);
+                (await this.settingsService.getValue('security.enforce_mfa_in_dev', false));
             if (shouldEnforceMfa) {
                 if (!mfaCode) {
                     throw new common_1.UnauthorizedException('MFA code is required for account recovery');
                 }
                 const isValidMfa = await this.validateMfaCode(user, mfaCode);
                 if (!isValidMfa) {
-                    this.auditLogService.log('account_recovery_mfa_failed', {
+                    await this.auditLogService.log('account_recovery_mfa_failed', {
                         userId: user.id,
-                        attempt: 'recovery'
+                        attempt: 'recovery',
                     });
                     throw new common_1.UnauthorizedException('Invalid MFA code');
                 }
@@ -189,8 +210,10 @@ let AuthService = AuthService_1 = class AuthService {
         await this.passwordHistoryService.addToHistory(updatedUser.id, hashedPassword);
         await this.sessionService.revokeAllUserSessions(updatedUser.id);
         await this.tokenService.revokeAllUserTokens(updatedUser.id);
-        this.auditLogService.log('account_recovery_success', { userId: updatedUser.id });
-        this.notificationService.sendAccountRecoverySuccess(updatedUser.email);
+        await this.auditLogService.log('account_recovery_success', {
+            userId: updatedUser.id,
+        });
+        await this.notificationService.sendAccountRecoverySuccess(updatedUser.email);
         return { success: true };
     }
     async changePassword(userId, oldPassword, newPassword) {
@@ -199,27 +222,27 @@ let AuthService = AuthService_1 = class AuthService {
             throw new common_1.BadRequestException('User not found');
         const isMatch = await bcrypt.compare(oldPassword, user.password);
         if (!isMatch) {
-            this.auditLogService.log('password_change_failed', {
+            await this.auditLogService.log('password_change_failed', {
                 userId: user.id,
-                reason: 'incorrect_old_password'
+                reason: 'incorrect_old_password',
             });
             throw new common_1.UnauthorizedException('Old password is incorrect');
         }
         const passwordInHistory = await this.isPasswordInHistory(userId, newPassword);
         if (passwordInHistory) {
-            this.auditLogService.log('password_change_failed', {
+            await this.auditLogService.log('password_change_failed', {
                 userId: user.id,
-                reason: 'password_reuse'
+                reason: 'password_reuse',
             });
             throw new common_1.ConflictException('Cannot reuse a previous password');
         }
         await this.usersService.update(userId, { password: newPassword });
         await this.passwordHistoryService.addToHistory(userId, newPassword);
-        this.auditLogService.log('password_changed', { userId });
+        await this.auditLogService.log('password_changed', { userId });
         return { message: 'Password changed successfully' };
     }
-    async validateMfaCode(user, code) {
-        if (!user.mfaEnabled)
+    validateMfaCode(user, code) {
+        if (!hasValidMfaConfig(user))
             return false;
         if (user.mfaType === 'totp') {
             if (!user.mfaSecret)
@@ -239,10 +262,17 @@ let AuthService = AuthService_1 = class AuthService {
         return false;
     }
     async setMfaSecret(userId, secret) {
-        await this.usersService.update(userId, { mfaSecret: secret, mfaEnabled: false, mfaType: 'totp' });
+        await this.usersService.update(userId, {
+            mfaSecret: secret,
+            mfaEnabled: false,
+            mfaType: 'totp',
+        });
     }
     async getUserById(userId) {
-        return this.usersService.findById(userId);
+        const user = await this.usersService.findById(userId);
+        if (!user)
+            throw new common_1.BadRequestException('User not found');
+        return user;
     }
     async enableMfa(userId) {
         await this.usersService.update(userId, { mfaEnabled: true });

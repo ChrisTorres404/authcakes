@@ -4,6 +4,14 @@ import { SettingsService } from '../../settings/services/settings.service';
 import { SessionRepository } from '../repositories/session.repository';
 import { CreateSessionDto } from '../dto/create-session.dto';
 import { RevokeSessionDto } from '../dto/revoke-session.dto';
+import { DeviceInfo } from '../interfaces/auth.interfaces';
+interface AuditEvent {
+    type: string;
+    userId?: string;
+    sessionId?: string;
+    metadata?: Record<string, unknown>;
+    timestamp?: Date;
+}
 export declare class SessionService {
     private readonly sessionRepository;
     private configService;
@@ -18,7 +26,8 @@ export declare class SessionService {
     getActiveSessions(userId: string): Promise<Session[]>;
     revokeSession(dto: RevokeSessionDto): Promise<void>;
     revokeAllUserSessions(userId: string, exceptSessionId?: string): Promise<void>;
-    protected checkCustomSessionPolicy(userId: string, deviceInfo: any): Promise<void>;
-    protected logAuditEvent(event: Record<string, any>): void;
+    protected checkCustomSessionPolicy(userId: string, deviceInfo: DeviceInfo): Promise<void>;
+    protected logAuditEvent(event: AuditEvent): void;
     listActiveSessions(userId: string): Promise<Session[]>;
 }
+export {};

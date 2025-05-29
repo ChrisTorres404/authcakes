@@ -42,7 +42,10 @@ __decorate([
     __metadata("design:type", String)
 ], LoginUserDto.prototype, "role", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: 'https://cdn.example.com/avatar.jpg', nullable: true }),
+    (0, swagger_1.ApiProperty)({
+        example: 'https://cdn.example.com/avatar.jpg',
+        nullable: true,
+    }),
     __metadata("design:type", String)
 ], LoginUserDto.prototype, "avatar", void 0);
 __decorate([
@@ -79,7 +82,11 @@ __decorate([
     __metadata("design:type", String)
 ], LoginResponseDto.prototype, "refreshToken", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: 'dev-verification-token', required: false, description: 'For development use only. Do not expose in production.' }),
+    (0, swagger_1.ApiProperty)({
+        example: 'dev-verification-token',
+        required: false,
+        description: 'For development use only. Do not expose in production.',
+    }),
     __metadata("design:type", String)
 ], LoginResponseDto.prototype, "verificationToken", void 0);
 //# sourceMappingURL=login-response.dto.js.map

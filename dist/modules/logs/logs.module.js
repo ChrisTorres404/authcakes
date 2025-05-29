@@ -17,9 +17,7 @@ let LogsModule = class LogsModule {
 exports.LogsModule = LogsModule;
 exports.LogsModule = LogsModule = __decorate([
     (0, common_1.Module)({
-        imports: [
-            typeorm_1.TypeOrmModule.forFeature([log_entity_1.Log]),
-        ],
+        imports: [typeorm_1.TypeOrmModule.forFeature([log_entity_1.Log])],
         controllers: [logs_controller_1.LogsController],
         providers: [logs_service_1.LogsService],
         exports: [logs_service_1.LogsService],

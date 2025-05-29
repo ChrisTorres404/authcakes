@@ -69,9 +69,7 @@ describe('Auth E2E', () => {
   });
 
   it('should not access protected route without token', async () => {
-    await request(app.getHttpServer())
-      .get('/api/users/profile')
-      .expect(401);
+    await request(app.getHttpServer()).get('/api/users/profile').expect(401);
   });
 
   it('should not refresh with revoked token (after logout)', async () => {
@@ -138,7 +136,8 @@ describe('Auth E2E', () => {
       .expect(201);
     const { accessToken } = loginRes.body;
     // Simulate expired token by using a clearly invalid/expired JWT
-    const expiredToken = accessToken.split('.').slice(0, 2).join('.') + '.expiredsig';
+    const expiredToken =
+      accessToken.split('.').slice(0, 2).join('.') + '.expiredsig';
     await request(app.getHttpServer())
       .get('/api/users/profile')
       .set('Authorization', `Bearer ${expiredToken}`)
@@ -255,7 +254,8 @@ describe('Auth E2E', () => {
       .send({ email })
       .expect(200);
     // Simulate receiving a recovery token (mock or extract from service in real test)
-    const recoveryToken = recoveryReq.body?.recoveryToken || 'mock-recovery-token';
+    const recoveryToken =
+      recoveryReq.body?.recoveryToken || 'mock-recovery-token';
     // Complete account recovery
     await request(app.getHttpServer())
       .post('/api/auth/complete-account-recovery')
@@ -343,4 +343,4 @@ describe('Auth E2E', () => {
       .expect(200);
     expect(Array.isArray(logsRes.body)).toBe(true);
   });
-}); 
+});

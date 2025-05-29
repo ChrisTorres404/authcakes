@@ -1,11 +1,17 @@
 // src/app.module.ts
 
-import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
+import {
+  Module,
+  NestModule,
+  MiddlewareConsumer,
+  ExecutionContext,
+} from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { Reflector } from '@nestjs/core';
+import { Request } from 'express';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -26,10 +32,8 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { TenantContextInterceptor } from './common/interceptors/tenant-context.interceptor';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { RolesGuard } from './common/guards/roles.guard';
-import { TenantAuthGuard } from './common/guards/tenant-auth.guard';
 import { LoggingMiddleware } from './common/middleware/logging.middleware';
 import { PerformanceInterceptor } from './common/interceptors/performance.interceptor';
-import { SeedCommand } from './commands/seed.command';
 
 @Module({
   imports: [
@@ -74,12 +78,15 @@ import { SeedCommand } from './commands/seed.command';
           },
         ],
         storage: undefined,
-        skipIf: (context) => {
+        skipIf: (context: ExecutionContext): boolean => {
           // Skip throttling in test environment
-          if (process.env.NODE_ENV === 'test' || process.env.THROTTLE_SKIP === 'true') {
+          if (
+            process.env.NODE_ENV === 'test' ||
+            process.env.THROTTLE_SKIP === 'true'
+          ) {
             return true;
           }
-          const request = context.switchToHttp().getRequest();
+          const request = context.switchToHttp().getRequest<Request>();
           return request.url === '/api/health';
         },
       }),

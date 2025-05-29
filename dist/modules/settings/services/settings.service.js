@@ -33,7 +33,7 @@ let SettingsService = SettingsService_1 = class SettingsService {
     async getValue(key, defaultValue) {
         const setting = await this.findByKey(key);
         if (!setting) {
-            this.logger.debug(`Setting "${key}" not found, using default value: ${defaultValue}`);
+            this.logger.debug(`Setting "${key}" not found, using default value: ${String(defaultValue)}`);
             return defaultValue;
         }
         try {
@@ -49,7 +49,8 @@ let SettingsService = SettingsService_1 = class SettingsService {
             }
         }
         catch (error) {
-            this.logger.error(`Error parsing setting "${key}" with type "${setting.type}": ${error.message}`);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            this.logger.error(`Error parsing setting "${key}" with type "${setting.type}": ${errorMessage}`);
             return defaultValue;
         }
     }
@@ -64,7 +65,8 @@ let SettingsService = SettingsService_1 = class SettingsService {
             }
         }
         catch (error) {
-            this.logger.error(`Error serializing value for setting "${key}": ${error.message}`);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            this.logger.error(`Error serializing value for setting "${key}": ${errorMessage}`);
             throw new Error(`Failed to serialize value for setting "${key}"`);
         }
         const setting = await this.findByKey(key);
@@ -112,6 +114,25 @@ let SettingsService = SettingsService_1 = class SettingsService {
             passwordRequireSpecial: await this.getValue('password_require_special', true),
             maxLoginAttempts: await this.getValue('max_login_attempts', 5),
             loginLockoutDuration: await this.getValue('login_lockout_duration', 30),
+        };
+    }
+    async getProfileSettings() {
+        return {
+            allowUserProfileUpdate: await this.getValue('ALLOW_USER_PROFILE_UPDATE', true),
+            profileUpdatableFields: await this.getValue('PROFILE_UPDATABLE_FIELDS', [
+                'firstName',
+                'lastName',
+                'avatar',
+                'company',
+                'department',
+                'country',
+                'state',
+                'address',
+                'address2',
+                'city',
+                'zipCode',
+                'bio',
+            ]),
         };
     }
     async getTokenSettings() {

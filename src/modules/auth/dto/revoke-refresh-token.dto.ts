@@ -11,4 +11,4 @@ export class RevokeRefreshTokenDto {
   @IsOptional()
   @IsString()
   revocationReason?: string;
-} 
+}

@@ -1,6 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreateMfaRecoveryCodesTable1685600600000 implements MigrationInterface {
+export class CreateMfaRecoveryCodesTable1685600600000
+  implements MigrationInterface
+{
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS "mfa_recovery_codes" (
@@ -21,4 +23,4 @@ export class CreateMfaRecoveryCodesTable1685600600000 implements MigrationInterf
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query('DROP TABLE IF EXISTS "mfa_recovery_codes"');
   }
-} 
+}

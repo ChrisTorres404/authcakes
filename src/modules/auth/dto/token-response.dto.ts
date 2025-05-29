@@ -13,4 +13,4 @@ export class TokenResponseDto {
 
   @ApiProperty({ example: 'refresh.jwt.token' })
   refreshToken: string;
-} 
+}

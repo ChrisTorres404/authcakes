@@ -22,4 +22,3 @@ export class CreateSettingDto {
   @IsOptional()
   description?: string;
 }
-

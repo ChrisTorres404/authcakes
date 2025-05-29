@@ -1,6 +1,6 @@
 import { CommandRunner } from 'nest-commander';
 import { DataSource } from 'typeorm';
-interface TruncateTablesCommandOptions {
+export interface TruncateTablesCommandOptions {
     tables?: string;
     all?: boolean;
     confirm?: boolean;
@@ -18,4 +18,3 @@ export declare class TruncateTablesCommand extends CommandRunner {
     private truncateTables;
     private printHelp;
 }
-export {};

@@ -24,29 +24,33 @@ let AllExceptionsFilter = AllExceptionsFilter_1 = class AllExceptionsFilter {
         const ctx = host.switchToHttp();
         const request = ctx.getRequest();
         const response = ctx.getResponse();
-        const isProd = process.env.NODE_ENV === 'production';
-        let status = 500;
+        let status = common_1.HttpStatus.INTERNAL_SERVER_ERROR;
         let message = 'Internal server error';
         let error = 'InternalServerError';
-        let details = undefined;
+        let details;
         if (exception instanceof common_1.HttpException) {
             status = exception.getStatus();
-            const res = exception.getResponse();
-            if (typeof res === 'string') {
-                message = res;
+            const response = exception.getResponse();
+            if (typeof response === 'string') {
+                message = response;
                 error = exception.name;
             }
-            else if (typeof res === 'object' && res !== null) {
-                const obj = res;
-                message = obj.message || exception.message || message;
-                error = obj.error || exception.name;
-                if (obj.details)
-                    details = obj.details;
+            else if (typeof response === 'object') {
+                const responseObj = response;
+                message =
+                    responseObj.message || exception.message || message;
+                error = responseObj.error || exception.name;
+                if (responseObj.details) {
+                    details = responseObj.details;
+                }
             }
-            if (exception instanceof common_1.BadRequestException &&
-                Array.isArray(exception.getResponse()?.message)) {
-                error = 'ValidationError';
-                message = exception.getResponse().message;
+            if (exception instanceof common_1.BadRequestException) {
+                const response = exception.getResponse();
+                if (Array.isArray(response.message)) {
+                    error = 'ValidationError';
+                    message = response.message;
+                    details = response.details;
+                }
             }
             if (exception instanceof common_1.UnauthorizedException) {
                 error = 'Unauthorized';
@@ -57,8 +61,8 @@ let AllExceptionsFilter = AllExceptionsFilter_1 = class AllExceptionsFilter {
                 message = 'You do not have permission to access this resource';
             }
         }
-        else if (exception?.name === 'ValidationError') {
-            status = 400;
+        else if (this.isValidationError(exception)) {
+            status = common_1.HttpStatus.BAD_REQUEST;
             error = 'ValidationError';
             message = exception.message || 'Validation failed';
             details = exception.details;
@@ -68,10 +72,10 @@ let AllExceptionsFilter = AllExceptionsFilter_1 = class AllExceptionsFilter {
             error = exception.name;
         }
         if (status >= 500) {
-            this.logger.error(`[${request.method}] ${request.url} ${status} - ${message}`, exception instanceof Error ? exception.stack : undefined);
+            this.logger.error(`[${request.method}] ${request.url} ${status} - ${Array.isArray(message) ? message.join(', ') : message}`, exception instanceof Error ? exception.stack : undefined);
         }
         else {
-            this.logger.warn(`[${request.method}] ${request.url} ${status} - ${message}`);
+            this.logger.warn(`[${request.method}] ${request.url} ${status} - ${Array.isArray(message) ? message.join(', ') : message}`);
         }
         const responseBody = {
             statusCode: status,
@@ -80,13 +84,19 @@ let AllExceptionsFilter = AllExceptionsFilter_1 = class AllExceptionsFilter {
             timestamp: new Date().toISOString(),
             path: request.url,
         };
-        if (process.env.NODE_ENV === 'development' && exception instanceof Error && exception.stack) {
-            responseBody.stack = exception.stack;
-        }
-        if (process.env.NODE_ENV === 'development' && details) {
-            responseBody.details = details;
+        if (process.env.NODE_ENV === 'development') {
+            if (exception instanceof Error && exception.stack) {
+                responseBody.stack = exception.stack;
+            }
+            if (details) {
+                responseBody.details = details;
+            }
         }
         httpAdapter.reply(response, responseBody, status);
+    }
+    isValidationError(exception) {
+        const err = exception;
+        return err?.name === 'ValidationError';
     }
 };
 exports.AllExceptionsFilter = AllExceptionsFilter;

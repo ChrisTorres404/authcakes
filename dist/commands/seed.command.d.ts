@@ -1,6 +1,6 @@
 import { CommandRunner } from 'nest-commander';
 import { SeederService } from '../modules/database/seeds/seeder.service';
-interface SeedCommandOptions {
+export interface SeedCommandOptions {
     force?: boolean;
 }
 export declare class SeedCommand extends CommandRunner {
@@ -10,4 +10,3 @@ export declare class SeedCommand extends CommandRunner {
     parseForceOption(val: boolean): boolean;
     run(passedParams: string[], options: SeedCommandOptions): Promise<void>;
 }
-export {};

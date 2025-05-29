@@ -1,6 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreateSystemSettingsTable1685600500000 implements MigrationInterface {
+export class CreateSystemSettingsTable1685600500000
+  implements MigrationInterface
+{
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS "system_settings" (
@@ -18,4 +20,4 @@ export class CreateSystemSettingsTable1685600500000 implements MigrationInterfac
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query('DROP TABLE IF EXISTS "system_settings"');
   }
-} 
+}

@@ -24,6 +24,7 @@ const swagger_1 = require("@nestjs/swagger");
 const session_settings_dto_1 = require("../dto/session-settings.dto");
 const auth_settings_dto_1 = require("../dto/auth-settings.dto");
 const token_settings_dto_1 = require("../dto/token-settings.dto");
+const profile_settings_dto_1 = require("../dto/profile-settings.dto");
 const bulk_setting_dto_1 = require("../dto/bulk-setting.dto");
 let SettingsController = class SettingsController {
     settingsService;
@@ -59,8 +60,14 @@ let SettingsController = class SettingsController {
     async getTokenSettings() {
         return this.settingsService.getTokenSettings();
     }
+    async getProfileSettings() {
+        return this.settingsService.getProfileSettings();
+    }
     async upsertBulkSettings(settings) {
-        return this.settingsService.upsertBulkSettings(settings);
+        return this.settingsService.upsertBulkSettings(settings.map(s => ({
+            ...s,
+            type: s.type,
+        })));
     }
 };
 exports.SettingsController = SettingsController;
@@ -68,7 +75,10 @@ __decorate([
     (0, common_1.Get)(),
     (0, roles_decorator_1.Roles)('admin'),
     (0, swagger_1.ApiOperation)({ summary: 'Get all system settings.' }),
-    (0, swagger_1.ApiOkResponse)({ type: [system_setting_entity_1.SystemSetting], description: 'List of all system settings.' }),
+    (0, swagger_1.ApiOkResponse)({
+        type: [system_setting_entity_1.SystemSetting],
+        description: 'List of all system settings.',
+    }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
@@ -89,7 +99,10 @@ __decorate([
     (0, roles_decorator_1.Roles)('admin'),
     (0, swagger_1.ApiOperation)({ summary: 'Create a new system setting.' }),
     (0, swagger_1.ApiBody)({ type: create_setting_dto_1.CreateSettingDto }),
-    (0, swagger_1.ApiOkResponse)({ type: system_setting_entity_1.SystemSetting, description: 'The created system setting.' }),
+    (0, swagger_1.ApiOkResponse)({
+        type: system_setting_entity_1.SystemSetting,
+        description: 'The created system setting.',
+    }),
     (0, swagger_1.ApiBadRequestResponse)({ description: 'Invalid input.' }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -101,7 +114,10 @@ __decorate([
     (0, roles_decorator_1.Roles)('admin'),
     (0, swagger_1.ApiOperation)({ summary: 'Update a system setting by key.' }),
     (0, swagger_1.ApiBody)({ type: update_setting_dto_1.UpdateSettingDto }),
-    (0, swagger_1.ApiOkResponse)({ type: system_setting_entity_1.SystemSetting, description: 'The updated system setting.' }),
+    (0, swagger_1.ApiOkResponse)({
+        type: system_setting_entity_1.SystemSetting,
+        description: 'The updated system setting.',
+    }),
     (0, swagger_1.ApiBadRequestResponse)({ description: 'Invalid input.' }),
     (0, swagger_1.ApiNotFoundResponse)({ description: 'Setting with key not found.' }),
     __param(0, (0, common_1.Param)('key')),
@@ -114,7 +130,10 @@ __decorate([
     (0, common_1.Delete)(':key'),
     (0, roles_decorator_1.Roles)('admin'),
     (0, swagger_1.ApiOperation)({ summary: 'Delete a system setting by key.' }),
-    (0, swagger_1.ApiOkResponse)({ schema: { example: { success: true } }, description: 'Setting deleted.' }),
+    (0, swagger_1.ApiOkResponse)({
+        schema: { example: { success: true } },
+        description: 'Setting deleted.',
+    }),
     (0, swagger_1.ApiNotFoundResponse)({ description: 'Setting with key not found.' }),
     __param(0, (0, common_1.Param)('key')),
     __metadata("design:type", Function),
@@ -125,7 +144,10 @@ __decorate([
     (0, common_1.Get)('categories/session'),
     (0, roles_decorator_1.Roles)('admin'),
     (0, swagger_1.ApiOperation)({ summary: 'Get session timeout settings.' }),
-    (0, swagger_1.ApiOkResponse)({ type: session_settings_dto_1.SessionSettingsDto, description: 'Session timeout settings.' }),
+    (0, swagger_1.ApiOkResponse)({
+        type: session_settings_dto_1.SessionSettingsDto,
+        description: 'Session timeout settings.',
+    }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
@@ -134,7 +156,10 @@ __decorate([
     (0, common_1.Get)('categories/authentication'),
     (0, roles_decorator_1.Roles)('admin'),
     (0, swagger_1.ApiOperation)({ summary: 'Get authentication settings.' }),
-    (0, swagger_1.ApiOkResponse)({ type: auth_settings_dto_1.AuthSettingsDto, description: 'Authentication settings.' }),
+    (0, swagger_1.ApiOkResponse)({
+        type: auth_settings_dto_1.AuthSettingsDto,
+        description: 'Authentication settings.',
+    }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
@@ -149,11 +174,26 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], SettingsController.prototype, "getTokenSettings", null);
 __decorate([
+    (0, common_1.Get)('categories/profile'),
+    (0, roles_decorator_1.Roles)('admin'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get profile update settings.' }),
+    (0, swagger_1.ApiOkResponse)({
+        type: profile_settings_dto_1.ProfileSettingsDto,
+        description: 'Profile update settings.',
+    }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], SettingsController.prototype, "getProfileSettings", null);
+__decorate([
     (0, common_1.Post)('bulk'),
     (0, roles_decorator_1.Roles)('admin'),
     (0, swagger_1.ApiOperation)({ summary: 'Upsert multiple system settings in bulk.' }),
     (0, swagger_1.ApiBody)({ type: [bulk_setting_dto_1.BulkSettingDto] }),
-    (0, swagger_1.ApiOkResponse)({ type: [system_setting_entity_1.SystemSetting], description: 'The upserted system settings.' }),
+    (0, swagger_1.ApiOkResponse)({
+        type: [system_setting_entity_1.SystemSetting],
+        description: 'The upserted system settings.',
+    }),
     (0, swagger_1.ApiBadRequestResponse)({ description: 'Invalid input.' }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),

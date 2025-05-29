@@ -17,9 +17,7 @@ let ApiModule = class ApiModule {
 exports.ApiModule = ApiModule;
 exports.ApiModule = ApiModule = __decorate([
     (0, common_1.Module)({
-        imports: [
-            typeorm_1.TypeOrmModule.forFeature([api_key_entity_1.ApiKey]),
-        ],
+        imports: [typeorm_1.TypeOrmModule.forFeature([api_key_entity_1.ApiKey])],
         controllers: [api_keys_controller_1.ApiKeysController],
         providers: [api_keys_service_1.ApiKeysService],
         exports: [api_keys_service_1.ApiKeysService],

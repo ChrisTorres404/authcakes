@@ -45,7 +45,9 @@ describe('Auth Account Recovery E2E', () => {
     dataSource = app.get(DataSource);
     authService = moduleFixture.get<AuthService>(AuthService);
     usersService = moduleFixture.get<UsersService>(UsersService);
-    userRepository = moduleFixture.get<Repository<User>>(getRepositoryToken(User));
+    userRepository = moduleFixture.get<Repository<User>>(
+      getRepositoryToken(User),
+    );
   }, 30000);
 
   afterAll(async () => {
@@ -57,38 +59,40 @@ describe('Auth Account Recovery E2E', () => {
       // Register user
       const email = uniqueEmail('recoveryflow');
       const password = 'Test1234!';
-      
+
       await request(app.getHttpServer())
         .post('/api/auth/register')
-        .send({ 
-          email, 
-          password, 
-          firstName: 'Test', 
-          lastName: 'User', 
-          organizationName: 'TestOrg' 
+        .send({
+          email,
+          password,
+          firstName: 'Test',
+          lastName: 'User',
+          organizationName: 'TestOrg',
         })
         .expect(200);
-      
+
       // Request account recovery
       const recoveryRes = await request(app.getHttpServer())
         .post('/api/auth/request-account-recovery')
         .send({ email })
         .expect(200);
-      
+
       // In test environment, token should be returned
       const recoveryToken = recoveryRes.body?.recoveryToken;
-      
+
       if (!recoveryToken) {
-        console.warn('Skipping account recovery test: recovery token not available');
+        console.warn(
+          'Skipping account recovery test: recovery token not available',
+        );
         return;
       }
-      
+
       // Complete account recovery
       await request(app.getHttpServer())
         .post('/api/auth/complete-account-recovery')
         .send({ token: recoveryToken, newPassword: 'RecoveredPass123!' })
         .expect(200);
-      
+
       // Login with new password should succeed
       await request(app.getHttpServer())
         .post('/api/auth/login')
@@ -98,13 +102,13 @@ describe('Auth Account Recovery E2E', () => {
 
     it('should not reveal whether an account exists during recovery request', async () => {
       const nonExistentEmail = uniqueEmail('nonexistent');
-      
+
       // Request recovery for non-existent account
       const response = await request(app.getHttpServer())
         .post('/api/auth/request-account-recovery')
         .send({ email: nonExistentEmail })
         .expect(200); // Should still return 200 OK
-      
+
       // Response should not include a recoveryToken for non-existent accounts
       expect(response.body).not.toHaveProperty('recoveryToken');
     });
@@ -129,42 +133,44 @@ describe('Auth Account Recovery E2E', () => {
       // Create a test user
       const email = uniqueEmail('recovery-expire');
       const password = 'StrongPass123!';
-      
+
       await request(app.getHttpServer())
         .post('/api/auth/register')
-        .send({ 
-          email, 
+        .send({
+          email,
           password,
-          firstName: 'Test', 
-          lastName: 'User', 
-          organizationName: 'TestOrg'
+          firstName: 'Test',
+          lastName: 'User',
+          organizationName: 'TestOrg',
         })
         .expect(200);
-      
+
       testUser = await usersService.findByEmail(email);
       expect(testUser).not.toBeNull();
-      
+
       // Request account recovery to get a token
       const recoveryReq = await request(app.getHttpServer())
         .post('/api/auth/request-account-recovery')
         .send({ email })
         .expect(200);
-      
+
       recoveryToken = recoveryReq.body?.recoveryToken;
-      
+
       if (!recoveryToken) {
-        console.warn('Skipping recovery expiration test: no recovery token available');
+        console.warn(
+          'Skipping recovery expiration test: no recovery token available',
+        );
         return;
       }
-      
+
       // Force token expiration by directly modifying the database
       if (testUser && testUser.id) {
         await userRepository.update(
           { id: testUser.id },
-          { accountRecoveryTokenExpiry: new Date(Date.now() - 3600000) } // 1 hour ago
+          { accountRecoveryTokenExpiry: new Date(Date.now() - 3600000) }, // 1 hour ago
         );
       }
-      
+
       // Try to use the expired token
       await request(app.getHttpServer())
         .post('/api/auth/complete-account-recovery')
@@ -175,9 +181,9 @@ describe('Auth Account Recovery E2E', () => {
     it('should reject recovery with an invalid token', async () => {
       await request(app.getHttpServer())
         .post('/api/auth/complete-account-recovery')
-        .send({ 
-          token: 'totally-invalid-token-that-doesnt-exist', 
-          newPassword: 'NewPassword123!' 
+        .send({
+          token: 'totally-invalid-token-that-doesnt-exist',
+          newPassword: 'NewPassword123!',
         })
         .expect(400);
     });
@@ -186,40 +192,42 @@ describe('Auth Account Recovery E2E', () => {
       // Create a test user
       const email = uniqueEmail('recovery-reuse');
       const password = 'StrongPass123!';
-      
+
       await request(app.getHttpServer())
         .post('/api/auth/register')
-        .send({ 
-          email, 
+        .send({
+          email,
           password,
-          firstName: 'Test', 
-          lastName: 'User', 
-          organizationName: 'TestOrg'
+          firstName: 'Test',
+          lastName: 'User',
+          organizationName: 'TestOrg',
         })
         .expect(200);
-      
+
       testUser = await usersService.findByEmail(email);
       expect(testUser).not.toBeNull();
-      
+
       // Request account recovery to get a token
       const recoveryReq = await request(app.getHttpServer())
         .post('/api/auth/request-account-recovery')
         .send({ email })
         .expect(200);
-      
+
       recoveryToken = recoveryReq.body?.recoveryToken;
-      
+
       if (!recoveryToken) {
-        console.warn('Skipping recovery reuse test: no recovery token available');
+        console.warn(
+          'Skipping recovery reuse test: no recovery token available',
+        );
         return;
       }
-      
+
       // First use should succeed
       await request(app.getHttpServer())
         .post('/api/auth/complete-account-recovery')
         .send({ token: recoveryToken, newPassword: 'NewPassword456!' })
         .expect(200);
-      
+
       // Second use should fail
       await request(app.getHttpServer())
         .post('/api/auth/complete-account-recovery')
@@ -231,53 +239,57 @@ describe('Auth Account Recovery E2E', () => {
       // Create a test user
       const email = uniqueEmail('recovery-multiple');
       const password = 'StrongPass123!';
-      
+
       await request(app.getHttpServer())
         .post('/api/auth/register')
-        .send({ 
-          email, 
+        .send({
+          email,
           password,
-          firstName: 'Test', 
-          lastName: 'User', 
-          organizationName: 'TestOrg'
+          firstName: 'Test',
+          lastName: 'User',
+          organizationName: 'TestOrg',
         })
         .expect(200);
-      
+
       testUser = await usersService.findByEmail(email);
       expect(testUser).not.toBeNull();
-      
+
       // Request first account recovery token
       const firstRecoveryReq = await request(app.getHttpServer())
         .post('/api/auth/request-account-recovery')
         .send({ email })
         .expect(200);
-      
+
       firstToken = firstRecoveryReq.body?.recoveryToken;
-      
+
       if (!firstToken) {
-        console.warn('Skipping multiple recovery test: no recovery token available');
+        console.warn(
+          'Skipping multiple recovery test: no recovery token available',
+        );
         return;
       }
-      
+
       // Request a second recovery token
       const secondRecoveryReq = await request(app.getHttpServer())
         .post('/api/auth/request-account-recovery')
         .send({ email })
         .expect(200);
-      
+
       const secondToken = secondRecoveryReq.body?.recoveryToken;
-      
+
       if (!secondToken) {
-        console.warn('Skipping multiple recovery test: no second recovery token available');
+        console.warn(
+          'Skipping multiple recovery test: no second recovery token available',
+        );
         return;
       }
-      
+
       // Try to use the first token (should fail as it's now invalid)
       await request(app.getHttpServer())
         .post('/api/auth/complete-account-recovery')
         .send({ token: firstToken, newPassword: 'ShouldNotWork123!' })
         .expect(400);
-      
+
       // Second token should still work
       await request(app.getHttpServer())
         .post('/api/auth/complete-account-recovery')
@@ -289,21 +301,21 @@ describe('Auth Account Recovery E2E', () => {
       // Create a test user
       const email = uniqueEmail('recovery-mfa');
       const password = 'StrongPass123!';
-      
+
       await request(app.getHttpServer())
         .post('/api/auth/register')
-        .send({ 
-          email, 
+        .send({
+          email,
           password,
-          firstName: 'Test', 
-          lastName: 'User', 
-          organizationName: 'TestOrg'
+          firstName: 'Test',
+          lastName: 'User',
+          organizationName: 'TestOrg',
         })
         .expect(200);
-      
+
       testUser = await usersService.findByEmail(email);
       expect(testUser).not.toBeNull();
-      
+
       // Force MFA enforcement in test environment
       // This ensures the security.enforce_mfa_in_dev setting is true for testing
       try {
@@ -312,65 +324,69 @@ describe('Auth Account Recovery E2E', () => {
           key: 'security.enforce_mfa_in_dev',
           value: 'true',
           type: 'boolean',
-          description: 'Enforce MFA in development environment'
+          description: 'Enforce MFA in development environment',
         });
       } catch (err) {
-        console.warn('Could not set MFA enforcement setting, test may be skipped');
+        console.warn(
+          'Could not set MFA enforcement setting, test may be skipped',
+        );
       }
-      
+
       // Enable MFA for the user (directly in the database for simplicity)
       if (testUser && testUser.id) {
         await userRepository.update(
           { id: testUser.id },
-          { 
-            mfaEnabled: true, 
-            mfaType: 'totp', 
-            mfaSecret: 'test-mfa-secret' 
-          }
+          {
+            mfaEnabled: true,
+            mfaType: 'totp',
+            mfaSecret: 'test-mfa-secret',
+          },
         );
       }
-      
+
       // Verify MFA is enabled
       testUser = await usersService.findByEmail(email);
       if (!testUser?.mfaEnabled) {
-        console.warn('Skipping MFA recovery test: could not enable MFA for test user');
+        console.warn(
+          'Skipping MFA recovery test: could not enable MFA for test user',
+        );
         return;
       }
-      
+
       const recoveryReq = await request(app.getHttpServer())
         .post('/api/auth/request-account-recovery')
         .send({ email })
         .expect(200);
-      
+
       recoveryToken = recoveryReq.body?.recoveryToken;
-      
+
       if (!recoveryToken) {
         console.warn('Skipping MFA recovery test: no recovery token available');
         return;
       }
-      
+
       // Step 1: Attempt recovery without MFA code - should be rejected with BadRequestException (400)
       const noMfaRes = await request(app.getHttpServer())
         .post('/api/auth/complete-account-recovery')
         .send({ token: recoveryToken, newPassword: 'NewPassword789!' })
         .expect(401); // AuthService throws UnauthorizedException for missing MFA code
-      
+
       expect(noMfaRes.body).toHaveProperty('message');
       expect(noMfaRes.body.message).toMatch(/authentication required/i);
-      
+
       // Step 2: Try with invalid MFA code - should be rejected with UnauthorizedException (401)
       const wrongMfaRes = await request(app.getHttpServer())
         .post('/api/auth/complete-account-recovery')
-        .send({ 
-          token: recoveryToken, 
-          newPassword: 'NewPassword789!', 
-          mfaCode: '654321' // Wrong code
+        .send({
+          token: recoveryToken,
+          newPassword: 'NewPassword789!',
+          mfaCode: '654321', // Wrong code
         })
         .expect(401); // AuthService throws UnauthorizedException for invalid MFA code
-      
+
       expect(wrongMfaRes.body).toHaveProperty('message');
       expect(wrongMfaRes.body.message).toMatch(/authentication required/i);
-      
+
       // The test is now complete - we've verified:
       // 1. Missing MFA code results in 400 Bad Request
       // 2. Invalid MFA code results in 401 Unauthorized

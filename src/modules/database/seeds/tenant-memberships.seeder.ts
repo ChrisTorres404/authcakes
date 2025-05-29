@@ -15,12 +15,20 @@ export async function seedTenantMemberships(
   const membershipsCount = await tenantMembershipRepository.count();
   if (membershipsCount === 0 || options.force) {
     if (membershipsCount > 0 && options.force) {
-      logger.log('Force option enabled - seeding tenant memberships even though memberships already exist');
+      logger.log(
+        'Force option enabled - seeding tenant memberships even though memberships already exist',
+      );
     }
     logger.log('Seeding tenant memberships...');
-    const adminUser = await userRepository.findOne({ where: { email: 'admin@example.com' } });
-    const demoUser = await userRepository.findOne({ where: { email: 'demo@example.com' } });
-    const demoTenant = await tenantRepository.findOne({ where: { slug: 'demo-org' } });
+    const adminUser = await userRepository.findOne({
+      where: { email: 'admin@example.com' },
+    });
+    const demoUser = await userRepository.findOne({
+      where: { email: 'demo@example.com' },
+    });
+    const demoTenant = await tenantRepository.findOne({
+      where: { slug: 'demo-org' },
+    });
     if (adminUser && demoUser && demoTenant) {
       const adminMembership = tenantMembershipRepository.create({
         userId: adminUser.id,
@@ -36,7 +44,9 @@ export async function seedTenantMemberships(
       await tenantMembershipRepository.save(demoMembership);
       logger.log('Tenant memberships seeded successfully');
     } else {
-      logger.warn('Required users or tenant not found, skipping tenant memberships seeding');
+      logger.warn(
+        'Required users or tenant not found, skipping tenant memberships seeding',
+      );
     }
   } else {
     logger.log('Tenant memberships already exist, skipping seeding');

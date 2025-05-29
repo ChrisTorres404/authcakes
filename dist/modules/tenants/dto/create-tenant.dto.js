@@ -27,13 +27,19 @@ __decorate([
     __metadata("design:type", String)
 ], CreateTenantDto.prototype, "name", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: 'acme-corp', description: 'Unique slug for the tenant' }),
+    (0, swagger_1.ApiProperty)({
+        example: 'acme-corp',
+        description: 'Unique slug for the tenant',
+    }),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], CreateTenantDto.prototype, "slug", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ example: 'https://cdn.example.com/logo.png', description: 'Logo URL' }),
+    (0, swagger_1.ApiPropertyOptional)({
+        example: 'https://cdn.example.com/logo.png',
+        description: 'Logo URL',
+    }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
@@ -45,7 +51,12 @@ __decorate([
     __metadata("design:type", Boolean)
 ], CreateTenantDto.prototype, "active", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ type: 'object', example: { timezone: 'UTC' }, description: 'Tenant settings', additionalProperties: true }),
+    (0, swagger_1.ApiPropertyOptional)({
+        type: 'object',
+        example: { timezone: 'UTC' },
+        description: 'Tenant settings',
+        additionalProperties: true,
+    }),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Object)
 ], CreateTenantDto.prototype, "settings", void 0);

@@ -18,6 +18,7 @@ const swagger_1 = require("@nestjs/swagger");
 const refresh_token_service_1 = require("../services/refresh-token.service");
 const create_refresh_token_dto_1 = require("../dto/create-refresh-token.dto");
 const revoke_refresh_token_dto_1 = require("../dto/revoke-refresh-token.dto");
+const refresh_token_entity_1 = require("../entities/refresh-token.entity");
 let RefreshTokenController = class RefreshTokenController {
     refreshTokenService;
     constructor(refreshTokenService) {
@@ -37,7 +38,11 @@ exports.RefreshTokenController = RefreshTokenController;
 __decorate([
     (0, common_1.Post)(),
     (0, swagger_1.ApiOperation)({ summary: 'Create a new refresh token' }),
-    (0, swagger_1.ApiResponse)({ status: 201, description: 'Refresh token created' }),
+    (0, swagger_1.ApiResponse)({
+        status: 201,
+        description: 'Refresh token created',
+        type: refresh_token_entity_1.RefreshToken,
+    }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [create_refresh_token_dto_1.CreateRefreshTokenDto]),
@@ -46,7 +51,10 @@ __decorate([
 __decorate([
     (0, common_1.Post)('revoke'),
     (0, swagger_1.ApiOperation)({ summary: 'Revoke a refresh token' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: 'Refresh token revoked' }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: 'Refresh token revoked',
+    }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [revoke_refresh_token_dto_1.RevokeRefreshTokenDto]),
@@ -55,7 +63,11 @@ __decorate([
 __decorate([
     (0, common_1.Get)('user/:userId'),
     (0, swagger_1.ApiOperation)({ summary: 'List all refresh tokens for a user' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: 'List of refresh tokens' }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: 'List of refresh tokens',
+        type: [refresh_token_entity_1.RefreshToken],
+    }),
     __param(0, (0, common_1.Param)('userId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),

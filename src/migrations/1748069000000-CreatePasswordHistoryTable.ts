@@ -1,6 +1,14 @@
-import { MigrationInterface, QueryRunner, Table, TableForeignKey, TableIndex } from 'typeorm';
+import {
+  MigrationInterface,
+  QueryRunner,
+  Table,
+  TableForeignKey,
+  TableIndex,
+} from 'typeorm';
 
-export class CreatePasswordHistoryTable1748069000000 implements MigrationInterface {
+export class CreatePasswordHistoryTable1748069000000
+  implements MigrationInterface
+{
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Create password_history table
     await queryRunner.createTable(
@@ -57,8 +65,14 @@ export class CreatePasswordHistoryTable1748069000000 implements MigrationInterfa
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.dropForeignKey('password_history', 'FK_PASSWORD_HISTORY_USER_ID');
-    await queryRunner.dropIndex('password_history', 'IDX_PASSWORD_HISTORY_USER_ID');
+    await queryRunner.dropForeignKey(
+      'password_history',
+      'FK_PASSWORD_HISTORY_USER_ID',
+    );
+    await queryRunner.dropIndex(
+      'password_history',
+      'IDX_PASSWORD_HISTORY_USER_ID',
+    );
     await queryRunner.dropTable('password_history');
   }
 }

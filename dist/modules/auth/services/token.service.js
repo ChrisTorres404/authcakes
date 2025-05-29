@@ -43,8 +43,11 @@ let TokenService = class TokenService {
             throw new Error('User not found');
         const tenantMemberships = await this.tenantsService.getUserTenantMemberships(userId);
         const defaultTenantId = tenantMemberships.length > 0 ? tenantMemberships[0].tenantId : null;
-        const tenantAccess = tenantMemberships.map(tm => tm.tenantId);
-        const session = await this.sessionService.createSession({ userId, deviceInfo });
+        const tenantAccess = tenantMemberships.map((tm) => tm.tenantId);
+        const session = await this.sessionService.createSession({
+            userId,
+            deviceInfo,
+        });
         console.log('[TokenService] Created session with ID:', session.id);
         const payload = {
             sub: userId,
@@ -58,9 +61,10 @@ let TokenService = class TokenService {
         const accessToken = this.generateAccessToken(payload);
         const refreshToken = await this.generateRefreshToken({
             ...payload,
-            type: 'refresh'
+            type: 'refresh',
         });
         return {
+            success: true,
             accessToken,
             refreshToken,
             sessionId: session.id,
@@ -85,8 +89,8 @@ let TokenService = class TokenService {
         const decoded = this.jwtService.decode(token);
         console.log('[TokenService] Access token generated:', {
             expiresIn,
-            iat: decoded?.iat,
-            exp: decoded?.exp,
+            iat: decoded.iat ?? 0,
+            exp: decoded.exp ?? 0,
             now: Math.floor(Date.now() / 1000),
         });
         return token;
@@ -103,8 +107,8 @@ let TokenService = class TokenService {
         const decoded = this.jwtService.decode(token);
         console.log('[TokenService] Refresh token generated:', {
             expiresIn,
-            iat: decoded?.iat,
-            exp: decoded?.exp,
+            iat: decoded.iat ?? 0,
+            exp: decoded.exp ?? 0,
             now: Math.floor(Date.now() / 1000),
         });
         console.log('[TokenService] Saving refresh token for sessionId:', payload.sessionId);
@@ -123,12 +127,16 @@ let TokenService = class TokenService {
         try {
             console.log('[TokenService] isRefreshTokenValid called with token:', token);
             const payload = this.jwtService.verify(token);
+            if (!payload || typeof payload !== 'object' || !('type' in payload)) {
+                console.warn('[TokenService] Invalid token payload structure');
+                return false;
+            }
             console.log('[TokenService] Decoded refresh token payload:', payload);
             const tokenRecord = await this.refreshTokenRepository.findOne({
                 where: {
                     token: token,
-                    isRevoked: false
-                }
+                    isRevoked: false,
+                },
             });
             console.log('[TokenService] Refresh token DB lookup result:', tokenRecord);
             if (!tokenRecord) {
@@ -173,7 +181,7 @@ let TokenService = class TokenService {
         const user = await this.usersService.findById(userId);
         const tenantMemberships = await this.tenantsService.getUserTenantMemberships(userId);
         const defaultTenantId = tenantMemberships.length > 0 ? tenantMemberships[0].tenantId : null;
-        const tenantAccess = tenantMemberships.map(tm => tm.tenantId);
+        const tenantAccess = tenantMemberships.map((tm) => tm.tenantId);
         const payload = {
             sub: userId,
             email: user.email,
@@ -188,6 +196,12 @@ let TokenService = class TokenService {
     async validateToken(token, type) {
         try {
             const payload = this.jwtService.verify(token);
+            if (!payload || typeof payload !== 'object') {
+                throw new Error('Invalid token payload');
+            }
+            if (!('type' in payload) || !('sub' in payload)) {
+                throw new Error('Invalid token structure');
+            }
             if (payload.type !== type) {
                 throw new Error(`Token is not a ${type} token`);
             }
@@ -201,8 +215,9 @@ let TokenService = class TokenService {
             }
             return payload;
         }
-        catch (err) {
-            throw new Error('Invalid or expired token');
+        catch (error) {
+            const message = error instanceof Error ? error.message : 'Invalid or expired token';
+            throw new Error(message);
         }
     }
     async revokeAllUserTokens(userId, reason) {
@@ -214,7 +229,11 @@ let TokenService = class TokenService {
     }
     getTokenPayload(token) {
         try {
-            return this.jwtService.decode(token);
+            const decoded = this.jwtService.decode(token);
+            if (decoded && typeof decoded === 'object' && 'sub' in decoded) {
+                return decoded;
+            }
+            return null;
         }
         catch {
             return null;

@@ -77,7 +77,8 @@ exports.AppModule = AppModule = __decorate([
                     ],
                     storage: undefined,
                     skipIf: (context) => {
-                        if (process.env.NODE_ENV === 'test' || process.env.THROTTLE_SKIP === 'true') {
+                        if (process.env.NODE_ENV === 'test' ||
+                            process.env.THROTTLE_SKIP === 'true') {
                             return true;
                         }
                         const request = context.switchToHttp().getRequest();

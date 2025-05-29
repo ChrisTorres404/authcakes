@@ -4,7 +4,9 @@ exports.validationSchema = void 0;
 const Joi = require("joi");
 exports.validationSchema = Joi.object({
     APP_PORT: Joi.number().default(3000),
-    NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
+    NODE_ENV: Joi.string()
+        .valid('development', 'production', 'test')
+        .default('development'),
     APP_CORS_ORIGINS: Joi.string().default('*'),
     APP_BASE_URL: Joi.string().uri().optional(),
     AUTH_JWT_SECRET: Joi.string().min(16).required(),
@@ -18,10 +20,17 @@ exports.validationSchema = Joi.object({
     AUTH_MFA_TOTP_WINDOW: Joi.number().min(0).max(10).default(1),
     AUTH_COOKIE_DOMAIN: Joi.string().allow('').default(''),
     AUTH_COOKIE_SECURE: Joi.boolean().default(false),
-    AUTH_COOKIE_SAMESITE: Joi.string().valid('lax', 'strict', 'none').default('lax'),
+    AUTH_COOKIE_SAMESITE: Joi.string()
+        .valid('lax', 'strict', 'none')
+        .default('lax'),
     AUTH_SECURITY_MAX_FAILED_ATTEMPTS: Joi.number().min(1).max(20).default(5),
-    AUTH_SECURITY_LOCK_DURATION_MINUTES: Joi.number().min(1).max(1440).default(30),
-    DB_TYPE: Joi.string().valid('postgres', 'mysql', 'sqlite', 'mariadb', 'mongodb').default('postgres'),
+    AUTH_SECURITY_LOCK_DURATION_MINUTES: Joi.number()
+        .min(1)
+        .max(1440)
+        .default(30),
+    DB_TYPE: Joi.string()
+        .valid('postgres', 'mysql', 'sqlite', 'mariadb', 'mongodb')
+        .default('postgres'),
     DB_HOST: Joi.string().default('localhost'),
     DB_PORT: Joi.number().default(5432),
     DB_USERNAME: Joi.string().default('postgres'),
@@ -74,7 +83,9 @@ exports.validationSchema = Joi.object({
     REDIS_DB: Joi.number().optional(),
     THROTTLE_TTL: Joi.number().default(60),
     THROTTLE_LIMIT: Joi.number().default(10),
-    LOG_LEVEL: Joi.string().valid('error', 'warn', 'info', 'debug').default('info'),
+    LOG_LEVEL: Joi.string()
+        .valid('error', 'warn', 'info', 'debug')
+        .default('info'),
     PROMETHEUS_ENABLED: Joi.boolean().default(false),
     DATADOG_API_KEY: Joi.string().optional(),
     DATADOG_APP_KEY: Joi.string().optional(),

@@ -11,9 +11,11 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UpdateTenantMemberRoleDto = exports.InviteTenantMemberDto = void 0;
 const swagger_1 = require("@nestjs/swagger");
+const tenant_invitation_dto_1 = require("./tenant-invitation.dto");
 class InviteTenantMemberDto {
     email;
     role;
+    invitedBy;
 }
 exports.InviteTenantMemberDto = InviteTenantMemberDto;
 __decorate([
@@ -21,15 +23,19 @@ __decorate([
     __metadata("design:type", String)
 ], InviteTenantMemberDto.prototype, "email", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ enum: ['user', 'admin'], example: 'user' }),
+    (0, swagger_1.ApiProperty)({ enum: tenant_invitation_dto_1.TenantRole, example: tenant_invitation_dto_1.TenantRole.MEMBER }),
     __metadata("design:type", String)
 ], InviteTenantMemberDto.prototype, "role", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 'uuid-of-inviting-user' }),
+    __metadata("design:type", String)
+], InviteTenantMemberDto.prototype, "invitedBy", void 0);
 class UpdateTenantMemberRoleDto {
     role;
 }
 exports.UpdateTenantMemberRoleDto = UpdateTenantMemberRoleDto;
 __decorate([
-    (0, swagger_1.ApiProperty)({ enum: ['user', 'admin'], example: 'admin' }),
+    (0, swagger_1.ApiProperty)({ enum: tenant_invitation_dto_1.TenantRole, example: tenant_invitation_dto_1.TenantRole.ADMIN }),
     __metadata("design:type", String)
 ], UpdateTenantMemberRoleDto.prototype, "role", void 0);
 //# sourceMappingURL=tenant-member.dto.js.map

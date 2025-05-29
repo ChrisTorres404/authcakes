@@ -13,11 +13,31 @@ let PerformanceInterceptor = class PerformanceInterceptor {
     logger = new common_1.Logger('Performance');
     intercept(context, next) {
         const now = Date.now();
-        return next.handle().pipe((0, operators_1.tap)(() => {
-            const req = context.switchToHttp().getRequest();
-            const ms = Date.now() - now;
-            this.logger.log(`${req.method} ${req.url} - ${ms}ms`);
+        const req = context.switchToHttp().getRequest();
+        return next.handle().pipe((0, operators_1.tap)({
+            next: () => this.logPerformance(req, now),
+            error: (error) => {
+                const metrics = this.generateMetrics(req, now);
+                if (error instanceof Error) {
+                    this.logger.error(`Error in ${metrics.method} ${metrics.url} after ${metrics.duration}ms`, error.stack);
+                }
+                else {
+                    this.logger.error(`Error in ${metrics.method} ${metrics.url} after ${metrics.duration}ms`, String(error));
+                }
+            },
         }));
+    }
+    generateMetrics(req, startTime) {
+        return {
+            method: req.method,
+            url: req.url,
+            duration: Date.now() - startTime,
+            timestamp: new Date(),
+        };
+    }
+    logPerformance(req, startTime) {
+        const metrics = this.generateMetrics(req, startTime);
+        this.logger.log(`${metrics.method} ${metrics.url} - ${metrics.duration}ms`, { metrics });
     }
 };
 exports.PerformanceInterceptor = PerformanceInterceptor;

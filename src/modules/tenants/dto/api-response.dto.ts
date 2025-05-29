@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-export class ApiResponseDto<T = any> {
+export class ApiResponseDto<T = unknown> {
   @ApiProperty({ example: true })
   success: boolean;
 
@@ -24,6 +24,9 @@ export class ApiErrorResponseDto {
   @ApiProperty({ example: 'Tenant not found' })
   message: string;
 
-  @ApiProperty({ example: 'TENANT_NOT_FOUND', description: 'Application-specific error code' })
+  @ApiProperty({
+    example: 'TENANT_NOT_FOUND',
+    description: 'Application-specific error code',
+  })
   errorCode: string;
-} 
+}

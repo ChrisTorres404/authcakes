@@ -18,7 +18,10 @@ class UpdateTenantMembershipDto {
 }
 exports.UpdateTenantMembershipDto = UpdateTenantMembershipDto;
 __decorate([
-    (0, swagger_1.ApiProperty)({ enum: add_user_to_tenant_dto_1.TenantRole, description: 'Role for the user in the tenant' }),
+    (0, swagger_1.ApiProperty)({
+        enum: add_user_to_tenant_dto_1.TenantRole,
+        description: 'Role for the user in the tenant',
+    }),
     (0, class_validator_1.IsEnum)(add_user_to_tenant_dto_1.TenantRole),
     __metadata("design:type", String)
 ], UpdateTenantMembershipDto.prototype, "role", void 0);

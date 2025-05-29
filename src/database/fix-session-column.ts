@@ -13,15 +13,18 @@ async function fixSessionColumn() {
     password: process.env.PG_PASSWORD || process.env.DB_PASSWORD, // Password from env
     database: 'authcakes', // Use the known working database name
     // Disable SSL by default unless explicitly enabled
-    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined
+    ssl:
+      process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
   });
 
   try {
     console.log('Connecting to database...');
-    console.log(`Using connection: ${client.host}:${client.port}/${client.database}`);
+    console.log(
+      `Using connection: ${client.host}:${client.port}/${client.database}`,
+    );
     await client.connect();
     console.log('Connected to database successfully');
-    
+
     // Check if sessions table exists
     const checkTableResult = await client.query(`
       SELECT EXISTS (
@@ -49,7 +52,9 @@ async function fixSessionColumn() {
 
     const columnExists = checkColumnResult.rows[0].exists;
     if (!columnExists) {
-      console.log('revokedBy column does not exist in sessions table, no fix needed.');
+      console.log(
+        'revokedBy column does not exist in sessions table, no fix needed.',
+      );
       return;
     }
 
@@ -80,15 +85,22 @@ async function fixSessionColumn() {
     `);
 
     console.log('Successfully fixed revokedBy column type!');
-    
   } catch (error) {
     console.error('Error fixing session column:', error);
     // Print environment variables for debugging
     console.log('Environment variables (sanitized):');
-    console.log(`PG_HOST/DB_HOST: ${process.env.PG_HOST || process.env.DB_HOST || 'not set'}`);
-    console.log(`PG_PORT/DB_PORT: ${process.env.PG_PORT || process.env.DB_PORT || 'not set'}`);
-    console.log(`PG_USER/DB_USER: ${process.env.PG_USER || process.env.PG_USERNAME || process.env.DB_USERNAME || process.env.DB_USER ? '[set]' : 'not set'}`);
-    console.log(`PG_DATABASE/DB_DATABASE: ${process.env.PG_DATABASE || process.env.DB_DATABASE || 'not set'}`);
+    console.log(
+      `PG_HOST/DB_HOST: ${process.env.PG_HOST || process.env.DB_HOST || 'not set'}`,
+    );
+    console.log(
+      `PG_PORT/DB_PORT: ${process.env.PG_PORT || process.env.DB_PORT || 'not set'}`,
+    );
+    console.log(
+      `PG_USER/DB_USER: ${process.env.PG_USER || process.env.PG_USERNAME || process.env.DB_USERNAME || process.env.DB_USER ? '[set]' : 'not set'}`,
+    );
+    console.log(
+      `PG_DATABASE/DB_DATABASE: ${process.env.PG_DATABASE || process.env.DB_DATABASE || 'not set'}`,
+    );
   } finally {
     // Close database client connection
     try {

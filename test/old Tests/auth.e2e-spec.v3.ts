@@ -47,7 +47,9 @@ describe('Auth E2E v3', () => {
     authService = moduleFixture.get<AuthService>(AuthService);
     usersService = moduleFixture.get<UsersService>(UsersService);
     connection = moduleFixture.get<Connection>(Connection);
-    userRepository = moduleFixture.get<Repository<User>>(getRepositoryToken(User));
+    userRepository = moduleFixture.get<Repository<User>>(
+      getRepositoryToken(User),
+    );
     console.log('[E2E Test] App initialized with cookieParser and CORS');
   }, 30000);
 
@@ -69,7 +71,7 @@ describe('Auth E2E v3', () => {
           password: 'Test1234!',
           firstName: 'Test',
           lastName: 'User',
-          organizationName: 'TestOrg'
+          organizationName: 'TestOrg',
         })
         .expect(200);
     } catch (err) {
@@ -84,7 +86,7 @@ describe('Auth E2E v3', () => {
         expect.stringContaining('access_token'),
         expect.stringContaining('refresh_token'),
         expect.stringContaining('session_id'),
-      ])
+      ]),
     );
     const cookies = registerRes.headers['set-cookie'];
 
@@ -109,14 +111,16 @@ describe('Auth E2E v3', () => {
     expect(loginRes.body).toHaveProperty('user');
     const loginCookiesRaw = loginRes.headers['set-cookie'];
     // Ensure loginCookies is always an array
-    const loginCookies = Array.isArray(loginCookiesRaw) ? loginCookiesRaw : [loginCookiesRaw];
+    const loginCookies = Array.isArray(loginCookiesRaw)
+      ? loginCookiesRaw
+      : [loginCookiesRaw];
     // Log cookies for debugging
     console.log('Login cookies:', loginCookies);
     // Extract access_token from cookies
     const accessToken = loginCookies
-      .map(cookie => cookie.match(/access_token=([^;]+)/))
+      .map((cookie) => cookie.match(/access_token=([^;]+)/))
       .filter(Boolean)
-      .map(match => match[1])[0];
+      .map((match) => match[1])[0];
     expect(accessToken).toBeTruthy();
 
     // Print decoded JWT payload
@@ -128,12 +132,18 @@ describe('Auth E2E v3', () => {
     console.log('User lookup result:', userFromDb);
 
     // Access protected route using Bearer token (Authorization header only)
-    console.log('Requesting /api/users/profile with Authorization header:', `Bearer ${accessToken}`);
+    console.log(
+      'Requesting /api/users/profile with Authorization header:',
+      `Bearer ${accessToken}`,
+    );
     const profileRes = await request(app.getHttpServer())
       .get('/api/users/profile')
       .set('Authorization', `Bearer ${accessToken}`)
       .expect(200);
-    console.log('Response from /api/users/profile (Authorization header):', profileRes.body);
+    console.log(
+      'Response from /api/users/profile (Authorization header):',
+      profileRes.body,
+    );
     expect(profileRes.body).toHaveProperty('id');
     expect(profileRes.body).toHaveProperty('email');
 
@@ -143,7 +153,10 @@ describe('Auth E2E v3', () => {
       .get('/api/users/profile')
       .set('Cookie', [`access_token=${accessToken}`])
       .expect(200);
-    console.log('Response from /api/users/profile (access_token cookie):', profileResCookie.body);
+    console.log(
+      'Response from /api/users/profile (access_token cookie):',
+      profileResCookie.body,
+    );
 
     // Refresh token
     const refreshRes = await request(app.getHttpServer())
@@ -167,9 +180,7 @@ describe('Auth E2E v3', () => {
   });
 
   it('should not access protected route without token', async () => {
-    await request(app.getHttpServer())
-      .get('/api/users/profile')
-      .expect(401);
+    await request(app.getHttpServer()).get('/api/users/profile').expect(401);
   });
 
   it('should not refresh with revoked token (after logout)', async () => {
@@ -177,7 +188,13 @@ describe('Auth E2E v3', () => {
     const email = uniqueEmail();
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
     const loginRes = await request(app.getHttpServer())
       .post('/api/auth/login')
@@ -202,11 +219,23 @@ describe('Auth E2E v3', () => {
     const email = uniqueEmail('dupe');
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(400);
   });
 
@@ -214,7 +243,13 @@ describe('Auth E2E v3', () => {
     const email = uniqueEmail('brute');
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
     for (let i = 0; i < 5; i++) {
       await request(app.getHttpServer())
@@ -231,10 +266,17 @@ describe('Auth E2E v3', () => {
   it('should not access protected route with expired access token', async () => {
     const loginRes = await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email: uniqueEmail('expiretoken'), password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email: uniqueEmail('expiretoken'),
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
     const { accessToken } = loginRes.body;
-    const expiredToken = accessToken.split('.').slice(0, 2).join('.') + '.expiredsig';
+    const expiredToken =
+      accessToken.split('.').slice(0, 2).join('.') + '.expiredsig';
     await request(app.getHttpServer())
       .get('/api/users/profile')
       .set('Authorization', `Bearer ${expiredToken}`)
@@ -245,7 +287,13 @@ describe('Auth E2E v3', () => {
     const email = uniqueEmail('resetflow');
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
     await request(app.getHttpServer())
       .post('/api/auth/forgot-password')
@@ -272,7 +320,13 @@ describe('Auth E2E v3', () => {
     const email = uniqueEmail('resetexpired');
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
     await request(app.getHttpServer())
       .post('/api/auth/forgot-password')
@@ -282,7 +336,9 @@ describe('Auth E2E v3', () => {
     const userRepo = dataSource.getRepository(User);
     const user = await userRepo.findOneByOrFail({ email });
     const resetToken = user.resetToken;
-    await userRepo.update(user.id, { resetTokenExpiry: new Date(Date.now() - 1000) });
+    await userRepo.update(user.id, {
+      resetTokenExpiry: new Date(Date.now() - 1000),
+    });
     await request(app.getHttpServer())
       .post('/api/auth/reset-password')
       .send({ token: resetToken, password: 'NewPass123!' })
@@ -300,7 +356,13 @@ describe('Auth E2E v3', () => {
     const email = uniqueEmail('resetdeactivated');
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
     const dataSource = app.get(DataSource);
     const userRepo = dataSource.getRepository(User);
@@ -322,12 +384,20 @@ describe('Auth E2E v3', () => {
     const email = uniqueEmail('resetlocked');
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
     const dataSource = app.get(DataSource);
     const userRepo = dataSource.getRepository(User);
     const user = await userRepo.findOneByOrFail({ email });
-    await userRepo.update(user.id, { lockedUntil: new Date(Date.now() + 60 * 60 * 1000) });
+    await userRepo.update(user.id, {
+      lockedUntil: new Date(Date.now() + 60 * 60 * 1000),
+    });
     await request(app.getHttpServer())
       .post('/api/auth/forgot-password')
       .send({ email })
@@ -344,7 +414,13 @@ describe('Auth E2E v3', () => {
     const email = uniqueEmail('verifyflow');
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
     const dataSource = app.get(DataSource);
     const userRepo = dataSource.getRepository(User);
@@ -361,14 +437,23 @@ describe('Auth E2E v3', () => {
     const email = uniqueEmail('phoneflow');
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', phoneNumber: '+1234567890', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        phoneNumber: '+1234567890',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
     const dataSource = app.get(DataSource);
     const userRepo = dataSource.getRepository(User);
     const user = await userRepo.findOneByOrFail({ email });
     const phoneToken = user.phoneVerificationToken;
     if (!phoneToken) {
-      console.warn('Skipping phone verification test: no phone verification token generated');
+      console.warn(
+        'Skipping phone verification test: no phone verification token generated',
+      );
       return;
     }
     await request(app.getHttpServer())
@@ -381,7 +466,13 @@ describe('Auth E2E v3', () => {
     const email = uniqueEmail('mfauser');
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
     const loginRes = await request(app.getHttpServer())
       .post('/api/auth/login')
@@ -411,7 +502,12 @@ describe('Auth E2E v3', () => {
         .send({ provider, token: socialToken })
         .expect(200);
     } catch (err) {
-      if (err.response && (err.response.status === 401 || err.response.status === 404 || err.response.status === 501)) {
+      if (
+        err.response &&
+        (err.response.status === 401 ||
+          err.response.status === 404 ||
+          err.response.status === 501)
+      ) {
         console.warn('Skipping social login test: endpoint not implemented');
         return;
       }
@@ -423,10 +519,16 @@ describe('Auth E2E v3', () => {
     const email = uniqueEmail('recoveryflow');
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+      .send({
+        email,
+        password: 'Test1234!',
+        firstName: 'Test',
+        lastName: 'User',
+        organizationName: 'TestOrg',
+      })
       .expect(200);
     const checkRes = await request(app.getHttpServer())
-        .post('/api/auth/request-account-recovery')
+      .post('/api/auth/request-account-recovery')
       .send({ email });
     if (checkRes.status === 404 || checkRes.status === 501) {
       console.warn('Skipping account recovery test: endpoint not implemented');
@@ -451,7 +553,13 @@ describe('Auth E2E v3', () => {
       const email = uniqueEmail('expiredrecovery');
       await request(app.getHttpServer())
         .post('/api/auth/register')
-        .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+        .send({
+          email,
+          password: 'Test1234!',
+          firstName: 'Test',
+          lastName: 'User',
+          organizationName: 'TestOrg',
+        })
         .expect(200);
       const checkRes = await request(app.getHttpServer())
         .post('/api/auth/request-account-recovery')
@@ -461,7 +569,9 @@ describe('Auth E2E v3', () => {
       const dataSource = app.get(DataSource);
       const userRepo = dataSource.getRepository(User);
       const user = await userRepo.findOneByOrFail({ email });
-      await userRepo.update(user.id, { accountRecoveryTokenExpiry: new Date(Date.now() - 1000) });
+      await userRepo.update(user.id, {
+        accountRecoveryTokenExpiry: new Date(Date.now() - 1000),
+      });
       await request(app.getHttpServer())
         .post('/api/auth/complete-account-recovery')
         .send({ token: recoveryToken, newPassword: 'RecoveredPass123!' })
@@ -479,7 +589,13 @@ describe('Auth E2E v3', () => {
       const email = uniqueEmail('reusetoken');
       await request(app.getHttpServer())
         .post('/api/auth/register')
-        .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+        .send({
+          email,
+          password: 'Test1234!',
+          firstName: 'Test',
+          lastName: 'User',
+          organizationName: 'TestOrg',
+        })
         .expect(200);
       const checkRes = await request(app.getHttpServer())
         .post('/api/auth/request-account-recovery')
@@ -500,7 +616,13 @@ describe('Auth E2E v3', () => {
       const email = uniqueEmail('multirequest');
       await request(app.getHttpServer())
         .post('/api/auth/register')
-        .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+        .send({
+          email,
+          password: 'Test1234!',
+          firstName: 'Test',
+          lastName: 'User',
+          organizationName: 'TestOrg',
+        })
         .expect(200);
       const firstRes = await request(app.getHttpServer())
         .post('/api/auth/request-account-recovery')
@@ -526,7 +648,13 @@ describe('Auth E2E v3', () => {
       const email = uniqueEmail('mfarecovery');
       await request(app.getHttpServer())
         .post('/api/auth/register')
-        .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+        .send({
+          email,
+          password: 'Test1234!',
+          firstName: 'Test',
+          lastName: 'User',
+          organizationName: 'TestOrg',
+        })
         .expect(200);
       const loginRes = await request(app.getHttpServer())
         .post('/api/auth/login')
@@ -551,12 +679,20 @@ describe('Auth E2E v3', () => {
       // Try with invalid MFA code
       await request(app.getHttpServer())
         .post('/api/auth/complete-account-recovery')
-        .send({ token: recoveryToken, newPassword: 'RecoveredPass123!', mfaCode: '000000' })
+        .send({
+          token: recoveryToken,
+          newPassword: 'RecoveredPass123!',
+          mfaCode: '000000',
+        })
         .expect(400);
       // Try with valid MFA code (simulate)
       await request(app.getHttpServer())
         .post('/api/auth/complete-account-recovery')
-        .send({ token: recoveryToken, newPassword: 'RecoveredPass123!', mfaCode: '123456' })
+        .send({
+          token: recoveryToken,
+          newPassword: 'RecoveredPass123!',
+          mfaCode: '123456',
+        })
         .expect(200);
     });
 
@@ -564,7 +700,13 @@ describe('Auth E2E v3', () => {
       const email = uniqueEmail('notifyrecovery');
       await request(app.getHttpServer())
         .post('/api/auth/register')
-        .send({ email, password: 'Test1234!', firstName: 'Test', lastName: 'User', organizationName: 'TestOrg' })
+        .send({
+          email,
+          password: 'Test1234!',
+          firstName: 'Test',
+          lastName: 'User',
+          organizationName: 'TestOrg',
+        })
         .expect(200);
       // Existing account
       const res1 = await request(app.getHttpServer())
@@ -580,4 +722,4 @@ describe('Auth E2E v3', () => {
       expect(res1.body).toEqual(res2.body);
     });
   });
-}); 
+});

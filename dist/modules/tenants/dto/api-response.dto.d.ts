@@ -1,4 +1,4 @@
-export declare class ApiResponseDto<T = any> {
+export declare class ApiResponseDto<T = unknown> {
     success: boolean;
     data?: T;
     message?: string;

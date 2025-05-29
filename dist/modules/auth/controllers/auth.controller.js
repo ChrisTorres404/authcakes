@@ -14,6 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const common_1 = require("@nestjs/common");
+const speakeasy = require("speakeasy");
 const config_1 = require("@nestjs/config");
 const auth_service_1 = require("../services/auth.service");
 const token_service_1 = require("../services/token.service");
@@ -74,13 +75,22 @@ let AuthController = class AuthController {
         if (oldRefreshToken) {
             await this.tokenService.revokeRefreshToken(oldRefreshToken, userId, 'Refresh token rotation');
         }
+        if (!oldSessionId) {
+            throw new common_1.UnauthorizedException('Invalid session');
+        }
         const { accessToken, refreshToken, user } = await this.authService.refresh(userId, oldSessionId, deviceInfo);
         this.setAuthCookies(res, {
             accessToken,
             refreshToken,
-            sessionId: oldSessionId
+            sessionId: oldSessionId,
         });
-        return { success: true, user, accessToken, refreshToken };
+        return {
+            success: true,
+            user,
+            sessionId: oldSessionId,
+            accessToken,
+            refreshToken,
+        };
     }
     async checkSessionStatus(req) {
         const userId = req.user.id ?? '';
@@ -89,7 +99,8 @@ let AuthController = class AuthController {
         if (!sessionValid) {
             return {
                 valid: false,
-                remainingSeconds: 0
+                remainingSeconds: 0,
+                sessionId: '',
             };
         }
         const remainingSeconds = await this.sessionService.getSessionRemainingTime(sessionId);
@@ -103,11 +114,11 @@ let AuthController = class AuthController {
         const userId = req.user.id;
         const sessions = await this.tokenService.listActiveSessions(userId);
         return {
-            sessions: sessions.map(session => ({
+            sessions: sessions.map((session) => ({
                 id: session.id,
-                createdAt: session.createdAt,
+                createdAt: session.createdAt.toISOString(),
                 deviceInfo: session.deviceInfo,
-                lastUsedAt: session.lastUsedAt,
+                lastUsedAt: session.lastUsedAt.toISOString(),
             })),
         };
     }
@@ -169,9 +180,20 @@ let AuthController = class AuthController {
         return { success: true, ...result };
     }
     async mfaEnroll(req) {
-        const secret = require('speakeasy').generateSecret({ length: 20 });
+        const secret = speakeasy.generateSecret({
+            length: 20,
+            name: `AuthCakes:${req.user.email}`,
+            issuer: 'AuthCakes',
+        });
+        if (!secret.base32) {
+            throw new Error('Failed to generate MFA secret');
+        }
         await this.authService.setMfaSecret(req.user.id, secret.base32);
-        return { success: true, secret: secret.base32, otpauth_url: secret.otpauth_url };
+        return {
+            success: true,
+            secret: secret.base32,
+            ...(secret.otpauth_url && { otpauth_url: secret.otpauth_url }),
+        };
     }
     async mfaVerify(req, code) {
         const user = await this.authService.getUserById(req.user.id);
@@ -179,7 +201,7 @@ let AuthController = class AuthController {
         if (!secret) {
             return { success: false, message: 'No MFA secret set' };
         }
-        const verified = require('speakeasy').totp.verify({
+        const verified = speakeasy.totp.verify({
             secret,
             encoding: 'base32',
             token: code,
@@ -231,7 +253,7 @@ let AuthController = class AuthController {
     }
     extractDeviceInfo(req) {
         return {
-            ip: req.ip,
+            ip: req.ip || '',
             userAgent: req.headers['user-agent'] || '',
         };
     }
@@ -245,7 +267,10 @@ __decorate([
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, swagger_1.ApiOperation)({ summary: 'Login with email and password' }),
     (0, swagger_1.ApiBody)({ type: login_dto_1.LoginDto }),
-    (0, swagger_1.ApiOkResponse)({ type: login_response_dto_1.LoginResponseDto, description: 'Successful login returns user info and tokens.' }),
+    (0, swagger_1.ApiOkResponse)({
+        type: login_response_dto_1.LoginResponseDto,
+        description: 'Successful login returns user info and tokens.',
+    }),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Req)()),
     __param(2, (0, common_1.Res)({ passthrough: true })),
@@ -256,8 +281,13 @@ __decorate([
 __decorate([
     (0, common_1.Post)('logout'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
-    (0, swagger_1.ApiOperation)({ summary: 'Logout the current user and clear authentication cookies.' }),
-    (0, swagger_1.ApiOkResponse)({ type: success_response_dto_1.SuccessResponseDto, description: 'Logout successful.' }),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Logout the current user and clear authentication cookies.',
+    }),
+    (0, swagger_1.ApiOkResponse)({
+        type: success_response_dto_1.SuccessResponseDto,
+        description: 'Logout successful.',
+    }),
     __param(0, (0, common_1.Req)()),
     __param(1, (0, common_1.Res)({ passthrough: true })),
     __metadata("design:type", Function),
@@ -270,8 +300,13 @@ __decorate([
     (0, throttle_decorator_1.ThrottleRefresh)(),
     (0, common_1.Post)('refresh'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
-    (0, swagger_1.ApiOperation)({ summary: 'Refresh access and refresh tokens using a valid refresh token.' }),
-    (0, swagger_1.ApiOkResponse)({ type: token_response_dto_1.TokenResponseDto, description: 'Returns new access and refresh tokens, and user info.' }),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Refresh access and refresh tokens using a valid refresh token.',
+    }),
+    (0, swagger_1.ApiOkResponse)({
+        type: token_response_dto_1.TokenResponseDto,
+        description: 'Returns new access and refresh tokens, and user info.',
+    }),
     __param(0, (0, common_1.Req)()),
     __param(1, (0, common_1.Res)({ passthrough: true })),
     __metadata("design:type", Function),
@@ -281,8 +316,13 @@ __decorate([
 __decorate([
     (0, common_1.Get)('session-status'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
-    (0, swagger_1.ApiOperation)({ summary: 'Check if the current session is valid and get remaining time.' }),
-    (0, swagger_1.ApiOkResponse)({ type: session_status_response_dto_1.SessionStatusResponseDto, description: 'Session validity and remaining time.' }),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Check if the current session is valid and get remaining time.',
+    }),
+    (0, swagger_1.ApiOkResponse)({
+        type: session_status_response_dto_1.SessionStatusResponseDto,
+        description: 'Session validity and remaining time.',
+    }),
     __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -291,7 +331,10 @@ __decorate([
 __decorate([
     (0, common_1.Get)('sessions'),
     (0, swagger_1.ApiOperation)({ summary: 'List all active sessions for the current user.' }),
-    (0, swagger_1.ApiOkResponse)({ type: session_list_response_dto_1.SessionListResponseDto, description: 'List of active sessions.' }),
+    (0, swagger_1.ApiOkResponse)({
+        type: session_list_response_dto_1.SessionListResponseDto,
+        description: 'List of active sessions.',
+    }),
     __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -302,7 +345,10 @@ __decorate([
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, swagger_1.ApiOperation)({ summary: 'Revoke a specific session for the current user.' }),
     (0, swagger_1.ApiBody)({ type: revoke_session_dto_1.RevokeSessionDto }),
-    (0, swagger_1.ApiOkResponse)({ type: success_response_dto_1.SuccessResponseDto, description: 'Session revoked successfully.' }),
+    (0, swagger_1.ApiOkResponse)({
+        type: success_response_dto_1.SuccessResponseDto,
+        description: 'Session revoked successfully.',
+    }),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
@@ -316,7 +362,10 @@ __decorate([
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, swagger_1.ApiOperation)({ summary: 'Register a new user account.' }),
     (0, swagger_1.ApiBody)({ type: register_dto_1.RegisterDto }),
-    (0, swagger_1.ApiOkResponse)({ type: login_response_dto_1.LoginResponseDto, description: 'Registration successful, returns user info and tokens.' }),
+    (0, swagger_1.ApiOkResponse)({
+        type: login_response_dto_1.LoginResponseDto,
+        description: 'Registration successful, returns user info and tokens.',
+    }),
     (0, swagger_1.ApiBadRequestResponse)({ description: 'Invalid input or weak password.' }),
     (0, swagger_1.ApiConflictResponse)({ description: 'Email already in use.' }),
     __param(0, (0, common_1.Body)()),
@@ -332,7 +381,9 @@ __decorate([
     (0, swagger_1.ApiOperation)({ summary: 'Verify user email with a token.' }),
     (0, swagger_1.ApiBody)({ schema: { example: { token: 'verification-token' } } }),
     (0, swagger_1.ApiOkResponse)({ description: 'Email verified and user info returned.' }),
-    (0, swagger_1.ApiBadRequestResponse)({ description: 'Invalid or expired verification token.' }),
+    (0, swagger_1.ApiBadRequestResponse)({
+        description: 'Invalid or expired verification token.',
+    }),
     __param(0, (0, common_1.Body)('token')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -369,9 +420,13 @@ __decorate([
     (0, throttle_decorator_1.ThrottlePasswordReset)(),
     (0, common_1.Post)('request-account-recovery'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
-    (0, swagger_1.ApiOperation)({ summary: 'Request account recovery when all credentials are lost.' }),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Request account recovery when all credentials are lost.',
+    }),
     (0, swagger_1.ApiBody)({ type: request_account_recovery_dto_1.RequestAccountRecoveryDto }),
-    (0, swagger_1.ApiOkResponse)({ description: 'Account recovery token sent if email exists.' }),
+    (0, swagger_1.ApiOkResponse)({
+        description: 'Account recovery token sent if email exists.',
+    }),
     (0, swagger_1.ApiBadRequestResponse)({ description: 'Invalid email or user not found.' }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -383,10 +438,14 @@ __decorate([
     (0, throttle_decorator_1.ThrottlePasswordReset)(),
     (0, common_1.Post)('complete-account-recovery'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
-    (0, swagger_1.ApiOperation)({ summary: 'Complete account recovery by setting a new password with a recovery token.' }),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Complete account recovery by setting a new password with a recovery token.',
+    }),
     (0, swagger_1.ApiBody)({ type: complete_account_recovery_dto_1.CompleteAccountRecoveryDto }),
     (0, swagger_1.ApiOkResponse)({ description: 'Account recovery completed.' }),
-    (0, swagger_1.ApiBadRequestResponse)({ description: 'Invalid token, password, or MFA code.' }),
+    (0, swagger_1.ApiBadRequestResponse)({
+        description: 'Invalid token, password, or MFA code.',
+    }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [complete_account_recovery_dto_1.CompleteAccountRecoveryDto]),
@@ -396,8 +455,19 @@ __decorate([
     (0, common_1.Post)('change-password'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, swagger_1.ApiOperation)({ summary: 'Change password for the current user.' }),
-    (0, swagger_1.ApiBody)({ schema: { example: { oldPassword: 'OldPassword123!', newPassword: 'NewPassword123!' } } }),
-    (0, swagger_1.ApiOkResponse)({ description: 'Password changed and all sessions/tokens revoked.' }),
+    (0, swagger_1.ApiBody)({
+        schema: {
+            type: 'object',
+            required: ['oldPassword', 'newPassword'],
+            properties: {
+                oldPassword: { type: 'string', example: 'OldPassword123!' },
+                newPassword: { type: 'string', example: 'NewPassword123!' },
+            },
+        },
+    }),
+    (0, swagger_1.ApiOkResponse)({
+        description: 'Password changed and all sessions/tokens revoked.',
+    }),
     (0, swagger_1.ApiBadRequestResponse)({ description: 'Invalid input or weak password.' }),
     __param(0, (0, common_1.Req)()),
     __param(1, (0, common_1.Body)('oldPassword')),
@@ -410,7 +480,16 @@ __decorate([
     (0, common_1.Post)('mfa/enroll'),
     (0, common_1.HttpCode)(200),
     (0, swagger_1.ApiOperation)({ summary: 'Enroll in multi-factor authentication (MFA).' }),
-    (0, swagger_1.ApiOkResponse)({ schema: { example: { success: true, secret: 'BASE32SECRET', otpauth_url: 'otpauth://totp/Service:user@example.com?secret=BASE32SECRET&issuer=Service' } }, description: 'MFA enrollment secret and URL returned.' }),
+    (0, swagger_1.ApiOkResponse)({
+        schema: {
+            example: {
+                success: true,
+                secret: 'BASE32SECRET',
+                otpauth_url: 'otpauth://totp/Service:user@example.com?secret=BASE32SECRET&issuer=Service',
+            },
+        },
+        description: 'MFA enrollment secret and URL returned.',
+    }),
     (0, swagger_1.ApiUnauthorizedResponse)({ description: 'User is not authenticated.' }),
     __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
@@ -422,11 +501,16 @@ __decorate([
     (0, common_1.HttpCode)(200),
     (0, swagger_1.ApiOperation)({ summary: 'Verify MFA code to enable MFA.' }),
     (0, swagger_1.ApiBody)({ schema: { example: { code: '123456' } } }),
-    (0, swagger_1.ApiOkResponse)({ schema: { oneOf: [
+    (0, swagger_1.ApiOkResponse)({
+        schema: {
+            oneOf: [
                 { example: { success: true } },
                 { example: { success: false, message: 'No MFA secret set' } },
-                { example: { success: false, message: 'Invalid MFA code' } }
-            ] }, description: 'MFA enabled if code is valid.' }),
+                { example: { success: false, message: 'Invalid MFA code' } },
+            ],
+        },
+        description: 'MFA enabled if code is valid.',
+    }),
     (0, swagger_1.ApiUnauthorizedResponse)({ description: 'User is not authenticated.' }),
     __param(0, (0, common_1.Req)()),
     __param(1, (0, common_1.Body)('code')),
@@ -436,16 +520,32 @@ __decorate([
 ], AuthController.prototype, "mfaVerify", null);
 __decorate([
     (0, common_1.Post)('social'),
-    (0, swagger_1.ApiOperation)({ summary: 'Social login (not implemented).', description: 'This endpoint is a stub and does not perform social login.' }),
-    (0, swagger_1.ApiOkResponse)({ schema: { example: { success: false, message: 'Social login not implemented yet' } }, description: 'Social login not implemented yet.' }),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Social login (not implemented).',
+        description: 'This endpoint is a stub and does not perform social login.',
+    }),
+    (0, swagger_1.ApiOkResponse)({
+        schema: {
+            example: { success: false, message: 'Social login not implemented yet' },
+        },
+        description: 'Social login not implemented yet.',
+    }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "socialLogin", null);
 __decorate([
     (0, common_1.Get)('/audit-logs'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get audit logs (not implemented).', description: 'This endpoint is a stub and does not return audit logs.' }),
-    (0, swagger_1.ApiOkResponse)({ schema: { example: { success: false, message: 'Audit logs not implemented yet' } }, description: 'Audit logs not implemented yet.' }),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Get audit logs (not implemented).',
+        description: 'This endpoint is a stub and does not return audit logs.',
+    }),
+    (0, swagger_1.ApiOkResponse)({
+        schema: {
+            example: { success: false, message: 'Audit logs not implemented yet' },
+        },
+        description: 'Audit logs not implemented yet.',
+    }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)

@@ -21,4 +21,4 @@ export class CreateRefreshTokenDto {
   @IsOptional()
   @IsString()
   ipAddress?: string;
-} 
+}

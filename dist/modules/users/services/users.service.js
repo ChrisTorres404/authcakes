@@ -23,17 +23,20 @@ const crypto = require("crypto");
 const user_entity_1 = require("../entities/user.entity");
 const session_service_1 = require("../../auth/services/session.service");
 const audit_log_service_1 = require("../../auth/services/audit-log.service");
+const settings_service_1 = require("../../settings/services/settings.service");
 let UsersService = UsersService_1 = class UsersService {
     userRepository;
     configService;
     sessionService;
     auditLogService;
+    settingsService;
     logger = new common_1.Logger(UsersService_1.name);
-    constructor(userRepository, configService, sessionService, auditLogService) {
+    constructor(userRepository, configService, sessionService, auditLogService, settingsService) {
         this.userRepository = userRepository;
         this.configService = configService;
         this.sessionService = sessionService;
         this.auditLogService = auditLogService;
+        this.settingsService = settingsService;
     }
     async findAll() {
         return this.userRepository.find();
@@ -89,6 +92,63 @@ let UsersService = UsersService_1 = class UsersService {
         }
         Object.assign(user, userData);
         return this.userRepository.save(user);
+    }
+    async updateProfile(id, profileData, updatedBy, requestInfo) {
+        const user = await this.findById(id);
+        const allowProfileUpdate = await this.settingsService.getValue('ALLOW_USER_PROFILE_UPDATE', true);
+        if (!allowProfileUpdate) {
+            throw new common_1.ForbiddenException('Profile updates are not allowed');
+        }
+        const allowedFields = await this.settingsService.getValue('PROFILE_UPDATABLE_FIELDS', [
+            'firstName',
+            'lastName',
+            'avatar',
+            'company',
+            'department',
+            'country',
+            'state',
+            'address',
+            'address2',
+            'city',
+            'zipCode',
+            'bio',
+        ]);
+        const changes = {
+            firstName: { before: null, after: null },
+            lastName: { before: null, after: null },
+            avatar: { before: null, after: null },
+            company: { before: null, after: null },
+            department: { before: null, after: null },
+            country: { before: null, after: null },
+            state: { before: null, after: null },
+            address: { before: null, after: null },
+            address2: { before: null, after: null },
+            city: { before: null, after: null },
+            zipCode: { before: null, after: null },
+            bio: { before: null, after: null },
+        };
+        const filteredData = {};
+        Object.keys(profileData).forEach((key) => {
+            if (allowedFields.includes(key) && profileData[key] !== undefined) {
+                const value = profileData[key];
+                const userKey = key;
+                changes[key] = {
+                    before: user[userKey],
+                    after: value,
+                };
+                if (userKey in user &&
+                    (typeof value === 'string' || value === null)) {
+                    filteredData[userKey] = value;
+                }
+            }
+        });
+        if (Object.keys(filteredData).length === 0) {
+            return user;
+        }
+        Object.assign(user, filteredData);
+        const updatedUser = await this.userRepository.save(user);
+        await this.auditLogService.logProfileUpdate(id, updatedBy, changes, requestInfo?.ip, requestInfo?.userAgent);
+        return updatedUser;
     }
     async delete(id) {
         const user = await this.findById(id);
@@ -161,7 +221,7 @@ let UsersService = UsersService_1 = class UsersService {
         const expiryHours = 24;
         const resetTokenExpiry = new Date();
         resetTokenExpiry.setHours(resetTokenExpiry.getHours() + expiryHours);
-        const otp = (Math.floor(100000 + Math.random() * 900000)).toString();
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
         console.log('[UsersService] Generated password reset token:', token, 'for user:', id, 'expires at:', resetTokenExpiry);
         await this.userRepository.update(id, {
@@ -184,7 +244,7 @@ let UsersService = UsersService_1 = class UsersService {
         });
         return token;
     }
-    async validateOtp(user, otp) {
+    validateOtp(user, otp) {
         if (!user.otp || !user.otpExpiry)
             return false;
         if (user.otp !== otp)
@@ -194,7 +254,7 @@ let UsersService = UsersService_1 = class UsersService {
         return true;
     }
     async resetPassword(token, newPassword, otp) {
-        this.auditLogService.log('password_reset_attempt', { token });
+        void this.auditLogService.log('password_reset_attempt', { token });
         console.log('[UsersService] Attempting password reset with token:', token);
         const user = await this.userRepository.findOne({
             where: { resetToken: token },
@@ -202,26 +262,38 @@ let UsersService = UsersService_1 = class UsersService {
         console.log('[UsersService] User lookup result for reset token:', user);
         if (!user) {
             console.warn('[UsersService] Invalid reset token:', token);
-            this.auditLogService.log('password_reset_failure', { token });
+            void this.auditLogService.log('password_reset_failure', { token });
             throw new common_1.BadRequestException('Invalid reset token');
         }
         if (user.resetTokenExpiry && user.resetTokenExpiry < new Date()) {
             console.warn('[UsersService] Reset token expired:', user.resetTokenExpiry, 'now:', new Date());
-            this.auditLogService.log('password_reset_failure', { userId: user.id, reason: 'expired' });
+            void this.auditLogService.log('password_reset_failure', {
+                userId: user.id,
+                reason: 'expired',
+            });
             throw new common_1.BadRequestException('Reset token has expired');
         }
         if (user.otp && user.otpExpiry) {
-            if (!otp || !(await this.validateOtp(user, otp))) {
-                this.auditLogService.log('password_reset_failure', { userId: user.id, reason: 'invalid_otp' });
+            if (!otp || !this.validateOtp(user, otp)) {
+                await this.auditLogService.log('password_reset_failure', {
+                    userId: user.id,
+                    reason: 'invalid_otp',
+                });
                 throw new common_1.BadRequestException('Invalid or expired OTP');
             }
         }
         if (!user.active) {
-            this.auditLogService.log('password_reset_failure', { userId: user.id, reason: 'inactive' });
+            void this.auditLogService.log('password_reset_failure', {
+                userId: user.id,
+                reason: 'inactive',
+            });
             throw new common_1.BadRequestException('Account is deactivated');
         }
         if (user.lockedUntil && user.lockedUntil > new Date()) {
-            this.auditLogService.log('password_reset_failure', { userId: user.id, reason: 'locked' });
+            void this.auditLogService.log('password_reset_failure', {
+                userId: user.id,
+                reason: 'locked',
+            });
             throw new common_1.BadRequestException('Account is locked');
         }
         user.password = await this.hashPassword(newPassword);
@@ -231,7 +303,9 @@ let UsersService = UsersService_1 = class UsersService {
         user.lockedUntil = null;
         user.otp = null;
         user.otpExpiry = null;
-        this.auditLogService.log('password_reset_success', { userId: user.id });
+        void this.auditLogService.log('password_reset_success', {
+            userId: user.id,
+        });
         return this.userRepository.save(user);
     }
     async hashPassword(password) {
@@ -243,8 +317,8 @@ let UsersService = UsersService_1 = class UsersService {
             where: [
                 { email: (0, typeorm_2.Like)(`%${query}%`) },
                 { firstName: (0, typeorm_2.Like)(`%${query}%`) },
-                { lastName: (0, typeorm_2.Like)(`%${query}%`) }
-            ]
+                { lastName: (0, typeorm_2.Like)(`%${query}%`) },
+            ],
         });
     }
     async remove(id) {
@@ -255,7 +329,7 @@ let UsersService = UsersService_1 = class UsersService {
     }
     async verifyPhone(token) {
         const user = await this.userRepository.findOne({
-            where: { phoneVerificationToken: token }
+            where: { phoneVerificationToken: token },
         });
         if (!user) {
             throw new common_1.NotFoundException('Invalid verification token');
@@ -275,23 +349,33 @@ let UsersService = UsersService_1 = class UsersService {
         await this.sessionService.revokeSession({ sessionId, revokedBy: userId });
     }
     async completeAccountRecovery(token, newPassword) {
-        this.auditLogService.log('account_recovery_attempt', { token });
+        void this.auditLogService.log('account_recovery_attempt', { token });
         console.log('[UsersService] Attempting account recovery with token:', token);
         const user = await this.userRepository.findOne({
             where: { accountRecoveryToken: token },
         });
         if (!user) {
             console.warn('[UsersService] Invalid account recovery token:', token);
-            this.auditLogService.log('account_recovery_failure', { token, reason: 'invalid_token' });
+            void this.auditLogService.log('account_recovery_failure', {
+                token,
+                reason: 'invalid_token',
+            });
             throw new common_1.BadRequestException('Invalid recovery token');
         }
-        if (user.accountRecoveryTokenExpiry && user.accountRecoveryTokenExpiry < new Date()) {
+        if (user.accountRecoveryTokenExpiry &&
+            user.accountRecoveryTokenExpiry < new Date()) {
             console.warn('[UsersService] Account recovery token expired:', user.accountRecoveryTokenExpiry, 'now:', new Date());
-            this.auditLogService.log('account_recovery_failure', { userId: user.id, reason: 'expired' });
+            void this.auditLogService.log('account_recovery_failure', {
+                userId: user.id,
+                reason: 'expired',
+            });
             throw new common_1.BadRequestException('Recovery token has expired');
         }
         if (!user.active) {
-            this.auditLogService.log('account_recovery_failure', { userId: user.id, reason: 'inactive' });
+            void this.auditLogService.log('account_recovery_failure', {
+                userId: user.id,
+                reason: 'inactive',
+            });
             throw new common_1.BadRequestException('Account is deactivated');
         }
         user.password = await this.hashPassword(newPassword);
@@ -299,7 +383,9 @@ let UsersService = UsersService_1 = class UsersService {
         user.accountRecoveryTokenExpiry = null;
         user.failedLoginAttempts = 0;
         user.lockedUntil = null;
-        this.auditLogService.log('account_recovery_success', { userId: user.id });
+        void this.auditLogService.log('account_recovery_success', {
+            userId: user.id,
+        });
         return this.userRepository.save(user);
     }
 };
@@ -310,6 +396,7 @@ exports.UsersService = UsersService = UsersService_1 = __decorate([
     __metadata("design:paramtypes", [typeorm_2.Repository,
         config_1.ConfigService,
         session_service_1.SessionService,
-        audit_log_service_1.AuditLogService])
+        audit_log_service_1.AuditLogService,
+        settings_service_1.SettingsService])
 ], UsersService);
 //# sourceMappingURL=users.service.js.map

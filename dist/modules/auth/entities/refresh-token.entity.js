@@ -35,12 +35,18 @@ __decorate([
     __metadata("design:type", String)
 ], RefreshToken.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => user_entity_1.User, (user) => user.refreshTokens, { onDelete: 'CASCADE', nullable: false }),
+    (0, typeorm_1.ManyToOne)(() => user_entity_1.User, (user) => user.refreshTokens, {
+        onDelete: 'CASCADE',
+        nullable: false,
+    }),
     (0, typeorm_1.Index)(),
     __metadata("design:type", user_entity_1.User)
 ], RefreshToken.prototype, "user", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => session_entity_1.Session, (session) => session.refreshTokens, { onDelete: 'SET NULL', nullable: true }),
+    (0, typeorm_1.ManyToOne)(() => session_entity_1.Session, (session) => session.refreshTokens, {
+        onDelete: 'SET NULL',
+        nullable: true,
+    }),
     __metadata("design:type", session_entity_1.Session)
 ], RefreshToken.prototype, "session", void 0);
 __decorate([

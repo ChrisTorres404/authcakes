@@ -26,4 +26,4 @@ export class CreateApiKeysTable1685601000000 implements MigrationInterface {
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query('DROP TABLE IF EXISTS "api_keys"');
   }
-} 
+}

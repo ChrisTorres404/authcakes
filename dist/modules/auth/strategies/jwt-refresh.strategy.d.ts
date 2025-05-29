@@ -14,14 +14,6 @@ export declare class JwtRefreshStrategy extends JwtRefreshStrategy_base {
     private readonly usersService;
     private readonly sessionService;
     constructor(configService: ConfigService, tokenService: TokenService, usersService: UsersService, sessionService: SessionService);
-    validate(request: Request, payload: JwtPayload): Promise<{
-        id: string;
-        email: string;
-        role: string;
-        tenantId: string | null;
-        tenantAccess: string[];
-        sessionId: string;
-        type: "refresh";
-    }>;
+    validate(request: Request, payload: JwtPayload): Promise<JwtPayload>;
 }
 export {};

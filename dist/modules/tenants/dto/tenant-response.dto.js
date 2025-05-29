@@ -43,7 +43,11 @@ __decorate([
     __metadata("design:type", Boolean)
 ], TenantResponseDto.prototype, "active", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ type: 'object', example: { timezone: 'UTC' }, additionalProperties: true }),
+    (0, swagger_1.ApiPropertyOptional)({
+        type: 'object',
+        example: { timezone: 'UTC' },
+        additionalProperties: true,
+    }),
     __metadata("design:type", Object)
 ], TenantResponseDto.prototype, "settings", void 0);
 __decorate([

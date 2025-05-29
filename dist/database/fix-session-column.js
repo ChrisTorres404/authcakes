@@ -10,7 +10,7 @@ async function fixSessionColumn() {
         user: 'authcakes_user',
         password: process.env.PG_PASSWORD || process.env.DB_PASSWORD,
         database: 'authcakes',
-        ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined
+        ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
     });
     try {
         console.log('Connecting to database...');

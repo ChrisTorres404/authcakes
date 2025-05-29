@@ -1,6 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreateWebauthnCredentialsTable1685600700000 implements MigrationInterface {
+export class CreateWebauthnCredentialsTable1685600700000
+  implements MigrationInterface
+{
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS "webauthn_credentials" (
@@ -23,4 +25,4 @@ export class CreateWebauthnCredentialsTable1685600700000 implements MigrationInt
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query('DROP TABLE IF EXISTS "webauthn_credentials"');
   }
-} 
+}

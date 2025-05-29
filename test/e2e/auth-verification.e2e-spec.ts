@@ -45,7 +45,9 @@ describe('Auth Verification E2E', () => {
     dataSource = app.get(DataSource);
     authService = moduleFixture.get<AuthService>(AuthService);
     usersService = moduleFixture.get<UsersService>(UsersService);
-    userRepository = moduleFixture.get<Repository<User>>(getRepositoryToken(User));
+    userRepository = moduleFixture.get<Repository<User>>(
+      getRepositoryToken(User),
+    );
   }, 30000);
 
   afterAll(async () => {
@@ -57,30 +59,30 @@ describe('Auth Verification E2E', () => {
       // Register user
       const email = uniqueEmail('verifyflow');
       const password = 'Test1234!';
-      
+
       await request(app.getHttpServer())
         .post('/api/auth/register')
-        .send({ 
-          email, 
-          password, 
-          firstName: 'Test', 
-          lastName: 'User', 
-          organizationName: 'TestOrg' 
+        .send({
+          email,
+          password,
+          firstName: 'Test',
+          lastName: 'User',
+          organizationName: 'TestOrg',
         })
         .expect(200);
-      
+
       // Fetch the verification token from the database
       const user = await userRepository.findOneByOrFail({ email });
       const verifyToken = user.emailVerificationToken;
-      
+
       expect(verifyToken).toBeTruthy();
-      
+
       // Verify email
       await request(app.getHttpServer())
         .post('/api/users/verify-email')
         .send({ token: verifyToken })
         .expect(200);
-      
+
       // Verify user's email is now verified
       const verifiedUser = await userRepository.findOneByOrFail({ email });
       expect(verifiedUser.emailVerified).toBe(true);
@@ -92,35 +94,37 @@ describe('Auth Verification E2E', () => {
       // Register user
       const email = uniqueEmail('phoneflow');
       const password = 'Test1234!';
-      
+
       await request(app.getHttpServer())
         .post('/api/auth/register')
-        .send({ 
-          email, 
-          password, 
-          phoneNumber: '+1234567890', 
-          firstName: 'Test', 
-          lastName: 'User', 
-          organizationName: 'TestOrg' 
+        .send({
+          email,
+          password,
+          phoneNumber: '+1234567890',
+          firstName: 'Test',
+          lastName: 'User',
+          organizationName: 'TestOrg',
         })
         .expect(200);
-      
+
       // Fetch the phone verification token from the database
       const user = await userRepository.findOneByOrFail({ email });
       const phoneToken = user.phoneVerificationToken;
-      
+
       // If no phone verification token was generated, skip the test
       if (!phoneToken) {
-        console.warn('Skipping phone verification test: no phone verification token generated');
+        console.warn(
+          'Skipping phone verification test: no phone verification token generated',
+        );
         return;
       }
-      
+
       // Verify phone
       await request(app.getHttpServer())
         .post('/api/users/verify-phone')
         .send({ token: phoneToken })
         .expect(200);
-      
+
       // Verify user's phone is now verified
       const verifiedUser = await userRepository.findOneByOrFail({ email });
       expect(verifiedUser.phoneVerified).toBe(true);

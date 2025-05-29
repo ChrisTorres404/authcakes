@@ -20,11 +20,7 @@ exports.TenantsModule = TenantsModule;
 exports.TenantsModule = TenantsModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forFeature([
-                tenant_entity_1.Tenant,
-                tenant_membership_entity_1.TenantMembership,
-                tenant_invitation_entity_1.TenantInvitation,
-            ]),
+            typeorm_1.TypeOrmModule.forFeature([tenant_entity_1.Tenant, tenant_membership_entity_1.TenantMembership, tenant_invitation_entity_1.TenantInvitation]),
         ],
         controllers: [tenants_controller_1.TenantsController],
         providers: [tenants_service_1.TenantsService],

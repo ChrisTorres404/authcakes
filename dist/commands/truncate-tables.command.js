@@ -18,6 +18,7 @@ const nest_commander_1 = require("nest-commander");
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
+const database_types_1 = require("./types/database.types");
 let TruncateTablesCommand = TruncateTablesCommand_1 = class TruncateTablesCommand extends nest_commander_1.CommandRunner {
     dataSource;
     logger = new common_1.Logger(TruncateTablesCommand_1.name);
@@ -54,7 +55,7 @@ let TruncateTablesCommand = TruncateTablesCommand_1 = class TruncateTablesComman
                 this.logger.log(`Preparing to truncate all seedable tables: ${tablesToTruncate.join(', ')}`);
             }
             else if (options.tables) {
-                tablesToTruncate = options.tables.split(',').map(t => t.trim());
+                tablesToTruncate = options.tables.split(',').map((t) => t.trim());
                 this.logger.log(`Preparing to truncate tables: ${tablesToTruncate.join(', ')}`);
             }
             else {
@@ -63,7 +64,7 @@ let TruncateTablesCommand = TruncateTablesCommand_1 = class TruncateTablesComman
                 process.exit(1);
             }
             const existingTables = await this.getExistingTables();
-            const nonExistentTables = tablesToTruncate.filter(table => !existingTables.includes(table));
+            const nonExistentTables = tablesToTruncate.filter((table) => !existingTables.includes(table));
             if (nonExistentTables.length > 0) {
                 this.logger.error(`The following tables do not exist: ${nonExistentTables.join(', ')}`);
                 process.exit(1);
@@ -77,7 +78,10 @@ let TruncateTablesCommand = TruncateTablesCommand_1 = class TruncateTablesComman
             process.exit(0);
         }
         catch (error) {
-            this.logger.error(`Error truncating tables: ${error.message}`, error.stack);
+            const dbError = (0, database_types_1.isDatabaseError)(error)
+                ? error
+                : { message: 'Unknown error during truncation' };
+            this.logger.error(`Error truncating tables: ${dbError.message}`, dbError.stack);
             process.exit(1);
         }
     }
@@ -85,18 +89,21 @@ let TruncateTablesCommand = TruncateTablesCommand_1 = class TruncateTablesComman
         const query = this.dataSource.createQueryRunner();
         const tables = await query.getTables();
         await query.release();
-        return tables.map(table => table.name);
+        return tables.map((table) => table.name);
     }
     async truncateTables(tables) {
         const queryRunner = this.dataSource.createQueryRunner();
         try {
             await queryRunner.connect();
             await queryRunner.startTransaction();
-            if (this.dataSource.options.type === 'postgres') {
-                await queryRunner.query('SET CONSTRAINTS ALL DEFERRED');
-            }
-            else if (this.dataSource.options.type === 'mysql') {
-                await queryRunner.query('SET FOREIGN_KEY_CHECKS = 0');
+            const dbType = this.dataSource.options.type;
+            if ((0, database_types_1.isSupportedDatabase)(dbType)) {
+                if (dbType === 'postgres') {
+                    await queryRunner.query('SET CONSTRAINTS ALL DEFERRED');
+                }
+                else if (dbType === 'mysql') {
+                    await queryRunner.query('SET FOREIGN_KEY_CHECKS = 0');
+                }
             }
             for (const table of tables) {
                 this.logger.log(`Truncating table: ${table}`);
@@ -113,7 +120,12 @@ let TruncateTablesCommand = TruncateTablesCommand_1 = class TruncateTablesComman
         }
         catch (error) {
             await queryRunner.rollbackTransaction();
-            throw error;
+            if (error instanceof Error) {
+                throw new Error(error.message);
+            }
+            else {
+                throw new Error('Unknown error during table truncation');
+            }
         }
         finally {
             await queryRunner.release();

@@ -15,11 +15,17 @@ export async function seedLogs(
   const count = await logRepository.count();
   if (count === 0 || options.force) {
     if (count > 0 && options.force) {
-      logger.log('Force option enabled - seeding logs even though logs already exist');
+      logger.log(
+        'Force option enabled - seeding logs even though logs already exist',
+      );
     }
     logger.log('Seeding logs...');
-    const adminUser = await userRepository.findOne({ where: { email: 'admin@example.com' } });
-    const demoTenant = await tenantRepository.findOne({ where: { slug: 'demo-org' } });
+    const adminUser = await userRepository.findOne({
+      where: { email: 'admin@example.com' },
+    });
+    const demoTenant = await tenantRepository.findOne({
+      where: { slug: 'demo-org' },
+    });
     if (adminUser && demoTenant) {
       const log = logRepository.create({
         userId: adminUser.id,

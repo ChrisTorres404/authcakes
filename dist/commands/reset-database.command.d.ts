@@ -1,7 +1,7 @@
 import { CommandRunner } from 'nest-commander';
 import { DataSource } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
-interface ResetDatabaseCommandOptions {
+export interface ResetDatabaseCommandOptions {
     confirm?: boolean;
     migrate?: boolean;
     seed?: boolean;
@@ -16,4 +16,3 @@ export declare class ResetDatabaseCommand extends CommandRunner {
     parseSeedOption(val: boolean): boolean;
     run(passedParams: string[], options: ResetDatabaseCommandOptions): Promise<void>;
 }
-export {};

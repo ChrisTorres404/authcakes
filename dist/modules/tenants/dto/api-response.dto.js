@@ -54,7 +54,10 @@ __decorate([
     __metadata("design:type", String)
 ], ApiErrorResponseDto.prototype, "message", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: 'TENANT_NOT_FOUND', description: 'Application-specific error code' }),
+    (0, swagger_1.ApiProperty)({
+        example: 'TENANT_NOT_FOUND',
+        description: 'Application-specific error code',
+    }),
     __metadata("design:type", String)
 ], ApiErrorResponseDto.prototype, "errorCode", void 0);
 //# sourceMappingURL=api-response.dto.js.map

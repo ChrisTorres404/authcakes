@@ -40,12 +40,21 @@ let JwtRefreshStrategy = class JwtRefreshStrategy extends (0, passport_1.Passpor
         if (payload.type !== 'refresh') {
             throw new common_1.UnauthorizedException('Not a refresh token');
         }
-        const refreshToken = request.cookies.refresh_token;
+        const refreshToken = (request.cookies?.refresh_token ?? '');
+        if (typeof refreshToken !== 'string' || !refreshToken) {
+            throw new common_1.UnauthorizedException('Refresh token missing or invalid');
+        }
         const isValid = await this.tokenService.isRefreshTokenValid(refreshToken);
         if (!isValid) {
             throw new common_1.UnauthorizedException('Invalid or revoked refresh token');
         }
-        const user = await this.usersService.findById(payload.sub).catch(() => null);
+        let user = null;
+        try {
+            user = await this.usersService.findById(payload.sub);
+        }
+        catch {
+            user = null;
+        }
         if (!user) {
             throw new common_1.UnauthorizedException('User not found');
         }
@@ -53,17 +62,19 @@ let JwtRefreshStrategy = class JwtRefreshStrategy extends (0, passport_1.Passpor
         if (!sessionValid) {
             throw new common_1.UnauthorizedException('Session is invalid or expired');
         }
-        request['sessionId'] = payload.sessionId;
-        request['userId'] = payload.sub;
-        return {
-            id: user.id,
+        const typedRequest = request;
+        typedRequest.sessionId = payload.sessionId;
+        typedRequest.userId = payload.sub;
+        const result = {
+            sub: user.id,
             email: user.email,
             role: user.role,
             tenantId: payload.tenantId,
             tenantAccess: payload.tenantAccess,
             sessionId: payload.sessionId,
-            type: payload.type,
+            type: 'refresh',
         };
+        return result;
     }
 };
 exports.JwtRefreshStrategy = JwtRefreshStrategy;

@@ -14,6 +14,10 @@ const common_1 = require("@nestjs/common");
 const app_service_1 = require("./app.service");
 const throttler_1 = require("@nestjs/throttler");
 const public_decorator_1 = require("./common/decorators/public.decorator");
+const swagger_generic_response_decorator_1 = require("./common/decorators/swagger-generic-response.decorator");
+const api_info_dto_1 = require("./dto/api-info.dto");
+const health_check_dto_1 = require("./dto/health-check.dto");
+const api_response_dto_1 = require("./modules/tenants/dto/api-response.dto");
 let AppController = class AppController {
     appService;
     constructor(appService) {
@@ -24,8 +28,22 @@ let AppController = class AppController {
     }
     healthCheck() {
         return {
-            status: 'ok',
-            timestamp: new Date().toISOString(),
+            success: true,
+            data: {
+                status: 'ok',
+                timestamp: new Date().toISOString(),
+            },
+        };
+    }
+    getApiInfo() {
+        return {
+            success: true,
+            data: {
+                name: 'AuthCakes API',
+                version: '1.0.0',
+                status: 'ok',
+                timestamp: new Date().toISOString(),
+            },
         };
     }
 };
@@ -40,10 +58,20 @@ __decorate([
     (0, public_decorator_1.Public)(),
     (0, throttler_1.SkipThrottle)(),
     (0, common_1.Get)('health'),
+    (0, swagger_generic_response_decorator_1.ApiResponseWithData)(health_check_dto_1.HealthCheckDto),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", api_response_dto_1.ApiResponseDto)
 ], AppController.prototype, "healthCheck", null);
+__decorate([
+    (0, public_decorator_1.Public)(),
+    (0, throttler_1.SkipThrottle)(),
+    (0, common_1.Get)('api'),
+    (0, swagger_generic_response_decorator_1.ApiResponseWithData)(api_info_dto_1.ApiInfoDto),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", api_response_dto_1.ApiResponseDto)
+], AppController.prototype, "getApiInfo", null);
 exports.AppController = AppController = __decorate([
     (0, common_1.Controller)(),
     __metadata("design:paramtypes", [app_service_1.AppService])

@@ -24,12 +24,18 @@ class AddUserToTenantDto {
 }
 exports.AddUserToTenantDto = AddUserToTenantDto;
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: 'uuid-of-user', description: 'User ID to add to tenant' }),
+    (0, swagger_1.ApiProperty)({
+        example: 'uuid-of-user',
+        description: 'User ID to add to tenant',
+    }),
     (0, class_validator_1.IsUUID)(),
     __metadata("design:type", String)
 ], AddUserToTenantDto.prototype, "userId", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ enum: TenantRole, description: 'Role for the user in the tenant' }),
+    (0, swagger_1.ApiProperty)({
+        enum: TenantRole,
+        description: 'Role for the user in the tenant',
+    }),
     (0, class_validator_1.IsEnum)(TenantRole),
     __metadata("design:type", String)
 ], AddUserToTenantDto.prototype, "role", void 0);

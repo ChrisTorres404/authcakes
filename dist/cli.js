@@ -16,12 +16,17 @@ async function bootstrap() {
         common_1.Logger.log('CommandFactory.run() completed successfully');
     }
     catch (error) {
-        common_1.Logger.error(`CLI Error: ${error.message}`, error.stack);
+        if (error instanceof Error) {
+            common_1.Logger.error(`CLI Error: ${error.message}`, error.stack);
+        }
+        else {
+            common_1.Logger.error('CLI Error: Unknown error', String(error));
+        }
         console.error('Detailed error object:', error);
         process.exit(1);
     }
 }
-bootstrap().catch(err => {
+bootstrap().catch((err) => {
     console.error('Unhandled bootstrap error:', err);
     process.exit(1);
 });

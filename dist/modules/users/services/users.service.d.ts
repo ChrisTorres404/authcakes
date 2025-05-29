@@ -1,22 +1,30 @@
-import { Repository } from 'typeorm';
+interface RequestInfo {
+    ip?: string;
+    userAgent?: string;
+}
+import { Repository, FindOneOptions } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { User } from '../entities/user.entity';
 import { SessionService } from '../../auth/services/session.service';
 import { AuditLogService } from '../../auth/services/audit-log.service';
+import { SettingsService } from '../../settings/services/settings.service';
+import { UpdateUserProfileDto } from '../dto/update-user-profile.dto';
 export declare class UsersService {
     private readonly userRepository;
     private readonly configService;
     private readonly sessionService;
     private readonly auditLogService;
+    private readonly settingsService;
     private readonly logger;
-    constructor(userRepository: Repository<User>, configService: ConfigService, sessionService: SessionService, auditLogService: AuditLogService);
+    constructor(userRepository: Repository<User>, configService: ConfigService, sessionService: SessionService, auditLogService: AuditLogService, settingsService: SettingsService);
     findAll(): Promise<User[]>;
-    findById(id: string, options?: any): Promise<User>;
+    findById(id: string, options?: FindOneOptions<User>): Promise<User>;
     findByEmail(email: string): Promise<User | null>;
     findByPasswordResetToken(token: string): Promise<User | null>;
     findByRecoveryToken(token: string): Promise<User | null>;
     create(userData: Partial<User>): Promise<User>;
     update(id: string, userData: Partial<User>): Promise<User>;
+    updateProfile(id: string, profileData: UpdateUserProfileDto, updatedBy: string, requestInfo?: RequestInfo): Promise<User>;
     delete(id: string): Promise<void>;
     validatePassword(userId: string, password: string): Promise<boolean>;
     changePassword(userId: string, currentPassword: string, newPassword: string): Promise<boolean>;
@@ -27,13 +35,14 @@ export declare class UsersService {
     verifyEmail(token: string): Promise<User>;
     generatePasswordResetToken(id: string): Promise<string>;
     generateAccountRecoveryToken(id: string): Promise<string>;
-    validateOtp(user: User, otp: string): Promise<boolean>;
+    validateOtp(user: User, otp: string): boolean;
     resetPassword(token: string, newPassword: string, otp?: string): Promise<User>;
     private hashPassword;
     search(query: string): Promise<User[]>;
     remove(id: string): Promise<void>;
     verifyPhone(token: string): Promise<User>;
-    listActiveSessions(userId: string): Promise<import("../../auth/entities/session.entity").Session[]>;
+    listActiveSessions(userId: string): Promise<unknown>;
     revokeSession(userId: string, sessionId: string): Promise<void>;
     completeAccountRecovery(token: string, newPassword: string): Promise<User>;
 }
+export {};

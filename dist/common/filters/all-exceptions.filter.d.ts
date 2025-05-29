@@ -5,4 +5,5 @@ export declare class AllExceptionsFilter implements ExceptionFilter {
     private readonly logger;
     constructor(httpAdapterHost: HttpAdapterHost);
     catch(exception: unknown, host: ArgumentsHost): void;
+    private isValidationError;
 }

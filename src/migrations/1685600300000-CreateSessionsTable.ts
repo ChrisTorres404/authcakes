@@ -30,4 +30,4 @@ export class CreateSessionsTable1685600300000 implements MigrationInterface {
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query('DROP TABLE IF EXISTS "sessions"');
   }
-} 
+}

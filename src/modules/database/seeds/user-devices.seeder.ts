@@ -13,10 +13,14 @@ export async function seedUserDevices(
   const count = await userDeviceRepository.count();
   if (count === 0 || options.force) {
     if (count > 0 && options.force) {
-      logger.log('Force option enabled - seeding user devices even though devices already exist');
+      logger.log(
+        'Force option enabled - seeding user devices even though devices already exist',
+      );
     }
     logger.log('Seeding user devices...');
-    const adminUser = await userRepository.findOne({ where: { email: 'admin@example.com' } });
+    const adminUser = await userRepository.findOne({
+      where: { email: 'admin@example.com' },
+    });
     if (adminUser) {
       const device = userDeviceRepository.create({
         userId: adminUser.id,

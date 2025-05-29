@@ -23,7 +23,8 @@ let NotificationService = NotificationService_1 = class NotificationService {
     sendGenericRecoveryAttemptEmail(email) {
         this.logger.log(`Generic recovery attempt notification sent to: ${email}`);
     }
-    sendRecoveryNotification(email, token, accountExists = false) {
+    sendRecoveryNotification(options) {
+        const { email, token, accountExists = false } = options;
         if (accountExists && token) {
             this.sendAccountRecoveryEmail(email, token);
         }

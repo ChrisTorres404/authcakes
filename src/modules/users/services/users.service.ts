@@ -1,13 +1,50 @@
+/** Request information for audit logging */
+interface RequestInfo {
+  ip?: string;
+  userAgent?: string;
+}
+
+/** Represents a change in a user's profile field */
+interface ProfileChange {
+  before: string | null;
+  after: string | null;
+}
+
+/** Type for updatable profile fields */
+type ProfileFields = Pick<
+  User,
+  | 'firstName'
+  | 'lastName'
+  | 'avatar'
+  | 'company'
+  | 'department'
+  | 'country'
+  | 'state'
+  | 'address'
+  | 'address2'
+  | 'city'
+  | 'zipCode'
+  | 'bio'
+>;
+
 // src/modules/users/services/users.service.ts
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
+import { Repository, Like, FindOneOptions } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { User } from '../entities/user.entity';
 import { SessionService } from '../../auth/services/session.service';
 import { AuditLogService } from '../../auth/services/audit-log.service';
+import { SettingsService } from '../../settings/services/settings.service';
+import { UpdateUserProfileDto } from '../dto/update-user-profile.dto';
 
 @Injectable()
 export class UsersService {
@@ -19,13 +56,20 @@ export class UsersService {
     private readonly configService: ConfigService,
     private readonly sessionService: SessionService,
     private readonly auditLogService: AuditLogService,
+    private readonly settingsService: SettingsService,
   ) {}
 
   async findAll(): Promise<User[]> {
     return this.userRepository.find();
   }
 
-  async findById(id: string, options?: any): Promise<User> {
+  /**
+   * Find a user by their ID with optional relations and select options
+   * @param id The user's unique identifier
+   * @param options TypeORM find options for including relations or selecting specific fields
+   * @returns The found user or throws NotFoundException
+   */
+  async findById(id: string, options?: FindOneOptions<User>): Promise<User> {
     const user = await this.userRepository.findOne({
       where: { id },
       ...options,
@@ -105,6 +149,115 @@ export class UsersService {
     return this.userRepository.save(user);
   }
 
+  /**
+   * Updates a user's profile based on system settings for allowed fields
+   * @param id User ID
+   * @param profileData Profile update data
+   * @param updatedBy ID of the user making the update (for audit)
+   * @param requestInfo Additional request info for audit logs
+   * @returns Updated user
+   */
+  async updateProfile(
+    id: string,
+    profileData: UpdateUserProfileDto,
+    updatedBy: string,
+    requestInfo?: RequestInfo,
+  ): Promise<User> {
+    // Get user
+    const user = await this.findById(id);
+
+    // Get allowed fields from settings
+    const allowProfileUpdate = await this.settingsService.getValue<boolean>(
+      'ALLOW_USER_PROFILE_UPDATE',
+      true,
+    );
+
+    if (!allowProfileUpdate) {
+      throw new ForbiddenException('Profile updates are not allowed');
+    }
+
+    const allowedFields = await this.settingsService.getValue<
+      Array<keyof UpdateUserProfileDto>
+    >('PROFILE_UPDATABLE_FIELDS', [
+      'firstName',
+      'lastName',
+      'avatar',
+      'company',
+      'department',
+      'country',
+      'state',
+      'address',
+      'address2',
+      'city',
+      'zipCode',
+      'bio',
+    ]);
+
+    // Initialize changes record with all required properties
+    const changes: Record<keyof UpdateUserProfileDto, ProfileChange> = {
+      firstName: { before: null, after: null },
+      lastName: { before: null, after: null },
+      avatar: { before: null, after: null },
+      company: { before: null, after: null },
+      department: { before: null, after: null },
+      country: { before: null, after: null },
+      state: { before: null, after: null },
+      address: { before: null, after: null },
+      address2: { before: null, after: null },
+      city: { before: null, after: null },
+      zipCode: { before: null, after: null },
+      bio: { before: null, after: null },
+    };
+
+    // Filter input to only include allowed fields
+    const filteredData: Partial<User> = {};
+
+    // Type-safe iteration over profile data
+    (Object.keys(profileData) as Array<keyof UpdateUserProfileDto>).forEach(
+      (key) => {
+        if (allowedFields.includes(key) && profileData[key] !== undefined) {
+          const value = profileData[key];
+          const userKey = key as keyof ProfileFields;
+
+          // Record change for audit log
+          changes[key] = {
+            before: user[userKey] as string | null,
+            after: value as string | null,
+          };
+
+          // Only update if the key exists in User entity and value is string or null
+          if (
+            userKey in user &&
+            (typeof value === 'string' || value === null)
+          ) {
+            // Safe assignment as we've verified the key exists in User
+            filteredData[userKey] = value;
+          }
+        }
+      },
+    );
+
+    // If no valid fields to update, return user without changes
+    if (Object.keys(filteredData).length === 0) {
+      return user;
+    }
+
+    // Update user with filtered data
+    Object.assign(user, filteredData);
+    const updatedUser = await this.userRepository.save(user);
+
+    // Log the profile update
+    await this.auditLogService.logProfileUpdate(
+      id,
+      updatedBy,
+      changes,
+      requestInfo?.ip,
+      requestInfo?.userAgent,
+    );
+
+    return updatedUser;
+  }
+
   async delete(id: string): Promise<void> {
     const user = await this.findById(id);
     await this.userRepository.remove(user);
@@ -115,19 +268,23 @@ export class UsersService {
     return bcrypt.compare(password, user.password);
   }
 
-  async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<boolean> {
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<boolean> {
     const user = await this.findById(userId);
-    
+
     // Verify current password
     const isValid = await bcrypt.compare(currentPassword, user.password);
     if (!isValid) {
       throw new BadRequestException('Current password is incorrect');
     }
-    
+
     // Update password
     user.password = await this.hashPassword(newPassword);
     await this.userRepository.save(user);
-    
+
     return true;
   }
 
@@ -136,9 +293,9 @@ export class UsersService {
     const query = userIdOrEmail.includes('@')
       ? { email: userIdOrEmail }
       : { id: userIdOrEmail };
-    
+
     const user = await this.userRepository.findOne({ where: query });
-    
+
     if (!user) {
       return; // Don't expose user existence
     }
@@ -147,14 +304,22 @@ export class UsersService {
     user.failedLoginAttempts += 1;
 
     // Lock account if too many attempts
-    const maxAttempts = this.configService.get<number>('auth.security.maxFailedAttempts', 5);
+    const maxAttempts = this.configService.get<number>(
+      'auth.security.maxFailedAttempts',
+      5,
+    );
     if (user.failedLoginAttempts >= maxAttempts) {
-      const lockDuration = this.configService.get<number>('auth.security.lockDurationMinutes', 30);
+      const lockDuration = this.configService.get<number>(
+        'auth.security.lockDurationMinutes',
+        30,
+      );
       const lockedUntil = new Date();
       lockedUntil.setMinutes(lockedUntil.getMinutes() + lockDuration);
       user.lockedUntil = lockedUntil;
-      
-      this.logger.warn(`Account locked for user ${user.email} due to too many failed login attempts`);
+
+      this.logger.warn(
+        `Account locked for user ${user.email} due to too many failed login attempts`,
+      );
     }
 
     await this.userRepository.save(user);
@@ -175,11 +340,11 @@ export class UsersService {
 
   async generateEmailVerificationToken(id: string): Promise<string> {
     const token = crypto.randomBytes(32).toString('hex');
-    
+
     await this.userRepository.update(id, {
       emailVerificationToken: token,
     });
-    
+
     return token;
   }
 
@@ -187,14 +352,14 @@ export class UsersService {
     const user = await this.userRepository.findOne({
       where: { emailVerificationToken: token },
     });
-    
+
     if (!user) {
       throw new BadRequestException('Invalid verification token');
     }
-    
+
     user.emailVerified = true;
     user.emailVerificationToken = null;
-    
+
     return this.userRepository.save(user);
   }
 
@@ -204,9 +369,16 @@ export class UsersService {
     const resetTokenExpiry = new Date();
     resetTokenExpiry.setHours(resetTokenExpiry.getHours() + expiryHours);
     // Generate 6-digit OTP and expiry (10 minutes)
-    const otp = (Math.floor(100000 + Math.random() * 900000)).toString();
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
-    console.log('[UsersService] Generated password reset token:', token, 'for user:', id, 'expires at:', resetTokenExpiry);
+    console.log(
+      '[UsersService] Generated password reset token:',
+      token,
+      'for user:',
+      id,
+      'expires at:',
+      resetTokenExpiry,
+    );
     await this.userRepository.update(id, {
       resetToken: token,
       resetTokenExpiry,
@@ -220,27 +392,40 @@ export class UsersService {
     const token = crypto.randomBytes(32).toString('hex');
     const expiryHours = 1; // 1 hour expiry for account recovery tokens
     const accountRecoveryTokenExpiry = new Date();
-    accountRecoveryTokenExpiry.setHours(accountRecoveryTokenExpiry.getHours() + expiryHours);
-    
-    console.log('[UsersService] Generated account recovery token:', token, 'for user:', id, 'expires at:', accountRecoveryTokenExpiry);
-    
+    accountRecoveryTokenExpiry.setHours(
+      accountRecoveryTokenExpiry.getHours() + expiryHours,
+    );
+
+    console.log(
+      '[UsersService] Generated account recovery token:',
+      token,
+      'for user:',
+      id,
+      'expires at:',
+      accountRecoveryTokenExpiry,
+    );
+
     await this.userRepository.update(id, {
       accountRecoveryToken: token,
       accountRecoveryTokenExpiry,
     });
-    
+
     return token;
   }
 
-  async validateOtp(user: User, otp: string): Promise<boolean> {
+  validateOtp(user: User, otp: string): boolean {
     if (!user.otp || !user.otpExpiry) return false;
     if (user.otp !== otp) return false;
     if (user.otpExpiry < new Date()) return false;
     return true;
   }
 
-  async resetPassword(token: string, newPassword: string, otp?: string): Promise<User> {
-    this.auditLogService.log('password_reset_attempt', { token });
+  async resetPassword(
+    token: string,
+    newPassword: string,
+    otp?: string,
+  ): Promise<User> {
+    void this.auditLogService.log('password_reset_attempt', { token });
     console.log('[UsersService] Attempting password reset with token:', token);
     const user = await this.userRepository.findOne({
       where: { resetToken: token },
@@ -248,27 +433,44 @@ export class UsersService {
     console.log('[UsersService] User lookup result for reset token:', user);
     if (!user) {
       console.warn('[UsersService] Invalid reset token:', token);
-      this.auditLogService.log('password_reset_failure', { token });
+      void this.auditLogService.log('password_reset_failure', { token });
       throw new BadRequestException('Invalid reset token');
     }
     if (user.resetTokenExpiry && user.resetTokenExpiry < new Date()) {
-      console.warn('[UsersService] Reset token expired:', user.resetTokenExpiry, 'now:', new Date());
-      this.auditLogService.log('password_reset_failure', { userId: user.id, reason: 'expired' });
+      console.warn(
+        '[UsersService] Reset token expired:',
+        user.resetTokenExpiry,
+        'now:',
+        new Date(),
+      );
+      void this.auditLogService.log('password_reset_failure', {
+        userId: user.id,
+        reason: 'expired',
+      });
       throw new BadRequestException('Reset token has expired');
     }
     // If OTP is required, validate it
     if (user.otp && user.otpExpiry) {
-      if (!otp || !(await this.validateOtp(user, otp))) {
-        this.auditLogService.log('password_reset_failure', { userId: user.id, reason: 'invalid_otp' });
+      if (!otp || !this.validateOtp(user, otp)) {
+        await this.auditLogService.log('password_reset_failure', {
+          userId: user.id,
+          reason: 'invalid_otp',
+        });
         throw new BadRequestException('Invalid or expired OTP');
       }
     }
     if (!user.active) {
-      this.auditLogService.log('password_reset_failure', { userId: user.id, reason: 'inactive' });
+      void this.auditLogService.log('password_reset_failure', {
+        userId: user.id,
+        reason: 'inactive',
+      });
       throw new BadRequestException('Account is deactivated');
     }
     if (user.lockedUntil && user.lockedUntil > new Date()) {
-      this.auditLogService.log('password_reset_failure', { userId: user.id, reason: 'locked' });
+      void this.auditLogService.log('password_reset_failure', {
+        userId: user.id,
+        reason: 'locked',
+      });
       throw new BadRequestException('Account is locked');
     }
     // Hash new password
@@ -279,12 +481,17 @@ export class UsersService {
     user.lockedUntil = null;
     user.otp = null;
     user.otpExpiry = null;
-    this.auditLogService.log('password_reset_success', { userId: user.id });
+    void this.auditLogService.log('password_reset_success', {
+      userId: user.id,
+    });
     return this.userRepository.save(user);
   }
 
   private async hashPassword(password: string): Promise<string> {
-    const saltRounds = this.configService.get<number>('auth.password.bcryptRounds', 10);
+    const saltRounds = this.configService.get<number>(
+      'auth.password.bcryptRounds',
+      10,
+    );
     return bcrypt.hash(password, saltRounds);
   }
 
@@ -293,8 +500,8 @@ export class UsersService {
       where: [
         { email: Like(`%${query}%`) },
         { firstName: Like(`%${query}%`) },
-        { lastName: Like(`%${query}%`) }
-      ]
+        { lastName: Like(`%${query}%`) },
+      ],
     });
   }
 
@@ -307,7 +514,7 @@ export class UsersService {
 
   async verifyPhone(token: string): Promise<User> {
     const user = await this.userRepository.findOne({
-      where: { phoneVerificationToken: token }
+      where: { phoneVerificationToken: token },
     });
     if (!user) {
       throw new NotFoundException('Invalid verification token');
@@ -317,12 +524,12 @@ export class UsersService {
     return this.userRepository.save(user);
   }
 
-  async listActiveSessions(userId: string) {
+  async listActiveSessions(userId: string): Promise<unknown> {
     // Only return sessions for the user
     return this.sessionService.getActiveSessions(userId);
   }
 
-  async revokeSession(userId: string, sessionId: string) {
+  async revokeSession(userId: string, sessionId: string): Promise<void> {
     // Ensure the session belongs to the user before revoking
     const session = await this.sessionService.getSessionById(sessionId);
     if (!session || session.user.id !== userId) {
@@ -331,40 +538,65 @@ export class UsersService {
     await this.sessionService.revokeSession({ sessionId, revokedBy: userId });
   }
 
-  async completeAccountRecovery(token: string, newPassword: string): Promise<User> {
-    this.auditLogService.log('account_recovery_attempt', { token });
-    console.log('[UsersService] Attempting account recovery with token:', token);
-    
+  async completeAccountRecovery(
+    token: string,
+    newPassword: string,
+  ): Promise<User> {
+    void this.auditLogService.log('account_recovery_attempt', { token });
+    console.log(
+      '[UsersService] Attempting account recovery with token:',
+      token,
+    );
+
     const user = await this.userRepository.findOne({
       where: { accountRecoveryToken: token },
     });
-    
+
     if (!user) {
       console.warn('[UsersService] Invalid account recovery token:', token);
-      this.auditLogService.log('account_recovery_failure', { token, reason: 'invalid_token' });
+      void this.auditLogService.log('account_recovery_failure', {
+        token,
+        reason: 'invalid_token',
+      });
       throw new BadRequestException('Invalid recovery token');
     }
-    
-    if (user.accountRecoveryTokenExpiry && user.accountRecoveryTokenExpiry < new Date()) {
-      console.warn('[UsersService] Account recovery token expired:', user.accountRecoveryTokenExpiry, 'now:', new Date());
-      this.auditLogService.log('account_recovery_failure', { userId: user.id, reason: 'expired' });
+
+    if (
+      user.accountRecoveryTokenExpiry &&
+      user.accountRecoveryTokenExpiry < new Date()
+    ) {
+      console.warn(
+        '[UsersService] Account recovery token expired:',
+        user.accountRecoveryTokenExpiry,
+        'now:',
+        new Date(),
+      );
+      void this.auditLogService.log('account_recovery_failure', {
+        userId: user.id,
+        reason: 'expired',
+      });
       throw new BadRequestException('Recovery token has expired');
     }
-    
+
     if (!user.active) {
-      this.auditLogService.log('account_recovery_failure', { userId: user.id, reason: 'inactive' });
+      void this.auditLogService.log('account_recovery_failure', {
+        userId: user.id,
+        reason: 'inactive',
+      });
       throw new BadRequestException('Account is deactivated');
     }
-    
+
     // Hash new password
     user.password = await this.hashPassword(newPassword);
     user.accountRecoveryToken = null;
     user.accountRecoveryTokenExpiry = null;
     user.failedLoginAttempts = 0;
     user.lockedUntil = null;
-    
-    this.auditLogService.log('account_recovery_success', { userId: user.id });
-    
+
+    void this.auditLogService.log('account_recovery_success', {
+      userId: user.id,
+    });
+
     return this.userRepository.save(user);
   }
 }

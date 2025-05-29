@@ -16,7 +16,7 @@ let RefreshTokenRepository = class RefreshTokenRepository extends typeorm_1.Repo
                 token,
                 isRevoked: false,
                 expiresAt: (0, typeorm_1.MoreThan)(new Date()),
-            }
+            },
         });
         return result ?? undefined;
     }

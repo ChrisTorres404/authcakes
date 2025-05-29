@@ -2,7 +2,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import * as bcrypt from 'bcrypt';
 
 export interface SeederOptions {
   force?: boolean;
@@ -59,8 +58,10 @@ export class SeederService {
 
   async seed(options: SeederOptions = {}) {
     console.log('SeederService.seed() called with options:', options);
-    this.logger.log('SeederService.seed() called with options: ' + JSON.stringify(options));
-    
+    this.logger.log(
+      'SeederService.seed() called with options: ' + JSON.stringify(options),
+    );
+
     await seedSystemSettings(this.systemSettingsRepository, options);
     await seedUsers(this.userRepository, options);
     await seedTenants(this.tenantRepository, options);

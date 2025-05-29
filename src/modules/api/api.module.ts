@@ -6,9 +6,7 @@ import { ApiKeysService } from './services/api-keys.service';
 import { ApiKeysController } from './controllers/api-keys.controller';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([ApiKey]),
-  ],
+  imports: [TypeOrmModule.forFeature([ApiKey])],
   controllers: [ApiKeysController],
   providers: [ApiKeysService],
   exports: [ApiKeysService],

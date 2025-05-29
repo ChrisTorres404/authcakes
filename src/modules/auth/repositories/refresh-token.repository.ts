@@ -10,7 +10,7 @@ export class RefreshTokenRepository extends Repository<RefreshToken> {
         token,
         isRevoked: false,
         expiresAt: MoreThan(new Date()),
-      }
+      },
     });
     return result ?? undefined;
   }
@@ -18,15 +18,15 @@ export class RefreshTokenRepository extends Repository<RefreshToken> {
   async revokeTokensByUser(userId: string): Promise<void> {
     await this.update(
       { user: { id: userId }, isRevoked: false },
-      { isRevoked: true, revokedAt: new Date() }
+      { isRevoked: true, revokedAt: new Date() },
     );
   }
-  
+
   async cleanupExpiredTokens(): Promise<void> {
     // Delete tokens that are more than 30 days old and have been revoked
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
+
     await this.createQueryBuilder()
       .delete()
       .where('isRevoked = :isRevoked', { isRevoked: true })

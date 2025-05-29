@@ -8,11 +8,17 @@ export enum TenantRole {
 }
 
 export class AddUserToTenantDto {
-  @ApiProperty({ example: 'uuid-of-user', description: 'User ID to add to tenant' })
+  @ApiProperty({
+    example: 'uuid-of-user',
+    description: 'User ID to add to tenant',
+  })
   @IsUUID()
   userId: string;
 
-  @ApiProperty({ enum: TenantRole, description: 'Role for the user in the tenant' })
+  @ApiProperty({
+    enum: TenantRole,
+    description: 'Role for the user in the tenant',
+  })
   @IsEnum(TenantRole)
   role: TenantRole;
-} 
+}

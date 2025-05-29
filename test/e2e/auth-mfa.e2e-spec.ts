@@ -1,19 +1,33 @@
-// auth-mfa.e2e-spec.ts
+/**
+ * @fileoverview E2E Tests for Multi-Factor Authentication
+ * Tests MFA enrollment, verification, and recovery flows
+ */
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import * as request from 'supertest';
-import * as cookieParser from 'cookie-parser';
+import request from 'supertest';
+import cookieParser from 'cookie-parser';
 import { AppModule } from '../../src/app.module';
 import { DataSource, Repository } from 'typeorm';
 import { User } from '../../src/modules/users/entities/user.entity';
 import { AuthService } from '../../src/modules/auth/services/auth.service';
 import { UsersService } from '../../src/modules/users/services/users.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import {
+  AuthTestResponse,
+  MfaType,
+  MfaEnrollRequest,
+  MfaEnrollResponse,
+  MfaVerifyRequest,
+  MfaVerifyResponse,
+  MfaSetupStatus,
+} from './types/auth.types';
 
 /**
- * Generates a unique email for tests
+ * Generates a unique email for test isolation
+ * @param prefix - Optional prefix for the email
+ * @returns Unique email address
  */
-function uniqueEmail(prefix = 'user') {
+function uniqueEmail(prefix = 'user'): string {
   return `${prefix}+${Date.now()}@example.com`;
 }
 
@@ -45,7 +59,9 @@ describe('Auth MFA E2E', () => {
     dataSource = app.get(DataSource);
     authService = moduleFixture.get<AuthService>(AuthService);
     usersService = moduleFixture.get<UsersService>(UsersService);
-    userRepository = moduleFixture.get<Repository<User>>(getRepositoryToken(User));
+    userRepository = moduleFixture.get<Repository<User>>(
+      getRepositoryToken(User),
+    );
   }, 30000);
 
   afterAll(async () => {
@@ -57,42 +73,74 @@ describe('Auth MFA E2E', () => {
       // Register and login
       const email = uniqueEmail('mfauser');
       const password = 'Test1234!';
-      
+
       await request(app.getHttpServer())
         .post('/api/auth/register')
-        .send({ 
-          email, 
-          password, 
-          firstName: 'Test', 
-          lastName: 'User', 
-          organizationName: 'TestOrg' 
+        .send({
+          email,
+          password,
+          firstName: 'Test',
+          lastName: 'User',
+          organizationName: 'TestOrg',
         })
         .expect(200);
-      
+
       const loginRes = await request(app.getHttpServer())
         .post('/api/auth/login')
         .send({ email, password })
         .expect(200);
-      
+
       const loginCookies = loginRes.headers['set-cookie'];
-      
+
       // Enroll in MFA
+      const enrollRequest: MfaEnrollRequest = {
+        type: 'totp',
+      };
+
       const enrollRes = await request(app.getHttpServer())
         .post('/api/auth/mfa/enroll')
         .set('Cookie', loginCookies)
-        .send({ type: 'totp' })
+        .send(enrollRequest)
         .expect(200);
-      
-      expect(enrollRes.body).toHaveProperty('secret');
-      
+
+      const enrollResponse = enrollRes.body as MfaEnrollResponse;
+      expect(enrollResponse.secret).toBeDefined();
+      expect(enrollResponse.setupStatus).toBe('pending');
+
       // Simulate user entering correct MFA code
-      const mfaCode = '123456'; // Mock code for testing
-      
-      await request(app.getHttpServer())
+      const verifyRequest: MfaVerifyRequest = {
+        code: '123456', // Mock code for testing
+        type: 'totp',
+      };
+
+      const verifyRes = await request(app.getHttpServer())
         .post('/api/auth/mfa/verify')
         .set('Cookie', loginCookies)
-        .send({ code: mfaCode })
+        .send(verifyRequest)
         .expect(200);
+
+      const verifyResponse = verifyRes.body as MfaVerifyResponse;
+      expect(verifyResponse.success).toBe(true);
+
+      // Verify MFA setup status
+      const user = await userRepository
+        .createQueryBuilder('user')
+        .leftJoinAndSelect('user.mfaRecoveryCodes', 'recoveryCodes')
+        .where('user.email = :email', { email })
+        .getOne();
+
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      // Verify MFA is properly enabled
+      expect(user.mfaEnabled).toBe(true);
+      expect(user.mfaType).toBe('totp');
+      expect(user.mfaSecret).toBeDefined();
+
+      // Verify recovery codes were generated
+      expect(user.mfaRecoveryCodes).toBeDefined();
+      expect(user.mfaRecoveryCodes.length).toBeGreaterThan(0);
     });
   });
 });

@@ -42,12 +42,20 @@ __decorate([
     __metadata("design:type", String)
 ], SystemSetting.prototype, "description", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ type: String, format: 'date-time', example: '2024-06-01T12:00:00Z' }),
+    (0, swagger_1.ApiProperty)({
+        type: String,
+        format: 'date-time',
+        example: '2024-06-01T12:00:00Z',
+    }),
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)
 ], SystemSetting.prototype, "createdAt", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ type: String, format: 'date-time', example: '2024-06-01T12:00:00Z' }),
+    (0, swagger_1.ApiProperty)({
+        type: String,
+        format: 'date-time',
+        example: '2024-06-01T12:00:00Z',
+    }),
     (0, typeorm_1.UpdateDateColumn)(),
     __metadata("design:type", Date)
 ], SystemSetting.prototype, "updatedAt", void 0);
