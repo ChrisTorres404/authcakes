@@ -2,6 +2,8 @@
 import { DataSource } from 'typeorm';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
 import { config } from 'dotenv';
+import * as fs from 'fs';
+import * as path from 'path';
 import { validationSchema } from './validation.schema';
 import { ValidationResult } from 'joi';
 
@@ -24,8 +26,18 @@ interface DatabaseEnvConfig {
   DB_LOGGING?: string;
 }
 
-// Load environment variables
-config();
+// Determine which env file to load based on NODE_ENV
+const envFile = process.env.NODE_ENV === 'test' ? '.env.test' : '.env';
+const envPath = path.resolve(process.cwd(), envFile);
+
+// Check if env file exists
+if (fs.existsSync(envPath)) {
+  console.log(`Loading environment from ${envFile}`);
+  config({ path: envPath });
+} else {
+  console.log(`Environment file ${envFile} not found, using default .env`);
+  config();
+}
 
 // Validate environment variables using Joi schema
 // allowUnknown: true is required because process.env contains many system variables not relevant to app config
@@ -40,16 +52,22 @@ if (error) {
   throw new Error(`Config validation error: ${error.message}`);
 }
 
+// Determine database name - for better visibility in logs
+const dbName = envVars.DB_NAME || envVars.PG_DATABASE || 
+  (process.env.NODE_ENV === 'test' ? 'authcakes_test' : 'authcakes_dev');
+
 /**
  * Log non-sensitive database configuration for audit/debug purposes
  * Explicitly excludes password for security
  */
-console.log('TypeORM DataSource configuration:', {
+console.log(`TypeORM DataSource configuration (${process.env.NODE_ENV || 'development'} environment):`, {
   host: envVars.DB_HOST || envVars.PG_HOST || 'localhost',
   port: envVars.DB_PORT || envVars.PG_PORT || '5432',
   username: envVars.DB_USERNAME || envVars.PG_USER || 'authcakes_user',
-  database: envVars.DB_NAME || envVars.PG_DATABASE || 'authcakes_dev',
+  database: dbName,
   type: envVars.DB_TYPE || 'postgres',
+  synchronize: envVars.DB_SYNCHRONIZE === 'true',
+  logging: envVars.DB_LOGGING === 'true',
 });
 
 /**
@@ -62,13 +80,23 @@ export const dataSourceOptions: PostgresConnectionOptions = {
   port: parseInt(envVars.DB_PORT || envVars.PG_PORT || '5432', 10),
   username: envVars.DB_USERNAME || envVars.PG_USER || 'authcakes_user',
   password: envVars.DB_PASSWORD || envVars.PG_PASSWORD || 'authcakes_password',
-  database: envVars.DB_NAME || envVars.PG_DATABASE || 'authcakes_dev',
+  database: dbName,
   entities: ['dist/**/*.entity{.ts,.js}'],
   migrations: ['dist/migrations/**/*{.ts,.js}'],
   synchronize: envVars.DB_SYNCHRONIZE === 'true',
   logging: envVars.DB_LOGGING === 'true',
+  // Add migration logging for troubleshooting
+  migrationsRun: process.env.NODE_ENV === 'test' || envVars.DB_MIGRATIONS_RUN === 'true',
 };
 
 // Create and export a new data source
 const dataSource = new DataSource(dataSourceOptions);
+
+// Log a warning if we're in test mode but not using test database
+if (process.env.NODE_ENV === 'test' && dbName !== 'authcakes_test') {
+  console.warn(
+    '⚠️ WARNING: Running in test environment but not using test database! ' +
+    'This may cause conflicts with development data.'
+  );
+}
 export default dataSource;

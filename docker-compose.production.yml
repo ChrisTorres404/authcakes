@@ -1,0 +1,482 @@
+version: '3.8'
+
+# AuthCakes API - Production Docker Compose Configuration
+# Enterprise-grade deployment with security, monitoring, and high availability
+
+services:
+  # =============================================================================
+  # Application Services
+  # =============================================================================
+  
+  authcakes-api:
+    image: authcakes/api:${APP_VERSION:-latest}
+    container_name: authcakes-api-primary
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3030
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    ports:
+      - "3030:3030"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs:rw
+      - ./uploads:/app/uploads:rw
+    networks:
+      - authcakes-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3030/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:rw,size=100M
+      - /app/logs:rw,size=200M
+
+  # Secondary instance for high availability
+  authcakes-api-secondary:
+    image: authcakes/api:${APP_VERSION:-latest}
+    container_name: authcakes-api-secondary
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3030
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs:rw
+      - ./uploads:/app/uploads:rw
+    networks:
+      - authcakes-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3030/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:rw,size=100M
+      - /app/logs:rw,size=200M
+
+  # =============================================================================
+  # Load Balancer
+  # =============================================================================
+  
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: authcakes-loadbalancer
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/logs:/var/log/nginx:rw
+    depends_on:
+      - authcakes-api
+      - authcakes-api-secondary
+    networks:
+      - authcakes-network
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    security_opt:
+      - no-new-privileges:true
+
+  # =============================================================================
+  # Database Services
+  # =============================================================================
+  
+  postgres:
+    image: postgres:15-alpine
+    container_name: authcakes-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    volumes:
+      - postgres_data:/var/lib/postgresql/data:rw
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+      - ./backups:/backups:rw
+    networks:
+      - authcakes-network
+    ports:
+      - "5432:5432"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_NAME}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    command: >
+      postgres
+      -c shared_preload_libraries=pg_stat_statements
+      -c pg_stat_statements.max=10000
+      -c pg_stat_statements.track=all
+      -c max_connections=100
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c work_mem=4MB
+      -c min_wal_size=1GB
+      -c max_wal_size=4GB
+      -c max_worker_processes=4
+      -c max_parallel_workers_per_gather=2
+      -c max_parallel_workers=4
+      -c max_parallel_maintenance_workers=2
+
+  # Database backup service
+  postgres-backup:
+    image: postgres:15-alpine
+    container_name: authcakes-postgres-backup
+    restart: "no"
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - ./backups:/backups:rw
+      - ./scripts:/scripts:ro
+    networks:
+      - authcakes-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - backup
+    command: >
+      sh -c "
+        while true; do
+          echo 'Starting scheduled backup...'
+          pg_dump -h postgres -U ${DB_USERNAME} -d ${DB_NAME} > /backups/backup_$(date +%Y%m%d_%H%M%S).sql
+          echo 'Backup completed'
+          sleep 86400  # 24 hours
+        done
+      "
+
+  # =============================================================================
+  # Cache & Session Store
+  # =============================================================================
+  
+  redis:
+    image: redis:7-alpine
+    container_name: authcakes-redis
+    restart: unless-stopped
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD}
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+      --appendonly yes
+      --appendfsync everysec
+    volumes:
+      - redis_data:/data:rw
+    networks:
+      - authcakes-network
+    ports:
+      - "6379:6379"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    security_opt:
+      - no-new-privileges:true
+
+  # =============================================================================
+  # Monitoring & Observability
+  # =============================================================================
+  
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    container_name: authcakes-prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.enable-lifecycle'
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus:rw
+    networks:
+      - authcakes-network
+    ports:
+      - "9090:9090"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  grafana:
+    image: grafana/grafana:10.1.0
+    container_name: authcakes-grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+    volumes:
+      - grafana_data:/var/lib/grafana:rw
+      - ./monitoring/grafana:/etc/grafana/provisioning:ro
+    networks:
+      - authcakes-network
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Log aggregation
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: authcakes-loki
+    restart: unless-stopped
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./monitoring/loki.yml:/etc/loki/local-config.yaml:ro
+      - loki_data:/tmp/loki:rw
+    networks:
+      - authcakes-network
+    ports:
+      - "3100:3100"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: authcakes-promtail
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/promtail.yml:/etc/promtail/config.yml:ro
+      - ./logs:/var/log/authcakes:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - authcakes-network
+    depends_on:
+      - loki
+
+  # =============================================================================
+  # Security Services
+  # =============================================================================
+  
+  # Fail2ban for intrusion prevention
+  fail2ban:
+    image: crazymax/fail2ban:latest
+    container_name: authcakes-fail2ban
+    restart: unless-stopped
+    environment:
+      - TZ=UTC
+      - F2B_LOG_LEVEL=INFO
+      - F2B_DB_PURGE_AGE=30d
+    volumes:
+      - ./security/fail2ban:/data:rw
+      - ./logs:/var/log/authcakes:ro
+      - ./nginx/logs:/var/log/nginx:ro
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    privileged: true
+
+  # =============================================================================
+  # Utility Services
+  # =============================================================================
+  
+  # Health check service
+  healthcheck:
+    image: alpine/curl:latest
+    container_name: authcakes-healthcheck
+    restart: "no"
+    networks:
+      - authcakes-network
+    profiles:
+      - healthcheck
+    command: >
+      sh -c "
+        while true; do
+          echo 'Performing health checks...'
+          curl -f http://authcakes-api:3030/api/health || echo 'Primary API health check failed'
+          curl -f http://authcakes-api-secondary:3030/api/health || echo 'Secondary API health check failed'
+          curl -f http://nginx/health || echo 'Load balancer health check failed'
+          sleep 60
+        done
+      "
+
+  # Certificate renewal service
+  certbot:
+    image: certbot/certbot:latest
+    container_name: authcakes-certbot
+    restart: "no"
+    volumes:
+      - ./nginx/ssl:/etc/letsencrypt:rw
+      - ./nginx/certbot:/var/www/certbot:rw
+    networks:
+      - authcakes-network
+    profiles:
+      - ssl-renewal
+    command: >
+      sh -c "
+        trap exit TERM
+        while :; do
+          certbot renew --webroot --webroot-path=/var/www/certbot --quiet
+          sleep 12h & wait $!
+        done
+      "
+
+# =============================================================================
+# Networks
+# =============================================================================
+
+networks:
+  authcakes-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16
+
+# =============================================================================
+# Volumes
+# =============================================================================
+
+volumes:
+  postgres_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/lib/authcakes/postgres
+  
+  redis_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/lib/authcakes/redis
+  
+  prometheus_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/lib/authcakes/prometheus
+  
+  grafana_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/lib/authcakes/grafana
+  
+  loki_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/lib/authcakes/loki

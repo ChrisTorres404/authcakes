@@ -1,5 +1,5 @@
 //src/modules/auth/strategies/jwt.strategy.ts
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy, StrategyOptionsWithRequest } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
@@ -12,25 +12,19 @@ import { User } from '../../users/entities/user.entity';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
+  private readonly logger = new Logger(JwtStrategy.name);
+
   constructor(
     private readonly configService: ConfigService,
     private readonly usersService: UsersService,
     private readonly sessionService: SessionService,
   ) {
-    console.log('[JWTStrategy] Constructor called');
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         ExtractJwt.fromAuthHeaderAsBearerToken(),
         (request: Request) => {
-          console.log(
-            '[JWTStrategy] Custom extractor, request.url:',
-            request?.url,
-            'headers:',
-            request?.headers,
-          );
-          const token = request?.cookies?.access_token;
-          if (!token) return null;
-          return token;
+          // Extract JWT from cookies for browser-based applications
+          return request?.cookies?.access_token || null;
         },
       ]),
       ignoreExpiration: false,
@@ -40,74 +34,71 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   async validate(request: Request, payload: JwtPayload): Promise<JwtPayload> {
-    console.log(
-      '[JWTStrategy] validate called. Request url:',
-      request.url,
-      'headers:',
-      request.headers,
-    );
-    console.log('[JWTStrategy] Request cookies:', request.cookies);
-    console.log('[JWTStrategy] Decoded JWT payload:', payload);
-    const user: User = await this.usersService.findById(payload.sub);
-    console.log('[JWTStrategy] User lookup result:', user);
-    if (!user) {
-      console.warn('[JWTStrategy] User not found for sub:', payload.sub);
-      throw new UnauthorizedException('User not found');
-    }
-    // Check if session is valid (not revoked, not expired)
-    if (payload.sessionId) {
-      console.log(
-        '[JWTStrategy] Checking session validity for userId:',
-        user.id,
-        'sessionId:',
-        payload.sessionId,
-      );
-      let sessionValid = false;
-      const session = await this.sessionService?.getSessionById(
-        payload.sessionId,
-      );
-      sessionValid =
-        (await this.sessionService?.isSessionValid(
-          user.id,
-          payload.sessionId,
-        )) ?? false;
-      console.log('[JWTStrategy] Session lookup result:', session);
-      if (!session) {
-        console.warn(
-          '[JWTStrategy] Session not found for sessionId:',
-          payload.sessionId,
-        );
-      } else if (session.revoked) {
-        console.warn('[JWTStrategy] Session is revoked:', session);
-      } else if (session.expiresAt && session.expiresAt < new Date()) {
-        console.warn('[JWTStrategy] Session is expired:', session);
+    const startTime = Date.now();
+    const requestId = `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+    
+    try {
+      // Security logging - log all JWT validation attempts
+      this.logger.log(`JWT validation started - RequestID: ${requestId}, User: ${payload.sub}, URL: ${request.url}`);
+      
+      const user: User = await this.usersService.findById(payload.sub);
+      if (!user) {
+        this.logger.warn(`JWT validation failed - User not found - RequestID: ${requestId}, UserID: ${payload.sub}`);
+        throw new UnauthorizedException('User not found');
       }
-      if (!sessionValid) {
-        console.warn(
-          '[JWTStrategy] Session is not valid for userId:',
-          user.id,
-          'sessionId:',
-          payload.sessionId,
-        );
-        throw new UnauthorizedException('Session is revoked or expired');
+      
+      // Check if user account is active and not locked
+      if (!user.active) {
+        this.logger.warn(`JWT validation failed - Inactive user - RequestID: ${requestId}, UserID: ${payload.sub}`);
+        throw new UnauthorizedException('Account is inactive');
       }
-    }
-    // Attach full tenant context to the request
-    const typedRequest = request as RequestWithUser;
-    typedRequest.tenantId = payload.tenantId ?? undefined;
-    typedRequest.tenantAccess = payload.tenantAccess;
-    typedRequest.sessionId = payload.sessionId;
+      
+      if (user.lockedUntil && user.lockedUntil > new Date()) {
+        this.logger.warn(`JWT validation failed - Account locked - RequestID: ${requestId}, UserID: ${payload.sub}, LockedUntil: ${user.lockedUntil}`);
+        throw new UnauthorizedException('Account is temporarily locked');
+      }
+      
+      // Check if session is valid (not revoked, not expired)
+      if (payload.sessionId) {
+        const session = await this.sessionService?.getSessionById(payload.sessionId);
+        const sessionValid = await this.sessionService?.isSessionValid(user.id, payload.sessionId) ?? false;
+        
+        if (!session) {
+          this.logger.warn(`JWT validation failed - Session not found - RequestID: ${requestId}, UserID: ${payload.sub}, SessionID: ${payload.sessionId}`);
+          throw new UnauthorizedException('Session not found');
+        }
+        
+        if (session.revoked) {
+          this.logger.warn(`JWT validation failed - Session revoked - RequestID: ${requestId}, UserID: ${payload.sub}, SessionID: ${payload.sessionId}`);
+          throw new UnauthorizedException('Session has been revoked');
+        }
+        
+        if (session.expiresAt && session.expiresAt < new Date()) {
+          this.logger.warn(`JWT validation failed - Session expired - RequestID: ${requestId}, UserID: ${payload.sub}, SessionID: ${payload.sessionId}, ExpiredAt: ${session.expiresAt}`);
+          throw new UnauthorizedException('Session has expired');
+        }
+        
+        if (!sessionValid) {
+          this.logger.warn(`JWT validation failed - Invalid session - RequestID: ${requestId}, UserID: ${payload.sub}, SessionID: ${payload.sessionId}`);
+          throw new UnauthorizedException('Session is invalid');
+        }
+      }
+      
+      // Attach full tenant context to the request
+      const typedRequest = request as RequestWithUser;
+      typedRequest.tenantId = payload.tenantId ?? undefined;
+      typedRequest.tenantAccess = payload.tenantAccess;
+      typedRequest.sessionId = payload.sessionId;
 
-    // Return payload matching JwtPayload interface
-    const result: JwtPayload = {
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-      tenantId: payload.tenantId,
-      tenantAccess: payload.tenantAccess,
-      sessionId: payload.sessionId,
-      type: payload.type,
-    };
-    return result;
+      const duration = Date.now() - startTime;
+      this.logger.log(`JWT validation successful - RequestID: ${requestId}, UserID: ${payload.sub}, Duration: ${duration}ms`);
+      
+      // Return the original payload since we've validated the user exists
+      return payload;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.logger.error(`JWT validation error - RequestID: ${requestId}, Duration: ${duration}ms, Error: ${error.message}`);
+      throw error;
+    }
   }
 }

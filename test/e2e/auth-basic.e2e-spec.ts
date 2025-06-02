@@ -4,8 +4,8 @@
  */
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import request from 'supertest';
-import cookieParser from 'cookie-parser';
+import * as request from 'supertest';
+import * as cookieParser from 'cookie-parser';
 import { AppModule } from '../../src/app.module';
 import { DataSource, Repository } from 'typeorm';
 import { User } from '../../src/modules/users/entities/user.entity';
@@ -40,6 +40,15 @@ function decodeJwtPayload(token: string): JwtPayload {
  */
 function uniqueEmail(prefix = 'user'): string {
   return `${prefix}+${Date.now()}@example.com`;
+}
+
+/**
+ * Generates a unique organization name for test isolation
+ * @param prefix - Optional prefix for the organization
+ * @returns Unique organization name
+ */
+function uniqueOrgName(prefix = 'TestOrg'): string {
+  return `${prefix}${Date.now()}`;
 }
 
 /**
@@ -103,6 +112,13 @@ describe('Auth Basic E2E', () => {
     );
   }, 30000);
 
+  beforeEach(async () => {
+    // Clean database before each test for isolation
+    await dataSource.query('TRUNCATE TABLE tenant_memberships CASCADE');
+    await dataSource.query('TRUNCATE TABLE tenants CASCADE');
+    await dataSource.query('TRUNCATE TABLE users CASCADE');
+  });
+
   afterAll(async () => {
     await app.close();
   }, 10000);
@@ -123,7 +139,7 @@ describe('Auth Basic E2E', () => {
           password,
           firstName: 'Test',
           lastName: 'User',
-          organizationName: 'TestOrg',
+          organizationName: uniqueOrgName(),
         })
         .expect(200);
 

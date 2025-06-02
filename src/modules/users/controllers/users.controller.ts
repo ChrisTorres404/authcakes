@@ -11,6 +11,7 @@ import {
   UseGuards,
   HttpCode,
   Req,
+  NotFoundException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { UsersService } from '../services/users.service';
@@ -36,6 +37,7 @@ import { UserProfileDto } from '../dto/user-profile.dto';
 import { Request } from 'express';
 import { UserResponseDto } from '../dto/user-response.dto';
 import { Logger } from '@nestjs/common';
+import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -73,8 +75,18 @@ export class UsersController {
     description: 'Current user profile',
     type: UserProfileDto,
   })
-  async getProfile(@CurrentUser() user: User): Promise<UserProfileDto> {
-    const entity = await this.usersService.findById(user.id);
+  async getProfile(@CurrentUser() user: JwtPayload): Promise<UserProfileDto> {
+    // Security audit trail: Log profile access attempts
+    Logger.log(`Profile access - UserID: ${user.sub}, SessionID: ${user.sessionId}`, 'UsersController');
+    
+    const entity = await this.usersService.findById(user.sub);
+    
+    // Additional security check: ensure the user from JWT matches the database user
+    if (entity.id !== user.sub) {
+      Logger.error(`Profile access security violation - JWT UserID: ${user.sub}, DB UserID: ${entity.id}`, 'UsersController');
+      throw new NotFoundException('User profile not found');
+    }
+    
     return {
       id: entity.id,
       email: entity.email,
@@ -97,7 +109,7 @@ export class UsersController {
     description: 'Profile updates not allowed or field update not permitted',
   })
   async updateProfile(
-    @CurrentUser() user: User,
+    @CurrentUser() user: JwtPayload,
     @Body() updateUserProfileDto: UpdateUserProfileDto,
     @Req() request: Request & { ip: string },
   ) {
@@ -107,9 +119,9 @@ export class UsersController {
     };
 
     return this.usersService.updateProfile(
-      user.id,
+      user.sub,
       updateUserProfileDto,
-      user.id, // self-update
+      user.sub, // self-update
       requestInfo,
     );
   }
@@ -167,7 +179,7 @@ export class UsersController {
   async update(
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,
-    @CurrentUser() admin: User,
+    @CurrentUser() admin: JwtPayload,
     @Req() request: Request,
   ): Promise<User> {
     // For admin updates, use the full update method which doesn't filter fields
@@ -182,7 +194,7 @@ export class UsersController {
       return this.usersService.updateProfile(
         id,
         updateUserDto as UpdateUserProfileDto,
-        admin.id, // admin update
+        admin.sub, // admin update
         requestInfo,
       );
     }
@@ -238,13 +250,13 @@ export class UsersController {
   @ApiOperation({ summary: 'List active user devices/sessions' })
   @ApiResponse({ status: 200, description: 'List of devices' })
   async listDevices(
-    @CurrentUser() user: User,
+    @CurrentUser() user: JwtPayload,
   ): Promise<{ devices: unknown[] }> {
     Logger.log(
-      `DeviceManagement: listDevices - User ${user.id}`,
+      `DeviceManagement: listDevices - User ${user.sub}`,
       'UsersController',
     );
-    let devices = await this.usersService.listActiveSessions(user.id);
+    let devices = await this.usersService.listActiveSessions(user.sub);
     if (!Array.isArray(devices)) {
       devices = [];
     }
@@ -256,15 +268,15 @@ export class UsersController {
   @ApiOperation({ summary: 'Revoke a device/session by ID' })
   @ApiResponse({ status: 200, description: 'Device revoked' })
   async revokeDevice(
-    @CurrentUser() user: User,
+    @CurrentUser() user: JwtPayload,
     @Param('id') sessionId: string,
   ) {
     Logger.log(
-      `DeviceManagement: revokeDevice - User ${user.id}, Session ${sessionId}`,
+      `DeviceManagement: revokeDevice - User ${user.sub}, Session ${sessionId}`,
       'UsersController',
     );
     // Only allow revoking own sessions
-    await this.usersService.revokeSession(user.id, sessionId);
+    await this.usersService.revokeSession(user.sub, sessionId);
     return { success: true };
   }
 }

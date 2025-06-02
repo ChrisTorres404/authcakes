@@ -112,14 +112,16 @@ export class AllExceptionsFilter implements ExceptionFilter {
       timestamp: new Date().toISOString(),
       path: request.url,
     };
-    // Add development-only information
-    if (process.env.NODE_ENV === 'development') {
+    // Add development-only information (never expose in production/test)
+    if (process.env.NODE_ENV === 'development' && process.env.EXPOSE_STACK_TRACE === 'true') {
       if (exception instanceof Error && exception.stack) {
         responseBody.stack = exception.stack;
       }
-      if (details) {
-        responseBody.details = details;
-      }
+    }
+    
+    // Always include validation details for client-side error handling
+    if (details && (status === HttpStatus.BAD_REQUEST || status === HttpStatus.UNPROCESSABLE_ENTITY)) {
+      responseBody.details = details;
     }
 
     httpAdapter.reply(response, responseBody, status);

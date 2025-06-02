@@ -10,17 +10,22 @@ import { isDatabaseError } from './types/database.types';
 /** Options for the database seed command */
 export interface SeedCommandOptions {
   force?: boolean;
+  environment?: string;
 }
 
 /**
  * Command to seed the database with initial data.
- * Executes seeding operations using the SeederService to populate
- * the database with initial records for testing or development.
+ * Supports environment-specific seeding for development, test, and production.
  *
  * @example
  * ```bash
- * # Seed database with initial data
+ * # Seed database with data for current NODE_ENV
  * npm run cli seed
+ *
+ * # Seed with specific environment data
+ * npm run cli seed --environment test
+ * npm run cli seed --environment development
+ * npm run cli seed --environment production
  *
  * # Force seed even if tables have data
  * npm run cli seed --force
@@ -45,14 +50,25 @@ export class SeedCommand extends CommandRunner {
     return !!val;
   }
 
+  @Option({
+    flags: '-e, --environment <environment>',
+    description: 'Environment to seed for (development, test, production)',
+  })
+  parseEnvironmentOption(val: string): string {
+    return val;
+  }
+
   async run(
     passedParams: string[],
     options: SeedCommandOptions,
   ): Promise<void> {
     try {
-      this.logger.log('Starting database seeding...');
+      const environment = options.environment || process.env.NODE_ENV || 'development';
+      this.logger.log(`Starting database seeding for ${environment} environment...`);
+      
       const seederOptions: SeederOptions = {
         force: options.force,
+        environment: environment as 'development' | 'test' | 'production',
       };
 
       await this.seederService.seed(seederOptions);

@@ -514,11 +514,13 @@ export class AuthService {
    * @param secret - MFA secret to set
    */
   async setMfaSecret(userId: string, secret: string): Promise<void> {
-    await this.usersService.update(userId, {
+    this.logger.log(`Setting MFA secret for user ${userId}...`);
+    const result = await this.usersService.update(userId, {
       mfaSecret: secret,
       mfaEnabled: false,
       mfaType: 'totp',
     });
+    this.logger.log(`MFA secret set for user ${userId}. Update result: ${JSON.stringify(result)}`);
   }
 
   /**

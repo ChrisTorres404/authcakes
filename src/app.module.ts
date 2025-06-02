@@ -33,6 +33,7 @@ import { TenantContextInterceptor } from './common/interceptors/tenant-context.i
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { RolesGuard } from './common/guards/roles.guard';
 import { LoggingMiddleware } from './common/middleware/logging.middleware';
+import { SecurityHeadersMiddleware } from './common/middleware/security-headers.middleware';
 import { PerformanceInterceptor } from './common/interceptors/performance.interceptor';
 
 @Module({
@@ -137,6 +138,10 @@ import { PerformanceInterceptor } from './common/interceptors/performance.interc
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(LoggingMiddleware).forRoutes('*');
+    consumer
+      .apply(SecurityHeadersMiddleware)
+      .forRoutes('*')
+      .apply(LoggingMiddleware)
+      .forRoutes('*');
   }
 }

@@ -496,7 +496,21 @@ export class AuthController {
     success: boolean;
     secret: string;
     otpauth_url?: string;
+    setupStatus: string;
   }> {
+    // Debug: Log req.user at the start of the endpoint
+    console.log('[mfaEnroll] req.user at entry:', req.user);
+    // Log the email from req.user
+    console.log('[mfaEnroll] req.user.email:', req.user?.email);
+    // Map sub to id for downstream compatibility
+    const jwtUser = req.user as any;
+    if (jwtUser && jwtUser.sub && !jwtUser.id) {
+      jwtUser.id = jwtUser.sub;
+    }
+    // Enterprise best practice: Validate req.user and req.user.id
+    if (!jwtUser || !jwtUser.id) {
+      throw new UnauthorizedException('User context missing or invalid in MFA enrollment');
+    }
     // Generate a TOTP secret for the user
     const secret = speakeasy.generateSecret({
       length: 20,
@@ -508,13 +522,16 @@ export class AuthController {
       throw new Error('Failed to generate MFA secret');
     }
 
-    // Store secret in user entity (not enabled yet)
+    // Add logging before and after calling setMfaSecret
+    console.log('[mfaEnroll] Calling setMfaSecret for user', req.user.id);
     await this.authService.setMfaSecret(req.user.id, secret.base32);
+    console.log('[mfaEnroll] setMfaSecret completed for user', req.user.id);
 
     return {
       success: true,
       secret: secret.base32,
       ...(secret.otpauth_url && { otpauth_url: secret.otpauth_url }),
+      setupStatus: 'pending',
     };
   }
 
@@ -540,9 +557,15 @@ export class AuthController {
     // Get user and secret
     const user = await this.authService.getUserById(req.user.id);
     const secret = user.mfaSecret;
+    // Log the user's email and mfaSecret for debugging
+    console.log('[mfaVerify] User email:', user.email, 'mfaSecret:', secret);
+    // Log the email from req.user
+    console.log('[mfaVerify] req.user.email:', req.user?.email);
     if (!secret) {
       return { success: false, message: 'No MFA secret set' };
     }
+    // Debug: Log the code and secret being verified
+    console.log('[mfaVerify] Verifying code:', code, 'with secret:', secret, 'at time:', Date.now());
     const verified = speakeasy.totp.verify({
       secret,
       encoding: 'base32',
