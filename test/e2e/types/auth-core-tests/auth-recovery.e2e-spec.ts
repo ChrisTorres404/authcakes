@@ -3,11 +3,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 import * as cookieParser from 'cookie-parser';
-import { AppModule } from '../../src/app.module';
+import { AppModule } from '../../../../src/app.module';
 import { DataSource, Repository } from 'typeorm';
-import { User } from '../../src/modules/users/entities/user.entity';
-import { AuthService } from '../../src/modules/auth/services/auth.service';
-import { UsersService } from '../../src/modules/users/services/users.service';
+import { User } from '../../../../src/modules/users/entities/user.entity';
+import { UsersService } from '../../../../src/modules/users/services/users.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
 /**
@@ -19,7 +18,6 @@ function uniqueEmail(prefix = 'user') {
 
 describe('Auth Account Recovery E2E', () => {
   let app: INestApplication;
-  let authService: AuthService;
   let usersService: UsersService;
   let userRepository: Repository<User>;
   let dataSource: DataSource;
@@ -43,7 +41,6 @@ describe('Auth Account Recovery E2E', () => {
     app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
     await app.init();
     dataSource = app.get(DataSource);
-    authService = moduleFixture.get<AuthService>(AuthService);
     usersService = moduleFixture.get<UsersService>(UsersService);
     userRepository = moduleFixture.get<Repository<User>>(
       getRepositoryToken(User),
@@ -51,8 +48,19 @@ describe('Auth Account Recovery E2E', () => {
   }, 30000);
 
   afterAll(async () => {
+    // Clean up database before closing
+    if (dataSource && dataSource.isInitialized) {
+      await dataSource.query('TRUNCATE TABLE logs, users, tenants, tenant_memberships CASCADE');
+    }
     await app.close();
   }, 10000);
+
+  beforeEach(async () => {
+    // Clean up database before each test to ensure isolation
+    if (dataSource && dataSource.isInitialized) {
+      await dataSource.query('TRUNCATE TABLE logs, users, tenants, tenant_memberships CASCADE');
+    }
+  });
 
   describe('Basic Account Recovery', () => {
     it('should handle account recovery flow', async () => {
@@ -120,11 +128,8 @@ describe('Auth Account Recovery E2E', () => {
     let firstToken: string;
 
     afterEach(async () => {
-      // Clean up test user if needed
-      if (testUser && testUser.id) {
-        await userRepository.delete({ id: testUser.id });
-        testUser = null;
-      }
+      // Reset variables - cleanup is handled by beforeEach
+      testUser = null;
       recoveryToken = '';
       firstToken = '';
     });

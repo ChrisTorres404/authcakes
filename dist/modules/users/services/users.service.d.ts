@@ -5,18 +5,20 @@ interface RequestInfo {
 import { Repository, FindOneOptions } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { User } from '../entities/user.entity';
+import { MfaRecoveryCode } from '../../auth/entities/mfa-recovery-code.entity';
 import { SessionService } from '../../auth/services/session.service';
 import { AuditLogService } from '../../auth/services/audit-log.service';
 import { SettingsService } from '../../settings/services/settings.service';
 import { UpdateUserProfileDto } from '../dto/update-user-profile.dto';
 export declare class UsersService {
     private readonly userRepository;
+    private readonly mfaRecoveryCodeRepository;
     private readonly configService;
     private readonly sessionService;
     private readonly auditLogService;
     private readonly settingsService;
     private readonly logger;
-    constructor(userRepository: Repository<User>, configService: ConfigService, sessionService: SessionService, auditLogService: AuditLogService, settingsService: SettingsService);
+    constructor(userRepository: Repository<User>, mfaRecoveryCodeRepository: Repository<MfaRecoveryCode>, configService: ConfigService, sessionService: SessionService, auditLogService: AuditLogService, settingsService: SettingsService);
     findAll(): Promise<User[]>;
     findById(id: string, options?: FindOneOptions<User>): Promise<User>;
     findByEmail(email: string): Promise<User | null>;
@@ -44,5 +46,7 @@ export declare class UsersService {
     listActiveSessions(userId: string): Promise<unknown>;
     revokeSession(userId: string, sessionId: string): Promise<void>;
     completeAccountRecovery(token: string, newPassword: string): Promise<User>;
+    saveRecoveryCodes(userId: string, codes: string[]): Promise<void>;
+    markRecoveryCodeAsUsed(codeId: string): Promise<void>;
 }
 export {};

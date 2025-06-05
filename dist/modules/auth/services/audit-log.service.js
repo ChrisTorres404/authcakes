@@ -23,7 +23,9 @@ let AuditLogService = class AuditLogService {
         this.logsRepository = logsRepository;
     }
     async log(event, details) {
-        console.log(`[AuditLog] ${event}:`, details);
+        if (process.env.NODE_ENV === 'development') {
+            console.log(`[AuditLog] ${event}:`, details);
+        }
         const log = this.logsRepository.create({
             action: event,
             userId: details.userId,

@@ -33,9 +33,11 @@ export class TokenService {
   async generateTokens(
     userId: string,
     deviceInfo: DeviceInfo = {},
+    existingUser?: { id: string; email: string; role: string; firstName: string; lastName: string; avatar?: string; emailVerified: boolean }, // Enterprise: avoid race condition
   ): Promise<AuthTokenResponse> {
-    // Get user with tenant info
-    const user = await this.usersService.findById(userId);
+    // Use existing user if provided (enterprise: avoids race condition)
+    // Otherwise fetch from database (standard operation)
+    const user = existingUser || await this.usersService.findById(userId);
     if (!user) throw new Error('User not found');
 
     // Get tenant memberships
@@ -52,7 +54,7 @@ export class TokenService {
       userId,
       deviceInfo,
     });
-    console.log('[TokenService] Created session with ID:', session.id);
+    // Security: Removed console.log that exposed session ID
 
     // Create JWT payload
     const payload: JwtPayload = {
@@ -102,13 +104,7 @@ export class TokenService {
       throw new Error('Invalid access token expiry configuration');
     }
     const token = this.jwtService.sign(payload, { expiresIn });
-    const decoded = this.jwtService.decode(token);
-    console.log('[TokenService] Access token generated:', {
-      expiresIn,
-      iat: decoded.iat ?? 0,
-      exp: decoded.exp ?? 0,
-      now: Math.floor(Date.now() / 1000),
-    });
+    // Security: Removed console.log that exposed token timing information
     return token;
   }
 
@@ -124,18 +120,9 @@ export class TokenService {
       { ...payload, type: 'refresh' },
       { expiresIn },
     );
-    const decoded = this.jwtService.decode(token);
-    console.log('[TokenService] Refresh token generated:', {
-      expiresIn,
-      iat: decoded.iat ?? 0,
-      exp: decoded.exp ?? 0,
-      now: Math.floor(Date.now() / 1000),
-    });
-    // Log sessionId before saving
-    console.log(
-      '[TokenService] Saving refresh token for sessionId:',
-      payload.sessionId,
-    );
+    // Security: Removed console.log that exposed refresh token information
+    // Continuing with token generation logic
+    // Security: Removed debug info and console.log that exposed session ID
     // Store refresh token
     await this.refreshTokenRepository.save({
       user: { id: payload.sub },
@@ -165,10 +152,10 @@ export class TokenService {
       // Verify JWT is valid
       const payload = this.jwtService.verify<JwtPayload>(token);
       if (!payload || typeof payload !== 'object' || !('type' in payload)) {
-        console.warn('[TokenService] Invalid token payload structure');
+        // Security: Removed console.warn that exposed token validation flow
         return false;
       }
-      console.log('[TokenService] Decoded refresh token payload:', payload);
+      // Security: Removed console.log that exposed token payload
       // Check if token exists and is not revoked
       const tokenRecord = await this.refreshTokenRepository.findOne({
         where: {
@@ -176,21 +163,18 @@ export class TokenService {
           isRevoked: false,
         },
       });
-      console.log(
-        '[TokenService] Refresh token DB lookup result:',
-        tokenRecord,
-      );
+      // Security: Removed console.log that exposed token database record
       if (!tokenRecord) {
-        console.warn('[TokenService] Refresh token not found or revoked in DB');
+        // Security: Removed console.warn that exposed token status
         return false;
       }
       // Check if token is expired
       if (tokenRecord.expiresAt < new Date()) {
-        console.warn('[TokenService] Refresh token is expired:', tokenRecord);
+        // Security: Removed console.warn that exposed token expiry details
         await this.revokeRefreshToken(token);
         return false;
       }
-      console.log('[TokenService] Refresh token is valid');
+      // Security: Removed console.log that exposed token validation result
       return true;
     } catch (error) {
       console.warn('[TokenService] Error validating refresh token:', error);

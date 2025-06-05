@@ -30,6 +30,7 @@ export declare class AuthService {
     private readonly logger;
     private readonly isProduction;
     constructor(usersService: UsersService, tokenService: TokenService, sessionService: SessionService, jwtService: JwtService, auditLogService: AuditLogService, notificationService: NotificationService, passwordHistoryService: PasswordHistoryService, settingsService: SettingsService, configService: ConfigService, tenantsService: TenantsService);
+    private generateVerificationToken;
     validateUser(email: string, password: string): Promise<User>;
     register(registerDto: RegisterDto, deviceInfo?: DeviceInfo): Promise<AuthTokenResponse>;
     refresh(userId: string, sessionId: string, deviceInfo?: DeviceInfo): Promise<AuthTokenResponse>;
@@ -48,6 +49,8 @@ export declare class AuthService {
     validateMfaCode(user: User, code: string): boolean;
     setMfaSecret(userId: string, secret: string): Promise<void>;
     getUserById(userId: string): Promise<User>;
-    enableMfa(userId: string): Promise<void>;
+    enableMfa(userId: string): Promise<string[]>;
+    private generateRecoveryCodes;
+    verifyRecoveryCode(userId: string, code: string): Promise<boolean>;
 }
 export {};

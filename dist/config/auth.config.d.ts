@@ -1,6 +1,7 @@
 export interface AuthConfig {
     jwt: {
         secret: string;
+        refreshSecret?: string;
         accessExpiresIn: string;
         refreshExpiresIn: string;
     };

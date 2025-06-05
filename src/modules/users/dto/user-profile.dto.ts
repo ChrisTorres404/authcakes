@@ -8,6 +8,7 @@ export class UserProfileDto {
   @ApiProperty() role: string;
   @ApiProperty() active: boolean;
   @ApiProperty() emailVerified: boolean;
+  @ApiProperty() phoneVerified: boolean;
   @ApiProperty({ required: false }) avatar?: string;
   // Add other safe fields as needed
 }

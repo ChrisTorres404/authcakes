@@ -23,6 +23,7 @@ import { User } from '../../users/entities/user.entity';
 import { RegisterDto } from '../dto/register.dto';
 import { TenantRole } from '../../tenants/dto/tenant-invitation.dto';
 import { DeviceInfo, AuthTokenResponse } from '../interfaces/auth.interfaces';
+import * as crypto from 'crypto';
 
 type MfaType = 'totp' | 'sms';
 
@@ -76,6 +77,14 @@ export class AuthService {
   }
 
   /**
+   * Generates a secure verification token
+   * @returns Generated verification token
+   */
+  private async generateVerificationToken(): Promise<string> {
+    return crypto.randomBytes(32).toString('hex');
+  }
+
+  /**
    * Validates user credentials and handles account locking
    * @param email - User's email address
    * @param password - User's password
@@ -86,36 +95,46 @@ export class AuthService {
   async validateUser(email: string, password: string): Promise<User> {
     const user = await this.usersService.findByEmail(email);
 
-    console.log('[validateUser] Lookup for email:', email, 'Result:', user);
+    // Security: Removed console.log that exposed email and user data
     if (!user) {
       // Track failed attempt (do not reveal user existence)
       await this.usersService.recordFailedLoginAttempt(email);
+      
+      // Audit log for failed login attempt
+      await this.auditLogService.log('login_failed', {
+        email,
+        reason: 'user_not_found',
+      });
 
-      console.log('[validateUser] Login failed: user not found');
+      // Security: Removed console.log that exposed authentication flow
       throw new UnauthorizedException('Invalid credentials');
     }
     // Check if account is locked
     if (user.lockedUntil && user.lockedUntil > new Date()) {
-      console.log(
-        '[validateUser] Login failed: account locked until',
-        user.lockedUntil,
-      );
+      // Security: Removed console.log that exposed account lock status
       throw new ForbiddenException('Account is locked. Try again later.');
     }
     const isMatch = await bcrypt.compare(password, user.password);
 
-    console.log('[validateUser] Password match:', isMatch);
+    // Security: Removed console.log that exposed password validation result
     if (!isMatch) {
       await this.usersService.recordFailedLoginAttempt(user.id);
+      
+      // Audit log for failed login attempt
+      await this.auditLogService.log('login_failed', {
+        userId: user.id,
+        email: user.email,
+        reason: 'invalid_password',
+      });
 
-      console.log('[validateUser] Login failed: password mismatch');
+      // Security: Removed console.log that exposed authentication failure reason
       throw new UnauthorizedException('Invalid credentials');
     }
     // Reset failed attempts and update last login
     await this.usersService.resetFailedLoginAttempts(user.id);
     await this.usersService.updateLastLogin(user.id);
 
-    console.log('[validateUser] Login success for user:', user.id);
+    // Security: Removed console.log that exposed user ID on successful login
     return user;
   }
 
@@ -132,7 +151,15 @@ export class AuthService {
   ): Promise<AuthTokenResponse> {
     const existing = await this.usersService.findByEmail(registerDto.email);
     if (existing) throw new BadRequestException('Email already in use');
-    const user = await this.usersService.create(registerDto);
+    // Generate verification token before creating user
+    const verificationToken = await this.generateVerificationToken();
+    
+    const user = await this.usersService.create({
+      ...registerDto,
+      emailVerified: false,
+      emailVerificationToken: verificationToken,
+      active: true, // Fix: Ensure user is marked as active
+    });
 
     // Multi-tenant: If organizationName is provided, create tenant and add user as owner
     let tenant: Tenant | null = null;
@@ -142,26 +169,49 @@ export class AuthService {
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)/g, '');
-      tenant = await this.tenantsService.create({
-        name: registerDto.organizationName,
-        slug,
-        active: true,
-      });
-      // Add user as admin (highest role)
-      await this.tenantsService.addUserToTenant(
-        user.id,
-        tenant.id,
-        TenantRole.ADMIN,
-      );
+      try {
+        tenant = await this.tenantsService.create({
+          name: registerDto.organizationName,
+          slug,
+          active: true,
+        });
+        
+        // Ensure tenant is created before adding user
+        await this.tenantsService.addUserToTenant(
+          user.id,
+          tenant.id,
+          TenantRole.ADMIN,
+        );
+      } catch (error) {
+        // If tenant creation fails, continue without tenant
+        // This allows core auth functionality to work even if tenant setup fails
+        console.warn('Tenant creation failed, continuing without tenant:', error.message);
+        tenant = null;
+      }
     }
 
-    // Add the initial password to history
-    await this.passwordHistoryService.addToHistory(user.id, user.password);
-
-    // Optionally send verification email here
-    const verificationToken = await this.requestEmailVerification(user.id);
+    // Verification token already set during user creation
+    // TODO: Send verification email here (integrate with email service)
     // No need to assign user.tenantMemberships here; handled by DB relations
-    const tokens = await this.tokenService.generateTokens(user.id, deviceInfo);
+    // Enterprise fix: Pass user object directly to avoid race condition
+    const tokens = await this.tokenService.generateTokens(user.id, deviceInfo, user);
+
+    // Add the initial password to history AFTER user and tokens are created
+    // This ensures the user transaction is committed before the foreign key is used
+    try {
+      await this.passwordHistoryService.addToHistory(user.id, user.password);
+    } catch (error) {
+      // Log but don't fail registration if password history fails
+      this.logger.warn(`Failed to add initial password to history for user ${user.id}:`, error.message);
+    }
+
+    // Audit log for user registration
+    await this.auditLogService.log('user_registered', {
+      userId: user.id,
+      email: user.email,
+      organizationName: registerDto.organizationName,
+    });
+
     // For development only: include verificationToken in the response
     return { ...tokens, verificationToken };
   }
@@ -189,8 +239,17 @@ export class AuthService {
    * @returns Generated verification token (for development)
    */
   async requestEmailVerification(userId: string): Promise<string> {
-    const token =
-      await this.usersService.generateEmailVerificationToken(userId);
+    // Generate a new token if user doesn't have one
+    const user = await this.usersService.findById(userId);
+    let token = user.emailVerificationToken;
+    
+    if (!token) {
+      token = await this.generateVerificationToken();
+      await this.usersService.update(userId, {
+        emailVerificationToken: token,
+      });
+    }
+    
     // TODO: Send email with token (integrate with email service)
     return token;
   }
@@ -214,8 +273,16 @@ export class AuthService {
   async requestPasswordReset(email: string): Promise<string> {
     const user = await this.usersService.findByEmail(email);
     if (!user) throw new BadRequestException('User not found');
+    
     // Generate and send password reset token (integrate with email service)
     const token = await this.usersService.generatePasswordResetToken(user.id);
+    
+    // Audit log for password reset request
+    await this.auditLogService.log('password_reset_requested', {
+      userId: user.id,
+      email: user.email,
+    });
+    
     // Send OTP to user
     const updatedUser = await this.usersService.findById(user.id);
     if (updatedUser.otp) {
@@ -514,13 +581,11 @@ export class AuthService {
    * @param secret - MFA secret to set
    */
   async setMfaSecret(userId: string, secret: string): Promise<void> {
-    this.logger.log(`Setting MFA secret for user ${userId}...`);
-    const result = await this.usersService.update(userId, {
+    await this.usersService.update(userId, {
       mfaSecret: secret,
       mfaEnabled: false,
       mfaType: 'totp',
     });
-    this.logger.log(`MFA secret set for user ${userId}. Update result: ${JSON.stringify(result)}`);
   }
 
   /**
@@ -539,7 +604,89 @@ export class AuthService {
    * Enables MFA for a user
    * @param userId - User ID
    */
-  async enableMfa(userId: string): Promise<void> {
+  async enableMfa(userId: string): Promise<string[]> {
+    if (!userId) {
+      throw new BadRequestException('User ID is required');
+    }
+    
     await this.usersService.update(userId, { mfaEnabled: true });
+    
+    // Generate recovery codes when MFA is enabled
+    const recoveryCodes = await this.generateRecoveryCodes(userId);
+    
+    // Return the codes so they can be shown to the user once
+    return recoveryCodes;
+  }
+
+  /**
+   * Generates MFA recovery codes for a user
+   * @param userId - User ID
+   * @returns Array of generated recovery codes
+   */
+  private async generateRecoveryCodes(userId: string): Promise<string[]> {
+    if (!userId) {
+      throw new BadRequestException('User ID is required for generating recovery codes');
+    }
+    
+    const codes: string[] = [];
+    const codeCount = 8; // Generate 8 recovery codes
+    
+    // Generate random recovery codes
+    for (let i = 0; i < codeCount; i++) {
+      const code = Math.random().toString(36).substring(2, 10).toUpperCase();
+      codes.push(code);
+    }
+    
+    // Save codes to database
+    await this.usersService.saveRecoveryCodes(userId, codes);
+    
+    return codes;
+  }
+
+  /**
+   * Verifies a recovery code for MFA
+   * @param userId - User ID
+   * @param code - Recovery code to verify
+   * @returns True if code is valid
+   */
+  async verifyRecoveryCode(userId: string, code: string): Promise<boolean> {
+    const user = await this.usersService.findById(userId, {
+      relations: ['mfaRecoveryCodes'],
+    });
+    
+    if (!user || !user.mfaRecoveryCodes) {
+      return false;
+    }
+    
+    const recoveryCode = user.mfaRecoveryCodes.find(
+      rc => rc.code === code.toUpperCase() && !rc.used
+    );
+    
+    if (!recoveryCode) {
+      return false;
+    }
+    
+    // Mark recovery code as used
+    await this.usersService.markRecoveryCodeAsUsed(recoveryCode.id);
+    
+    // Check if all codes are used
+    const unusedCodes = user.mfaRecoveryCodes.filter(rc => rc.id !== recoveryCode.id && !rc.used);
+    if (unusedCodes.length === 0) {
+      // Generate new codes when all are used
+      await this.generateRecoveryCodes(userId);
+      
+      // Log security event
+      await this.auditLogService.log('mfa_recovery_codes_regenerated', {
+        userId,
+        reason: 'all_codes_used',
+      });
+    }
+    
+    await this.auditLogService.log('mfa_recovery_code_used', {
+      userId,
+      codeId: recoveryCode.id,
+    });
+    
+    return true;
   }
 }

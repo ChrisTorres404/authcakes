@@ -51,15 +51,21 @@ let AuthController = class AuthController {
         const deviceInfo = this.extractDeviceInfo(req);
         const { accessToken, refreshToken, sessionId, user } = await this.tokenService.generateTokens(req.user.id, deviceInfo);
         this.setAuthCookies(res, { accessToken, refreshToken, sessionId });
+        const passwordExpired = false;
         return {
             success: true,
             user,
             sessionId,
             accessToken,
             refreshToken,
+            passwordExpired,
         };
     }
     async logout(req, res) {
+        if (process.env.NODE_ENV === 'test') {
+            console.log('Logout endpoint - cookies:', req.cookies);
+            console.log('Logout endpoint - user:', req.user);
+        }
         const sessionId = req.user.sessionId;
         if (sessionId) {
             await this.tokenService.revokeSession(sessionId, req.user.id, 'User logout');
@@ -118,7 +124,7 @@ let AuthController = class AuthController {
                 id: session.id,
                 createdAt: session.createdAt.toISOString(),
                 deviceInfo: session.deviceInfo,
-                lastUsedAt: session.lastUsedAt.toISOString(),
+                lastUsedAt: session.lastUsedAt?.toISOString() || session.createdAt.toISOString(),
             })),
         };
     }
@@ -164,12 +170,16 @@ let AuthController = class AuthController {
         const user = await this.authService.resetPassword(dto.token, dto.password, dto.otp);
         return { success: true, user };
     }
-    async requestAccountRecovery(dto) {
+    async requestAccountRecovery(dto, req, res) {
         const result = await this.authService.requestAccountRecovery(dto.email);
+        res.header('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        res.header('X-Request-ID', req.headers['x-request-id'] || Math.random().toString(36));
         return result;
     }
-    async completeAccountRecovery(dto) {
-        const result = await this.authService.completeAccountRecovery(dto.token, dto.newPassword);
+    async completeAccountRecovery(dto, req, res) {
+        const result = await this.authService.completeAccountRecovery(dto.token, dto.newPassword, dto.mfaCode);
+        res.header('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        res.header('X-Request-ID', req.headers['x-request-id'] || Math.random().toString(36));
         return result;
     }
     async changePassword(req, oldPassword, newPassword) {
@@ -180,6 +190,13 @@ let AuthController = class AuthController {
         return { success: true, ...result };
     }
     async mfaEnroll(req) {
+        const jwtUser = req.user;
+        if (jwtUser && jwtUser.sub && !jwtUser.id) {
+            jwtUser.id = jwtUser.sub;
+        }
+        if (!jwtUser || !jwtUser.id) {
+            throw new common_1.UnauthorizedException('User context missing or invalid in MFA enrollment');
+        }
         const secret = speakeasy.generateSecret({
             length: 20,
             name: `AuthCakes:${req.user.email}`,
@@ -193,10 +210,22 @@ let AuthController = class AuthController {
             success: true,
             secret: secret.base32,
             ...(secret.otpauth_url && { otpauth_url: secret.otpauth_url }),
+            setupStatus: 'pending',
         };
     }
-    async mfaVerify(req, code) {
-        const user = await this.authService.getUserById(req.user.id);
+    async mfaVerify(req, verifyDto) {
+        const userId = req.user?.id || req.user?.sub;
+        if (!userId) {
+            return { success: false, message: 'User not authenticated' };
+        }
+        if (verifyDto.type === 'recovery') {
+            const isValid = await this.authService.verifyRecoveryCode(userId, verifyDto.code);
+            if (isValid) {
+                return { success: true };
+            }
+            return { success: false, message: 'Invalid recovery code' };
+        }
+        const user = await this.authService.getUserById(userId);
         const secret = user.mfaSecret;
         if (!secret) {
             return { success: false, message: 'No MFA secret set' };
@@ -204,11 +233,18 @@ let AuthController = class AuthController {
         const verified = speakeasy.totp.verify({
             secret,
             encoding: 'base32',
-            token: code,
+            token: verifyDto.code,
             window: 1,
         });
         if (verified) {
-            await this.authService.enableMfa(req.user.id);
+            if (!user.mfaEnabled) {
+                const recoveryCodes = await this.authService.enableMfa(userId);
+                return {
+                    success: true,
+                    recoveryCodes,
+                    message: 'MFA enabled successfully. Save these recovery codes in a safe place.'
+                };
+            }
             return { success: true };
         }
         else {
@@ -429,8 +465,10 @@ __decorate([
     }),
     (0, swagger_1.ApiBadRequestResponse)({ description: 'Invalid email or user not found.' }),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
+    __param(2, (0, common_1.Res)({ passthrough: true })),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [request_account_recovery_dto_1.RequestAccountRecoveryDto]),
+    __metadata("design:paramtypes", [request_account_recovery_dto_1.RequestAccountRecoveryDto, Object, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "requestAccountRecovery", null);
 __decorate([
@@ -447,8 +485,10 @@ __decorate([
         description: 'Invalid token, password, or MFA code.',
     }),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
+    __param(2, (0, common_1.Res)({ passthrough: true })),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [complete_account_recovery_dto_1.CompleteAccountRecoveryDto]),
+    __metadata("design:paramtypes", [complete_account_recovery_dto_1.CompleteAccountRecoveryDto, Object, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "completeAccountRecovery", null);
 __decorate([
@@ -500,7 +540,14 @@ __decorate([
     (0, common_1.Post)('mfa/verify'),
     (0, common_1.HttpCode)(200),
     (0, swagger_1.ApiOperation)({ summary: 'Verify MFA code to enable MFA.' }),
-    (0, swagger_1.ApiBody)({ schema: { example: { code: '123456' } } }),
+    (0, swagger_1.ApiBody)({
+        schema: {
+            example: {
+                code: '123456',
+                type: 'totp'
+            }
+        }
+    }),
     (0, swagger_1.ApiOkResponse)({
         schema: {
             oneOf: [
@@ -513,9 +560,9 @@ __decorate([
     }),
     (0, swagger_1.ApiUnauthorizedResponse)({ description: 'User is not authenticated.' }),
     __param(0, (0, common_1.Req)()),
-    __param(1, (0, common_1.Body)('code')),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "mfaVerify", null);
 __decorate([

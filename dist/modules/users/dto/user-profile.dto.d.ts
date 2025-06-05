@@ -6,5 +6,6 @@ export declare class UserProfileDto {
     role: string;
     active: boolean;
     emailVerified: boolean;
+    phoneVerified: boolean;
     avatar?: string;
 }

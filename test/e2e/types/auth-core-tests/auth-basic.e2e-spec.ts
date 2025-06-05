@@ -6,11 +6,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 import * as cookieParser from 'cookie-parser';
-import { AppModule } from '../../src/app.module';
+import { AppModule } from '../../../../src/app.module';
 import { DataSource, Repository } from 'typeorm';
-import { User } from '../../src/modules/users/entities/user.entity';
-import { AuthService } from '../../src/modules/auth/services/auth.service';
-import { UsersService } from '../../src/modules/users/services/users.service';
+import { User } from '../../../../src/modules/users/entities/user.entity';
+import { AuthService } from '../../../../src/modules/auth/services/auth.service';
+import { UsersService } from '../../../../src/modules/users/services/users.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import {
   TestUser,
@@ -20,7 +20,7 @@ import {
   AuthTestResponse,
   ErrorResponse,
   CookieHeader,
-} from './types/auth.types';
+} from '../auth.types';
 
 /**
  * Decodes and returns the JWT payload
@@ -278,12 +278,11 @@ describe('Auth Basic E2E', () => {
         .send({ email, password })
         .expect(200);
 
-      const loginCookies = loginRes.headers['set-cookie'];
-
-      // Logout
+      // Logout - use Authorization header for reliable authentication
+      const accessToken = loginRes.body.accessToken;
       await request(app.getHttpServer())
         .post('/api/auth/logout')
-        .set('Cookie', loginCookies)
+        .set('Authorization', `Bearer ${accessToken}`)
         .expect(200);
     });
   });
@@ -426,10 +425,10 @@ describe('Auth Basic E2E', () => {
       expect(profileRes.body).toHaveProperty('id');
       expect(profileRes.body).toHaveProperty('email');
 
-      // Logout
+      // Logout - use Authorization header for reliable authentication
       await request(app.getHttpServer())
         .post('/api/auth/logout')
-        .set('Cookie', loginCookies)
+        .set('Authorization', `Bearer ${accessToken}`)
         .expect(200);
     });
   });

@@ -30,10 +30,19 @@ const tenant_context_interceptor_1 = require("./common/interceptors/tenant-conte
 const all_exceptions_filter_1 = require("./common/filters/all-exceptions.filter");
 const roles_guard_1 = require("./common/guards/roles.guard");
 const logging_middleware_1 = require("./common/middleware/logging.middleware");
+const security_headers_middleware_1 = require("./common/middleware/security-headers.middleware");
+const csrf_middleware_1 = require("./common/middleware/csrf.middleware");
 const performance_interceptor_1 = require("./common/interceptors/performance.interceptor");
 let AppModule = class AppModule {
     configure(consumer) {
-        consumer.apply(logging_middleware_1.LoggingMiddleware).forRoutes('*');
+        consumer
+            .apply(security_headers_middleware_1.SecurityHeadersMiddleware)
+            .forRoutes('*')
+            .apply(logging_middleware_1.LoggingMiddleware)
+            .forRoutes('*')
+            .apply(csrf_middleware_1.CsrfMiddleware)
+            .exclude({ path: 'api/auth/login', method: common_1.RequestMethod.POST }, { path: 'api/auth/register', method: common_1.RequestMethod.POST }, { path: 'api/auth/refresh', method: common_1.RequestMethod.POST }, { path: 'api/health', method: common_1.RequestMethod.GET }, { path: 'api/docs', method: common_1.RequestMethod.GET })
+            .forRoutes('*');
     }
 };
 exports.AppModule = AppModule;

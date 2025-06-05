@@ -37,8 +37,8 @@ let TokenService = class TokenService {
         this.sessionService = sessionService;
         this.refreshTokenRepository = refreshTokenRepository;
     }
-    async generateTokens(userId, deviceInfo = {}) {
-        const user = await this.usersService.findById(userId);
+    async generateTokens(userId, deviceInfo = {}, existingUser) {
+        const user = existingUser || await this.usersService.findById(userId);
         if (!user)
             throw new Error('User not found');
         const tenantMemberships = await this.tenantsService.getUserTenantMemberships(userId);
@@ -48,7 +48,6 @@ let TokenService = class TokenService {
             userId,
             deviceInfo,
         });
-        console.log('[TokenService] Created session with ID:', session.id);
         const payload = {
             sub: userId,
             email: user.email,
@@ -86,13 +85,6 @@ let TokenService = class TokenService {
             throw new Error('Invalid access token expiry configuration');
         }
         const token = this.jwtService.sign(payload, { expiresIn });
-        const decoded = this.jwtService.decode(token);
-        console.log('[TokenService] Access token generated:', {
-            expiresIn,
-            iat: decoded.iat ?? 0,
-            exp: decoded.exp ?? 0,
-            now: Math.floor(Date.now() / 1000),
-        });
         return token;
     }
     async generateRefreshToken(payload) {
@@ -104,14 +96,6 @@ let TokenService = class TokenService {
         const expiresAt = new Date();
         expiresAt.setSeconds(expiresAt.getSeconds() + expiresIn);
         const token = this.jwtService.sign({ ...payload, type: 'refresh' }, { expiresIn });
-        const decoded = this.jwtService.decode(token);
-        console.log('[TokenService] Refresh token generated:', {
-            expiresIn,
-            iat: decoded.iat ?? 0,
-            exp: decoded.exp ?? 0,
-            now: Math.floor(Date.now() / 1000),
-        });
-        console.log('[TokenService] Saving refresh token for sessionId:', payload.sessionId);
         await this.refreshTokenRepository.save({
             user: { id: payload.sub },
             session: { id: payload.sessionId },
@@ -128,27 +112,21 @@ let TokenService = class TokenService {
             console.log('[TokenService] isRefreshTokenValid called with token:', token);
             const payload = this.jwtService.verify(token);
             if (!payload || typeof payload !== 'object' || !('type' in payload)) {
-                console.warn('[TokenService] Invalid token payload structure');
                 return false;
             }
-            console.log('[TokenService] Decoded refresh token payload:', payload);
             const tokenRecord = await this.refreshTokenRepository.findOne({
                 where: {
                     token: token,
                     isRevoked: false,
                 },
             });
-            console.log('[TokenService] Refresh token DB lookup result:', tokenRecord);
             if (!tokenRecord) {
-                console.warn('[TokenService] Refresh token not found or revoked in DB');
                 return false;
             }
             if (tokenRecord.expiresAt < new Date()) {
-                console.warn('[TokenService] Refresh token is expired:', tokenRecord);
                 await this.revokeRefreshToken(token);
                 return false;
             }
-            console.log('[TokenService] Refresh token is valid');
             return true;
         }
         catch (error) {

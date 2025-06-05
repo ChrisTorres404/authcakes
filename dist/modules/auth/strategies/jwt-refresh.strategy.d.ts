@@ -5,7 +5,7 @@ import { TokenService } from '../services/token.service';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
 import { UsersService } from '../../users/services/users.service';
 import { SessionService } from '../services/session.service';
-declare const JwtRefreshStrategy_base: new (...args: [opt: StrategyOptionsWithRequest] | [opt: import("passport-jwt").StrategyOptionsWithoutRequest]) => Strategy & {
+declare const JwtRefreshStrategy_base: new (...args: [opt: import("passport-jwt").StrategyOptionsWithoutRequest] | [opt: StrategyOptionsWithRequest]) => Strategy & {
     validate(...args: any[]): unknown;
 };
 export declare class JwtRefreshStrategy extends JwtRefreshStrategy_base {

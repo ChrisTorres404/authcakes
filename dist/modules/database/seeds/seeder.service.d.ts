@@ -1,6 +1,7 @@
 import { Repository } from 'typeorm';
 export interface SeederOptions {
     force?: boolean;
+    environment?: 'development' | 'test' | 'production';
 }
 import { SystemSetting } from '../../settings/entities/system-setting.entity';
 import { User } from '../../users/entities/user.entity';
@@ -26,4 +27,10 @@ export declare class SeederService {
     private readonly logger;
     constructor(systemSettingsRepository: Repository<SystemSetting>, userRepository: Repository<User>, tenantRepository: Repository<Tenant>, tenantMembershipRepository: Repository<TenantMembership>, logRepository: Repository<Log>, apiKeyRepository: Repository<ApiKey>, mfaRecoveryCodeRepository: Repository<MfaRecoveryCode>, webauthnCredentialRepository: Repository<WebauthnCredential>, userDeviceRepository: Repository<UserDevice>, invitationRepository: Repository<TenantInvitation>);
     seed(options?: SeederOptions): Promise<void>;
+    private seedSystemSettings;
+    private seedUsers;
+    private seedTenants;
+    private seedTenantMemberships;
+    private seedApiKeys;
+    private seedDemoData;
 }

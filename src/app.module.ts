@@ -5,6 +5,7 @@ import {
   NestModule,
   MiddlewareConsumer,
   ExecutionContext,
+  RequestMethod,
 } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -34,6 +35,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { RolesGuard } from './common/guards/roles.guard';
 import { LoggingMiddleware } from './common/middleware/logging.middleware';
 import { SecurityHeadersMiddleware } from './common/middleware/security-headers.middleware';
+import { CsrfMiddleware } from './common/middleware/csrf.middleware';
 import { PerformanceInterceptor } from './common/interceptors/performance.interceptor';
 
 @Module({
@@ -142,6 +144,15 @@ export class AppModule implements NestModule {
       .apply(SecurityHeadersMiddleware)
       .forRoutes('*')
       .apply(LoggingMiddleware)
+      .forRoutes('*')
+      .apply(CsrfMiddleware)
+      .exclude(
+        { path: 'api/auth/login', method: RequestMethod.POST },
+        { path: 'api/auth/register', method: RequestMethod.POST },
+        { path: 'api/auth/refresh', method: RequestMethod.POST },
+        { path: 'api/health', method: RequestMethod.GET },
+        { path: 'api/docs', method: RequestMethod.GET },
+      )
       .forRoutes('*');
   }
 }

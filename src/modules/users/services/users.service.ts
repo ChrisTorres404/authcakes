@@ -41,6 +41,7 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { User } from '../entities/user.entity';
+import { MfaRecoveryCode } from '../../auth/entities/mfa-recovery-code.entity';
 import { SessionService } from '../../auth/services/session.service';
 import { AuditLogService } from '../../auth/services/audit-log.service';
 import { SettingsService } from '../../settings/services/settings.service';
@@ -53,6 +54,8 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(MfaRecoveryCode)
+    private readonly mfaRecoveryCodeRepository: Repository<MfaRecoveryCode>,
     private readonly configService: ConfigService,
     private readonly sessionService: SessionService,
     private readonly auditLogService: AuditLogService,
@@ -371,14 +374,7 @@ export class UsersService {
     // Generate 6-digit OTP and expiry (10 minutes)
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
-    console.log(
-      '[UsersService] Generated password reset token:',
-      token,
-      'for user:',
-      id,
-      'expires at:',
-      resetTokenExpiry,
-    );
+    // Security: Removed console.log that exposed password reset token details
     await this.userRepository.update(id, {
       resetToken: token,
       resetTokenExpiry,
@@ -396,14 +392,7 @@ export class UsersService {
       accountRecoveryTokenExpiry.getHours() + expiryHours,
     );
 
-    console.log(
-      '[UsersService] Generated account recovery token:',
-      token,
-      'for user:',
-      id,
-      'expires at:',
-      accountRecoveryTokenExpiry,
-    );
+    // Security: Removed console.log that exposed account recovery token details
 
     await this.userRepository.update(id, {
       accountRecoveryToken: token,
@@ -425,25 +414,20 @@ export class UsersService {
     newPassword: string,
     otp?: string,
   ): Promise<User> {
-    void this.auditLogService.log('password_reset_attempt', { token });
-    console.log('[UsersService] Attempting password reset with token:', token);
+    await this.auditLogService.log('password_reset_attempt', { token });
+    // Security: Removed console.log that exposed password reset token
     const user = await this.userRepository.findOne({
       where: { resetToken: token },
     });
-    console.log('[UsersService] User lookup result for reset token:', user);
+    // Security: Removed console.log that exposed user data
     if (!user) {
-      console.warn('[UsersService] Invalid reset token:', token);
-      void this.auditLogService.log('password_reset_failure', { token });
+      // Security: Removed console.warn that exposed reset token
+      await this.auditLogService.log('password_reset_failure', { token });
       throw new BadRequestException('Invalid reset token');
     }
     if (user.resetTokenExpiry && user.resetTokenExpiry < new Date()) {
-      console.warn(
-        '[UsersService] Reset token expired:',
-        user.resetTokenExpiry,
-        'now:',
-        new Date(),
-      );
-      void this.auditLogService.log('password_reset_failure', {
+      // Security: Removed console.warn that exposed token expiry information
+      await this.auditLogService.log('password_reset_failure', {
         userId: user.id,
         reason: 'expired',
       });
@@ -460,14 +444,14 @@ export class UsersService {
       }
     }
     if (!user.active) {
-      void this.auditLogService.log('password_reset_failure', {
+      await this.auditLogService.log('password_reset_failure', {
         userId: user.id,
         reason: 'inactive',
       });
       throw new BadRequestException('Account is deactivated');
     }
     if (user.lockedUntil && user.lockedUntil > new Date()) {
-      void this.auditLogService.log('password_reset_failure', {
+      await this.auditLogService.log('password_reset_failure', {
         userId: user.id,
         reason: 'locked',
       });
@@ -481,7 +465,7 @@ export class UsersService {
     user.lockedUntil = null;
     user.otp = null;
     user.otpExpiry = null;
-    void this.auditLogService.log('password_reset_success', {
+    await this.auditLogService.log('password_reset_success', {
       userId: user.id,
     });
     return this.userRepository.save(user);
@@ -542,19 +526,16 @@ export class UsersService {
     token: string,
     newPassword: string,
   ): Promise<User> {
-    void this.auditLogService.log('account_recovery_attempt', { token });
-    console.log(
-      '[UsersService] Attempting account recovery with token:',
-      token,
-    );
+    await this.auditLogService.log('account_recovery_attempt', { token });
+    // Security: Removed console.log that exposed account recovery token
 
     const user = await this.userRepository.findOne({
       where: { accountRecoveryToken: token },
     });
 
     if (!user) {
-      console.warn('[UsersService] Invalid account recovery token:', token);
-      void this.auditLogService.log('account_recovery_failure', {
+      // Security: Removed console.warn that exposed invalid recovery token
+      await this.auditLogService.log('account_recovery_failure', {
         token,
         reason: 'invalid_token',
       });
@@ -565,13 +546,8 @@ export class UsersService {
       user.accountRecoveryTokenExpiry &&
       user.accountRecoveryTokenExpiry < new Date()
     ) {
-      console.warn(
-        '[UsersService] Account recovery token expired:',
-        user.accountRecoveryTokenExpiry,
-        'now:',
-        new Date(),
-      );
-      void this.auditLogService.log('account_recovery_failure', {
+      // Security: Removed console.warn that exposed token expiry information
+      await this.auditLogService.log('account_recovery_failure', {
         userId: user.id,
         reason: 'expired',
       });
@@ -579,24 +555,85 @@ export class UsersService {
     }
 
     if (!user.active) {
-      void this.auditLogService.log('account_recovery_failure', {
+      await this.auditLogService.log('account_recovery_failure', {
         userId: user.id,
         reason: 'inactive',
       });
       throw new BadRequestException('Account is deactivated');
     }
 
-    // Hash new password
-    user.password = await this.hashPassword(newPassword);
-    user.accountRecoveryToken = null;
-    user.accountRecoveryTokenExpiry = null;
-    user.failedLoginAttempts = 0;
-    user.lockedUntil = null;
+    // Use database transaction for account recovery completion
+    const queryRunner = this.userRepository.manager.connection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    void this.auditLogService.log('account_recovery_success', {
-      userId: user.id,
-    });
+    try {
+      // Hash new password
+      user.password = await this.hashPassword(newPassword);
+      user.accountRecoveryToken = null;
+      user.accountRecoveryTokenExpiry = null;
+      user.failedLoginAttempts = 0;
+      user.lockedUntil = null;
 
-    return this.userRepository.save(user);
+      const updatedUser = await queryRunner.manager.save(user);
+
+      await this.auditLogService.log('account_recovery_success', {
+        userId: user.id,
+      });
+
+      await queryRunner.commitTransaction();
+      return updatedUser;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  /**
+   * Saves MFA recovery codes for a user
+   * @param userId - User ID
+   * @param codes - Array of recovery codes to save
+   */
+  async saveRecoveryCodes(userId: string, codes: string[]): Promise<void> {
+    // Delete existing recovery codes
+    await this.mfaRecoveryCodeRepository.delete({ userId });
+
+    // Create new recovery codes using raw query to ensure userId is properly set
+    if (codes.length > 0) {
+      const queryRunner = this.mfaRecoveryCodeRepository.manager.connection.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+
+      try {
+        for (const code of codes) {
+          await queryRunner.query(
+            `INSERT INTO "mfa_recovery_codes" ("userId", "code", "used") VALUES ($1, $2, $3)`,
+            [userId, code, false]
+          );
+        }
+        await queryRunner.commitTransaction();
+      } catch (error) {
+        await queryRunner.rollbackTransaction();
+        throw error;
+      } finally {
+        await queryRunner.release();
+      }
+    }
+  }
+
+  /**
+   * Marks a recovery code as used
+   * @param codeId - Recovery code ID
+   */
+  async markRecoveryCodeAsUsed(codeId: string): Promise<void> {
+    await this.mfaRecoveryCodeRepository.update(
+      { id: codeId },
+      { 
+        used: true,
+        usedAt: new Date()
+      }
+    );
   }
 }

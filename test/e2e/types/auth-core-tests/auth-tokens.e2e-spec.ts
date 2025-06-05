@@ -4,23 +4,16 @@
  */
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import request from 'supertest';
-import cookieParser from 'cookie-parser';
-import { AppModule } from '../../src/app.module';
+import * as request from 'supertest';
+import * as cookieParser from 'cookie-parser';
+import { AppModule } from '../../../../src/app.module';
 import { DataSource, Repository } from 'typeorm';
-import { User } from '../../src/modules/users/entities/user.entity';
-import { AuthService } from '../../src/modules/auth/services/auth.service';
-import { UsersService } from '../../src/modules/users/services/users.service';
+import { User } from '../../../../src/modules/users/entities/user.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import {
-  AuthTestResponse,
-  TestUser,
-  TokenResponse,
-  RefreshTokenResponse,
   SessionListResponse,
   PasswordChangePayload,
-  ErrorResponse,
-} from './types/auth.types';
+} from '../auth.types';
 
 /**
  * Generates a unique email for test isolation
@@ -33,8 +26,6 @@ function uniqueEmail(prefix = 'user'): string {
 
 describe('Auth Tokens E2E', () => {
   let app: INestApplication;
-  let authService: AuthService;
-  let usersService: UsersService;
   let userRepository: Repository<User>;
   let dataSource: DataSource;
 
@@ -57,8 +48,6 @@ describe('Auth Tokens E2E', () => {
     app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
     await app.init();
     dataSource = app.get(DataSource);
-    authService = moduleFixture.get<AuthService>(AuthService);
-    usersService = moduleFixture.get<UsersService>(UsersService);
     userRepository = moduleFixture.get<Repository<User>>(
       getRepositoryToken(User),
     );
@@ -67,6 +56,13 @@ describe('Auth Tokens E2E', () => {
   afterAll(async () => {
     await app.close();
   }, 10000);
+
+  beforeEach(async () => {
+    // Clean up database between tests
+    await dataSource.query('TRUNCATE TABLE "tenant_memberships" CASCADE');
+    await dataSource.query('TRUNCATE TABLE "tenants" CASCADE');
+    await dataSource.query('TRUNCATE TABLE "users" CASCADE');
+  });
 
   describe('Access Tokens', () => {
     it('should not access protected route with expired access token', async () => {
@@ -81,7 +77,7 @@ describe('Auth Tokens E2E', () => {
           password,
           firstName: 'Test',
           lastName: 'User',
-          organizationName: 'TestOrg',
+          organizationName: `TestOrg${Date.now()}${Math.random().toString(36).substring(2, 7)}`,
         })
         .expect(200);
 
@@ -109,7 +105,7 @@ describe('Auth Tokens E2E', () => {
           password,
           firstName: 'Test',
           lastName: 'User',
-          organizationName: 'TestOrg',
+          organizationName: `TestOrg${Date.now()}${Math.random().toString(36).substring(2, 7)}`,
         })
         .expect(200);
 
@@ -140,7 +136,7 @@ describe('Auth Tokens E2E', () => {
           password,
           firstName: 'Test',
           lastName: 'User',
-          organizationName: 'TestOrg',
+          organizationName: `TestOrg${Date.now()}${Math.random().toString(36).substring(2, 7)}`,
         })
         .expect(200);
 
@@ -185,8 +181,15 @@ describe('Auth Tokens E2E', () => {
           password,
           firstName: 'Test',
           lastName: 'User',
-          organizationName: 'TestOrg',
+          organizationName: `TestOrg${Date.now()}${Math.random().toString(36).substring(2, 7)}`,
         })
+        .expect(200);
+
+      // Verify email
+      const user = await userRepository.findOneByOrFail({ email });
+      await request(app.getHttpServer())
+        .post('/api/users/verify-email')
+        .send({ token: user.emailVerificationToken })
         .expect(200);
 
       const loginRes = await request(app.getHttpServer())
@@ -195,12 +198,18 @@ describe('Auth Tokens E2E', () => {
         .expect(200);
 
       const loginCookies = loginRes.headers['set-cookie'];
+      console.log('Login cookies:', loginCookies);
 
-      // Refresh token
+      // Refresh token  
       const refreshRes = await request(app.getHttpServer())
         .post('/api/auth/refresh')
-        .set('Cookie', loginCookies)
-        .expect(200);
+        .set('Cookie', loginCookies);
+      
+      if (refreshRes.status !== 200) {
+        console.log('Refresh failed:', refreshRes.status, refreshRes.body);
+        console.log('Login response:', loginRes.body);
+      }
+      expect(refreshRes.status).toBe(200);
 
       expect(refreshRes.body).toHaveProperty('accessToken');
     });
@@ -217,8 +226,15 @@ describe('Auth Tokens E2E', () => {
           password,
           firstName: 'Test',
           lastName: 'User',
-          organizationName: 'TestOrg',
+          organizationName: `TestOrg${Date.now()}${Math.random().toString(36).substring(2, 7)}`,
         })
+        .expect(200);
+
+      // Verify email
+      const user = await userRepository.findOneByOrFail({ email });
+      await request(app.getHttpServer())
+        .post('/api/users/verify-email')
+        .send({ token: user.emailVerificationToken })
         .expect(200);
 
       const loginRes = await request(app.getHttpServer())
@@ -228,11 +244,16 @@ describe('Auth Tokens E2E', () => {
 
       const loginCookies = loginRes.headers['set-cookie'];
 
-      // Logout to revoke refresh token
-      await request(app.getHttpServer())
+      // Logout to revoke refresh token (needs access token)
+      const logoutRes = await request(app.getHttpServer())
         .post('/api/auth/logout')
         .set('Cookie', loginCookies)
-        .expect(200);
+        .set('Authorization', `Bearer ${loginRes.body.accessToken}`);
+        
+      if (logoutRes.status !== 200) {
+        console.log('Logout failed:', logoutRes.status, logoutRes.body);
+      }
+      expect(logoutRes.status).toBe(200);
 
       // Try to refresh with revoked token
       await request(app.getHttpServer())
@@ -253,8 +274,15 @@ describe('Auth Tokens E2E', () => {
           password,
           firstName: 'Test',
           lastName: 'User',
-          organizationName: 'TestOrg',
+          organizationName: `TestOrg${Date.now()}${Math.random().toString(36).substring(2, 7)}`,
         })
+        .expect(200);
+
+      // Verify email
+      const user = await userRepository.findOneByOrFail({ email });
+      await request(app.getHttpServer())
+        .post('/api/users/verify-email')
+        .send({ token: user.emailVerificationToken })
         .expect(200);
 
       const loginRes = await request(app.getHttpServer())
@@ -264,10 +292,11 @@ describe('Auth Tokens E2E', () => {
 
       const loginCookies = loginRes.headers['set-cookie'];
 
-      // List sessions to get sessionId
+      // List sessions to get sessionId (needs access token)
       const sessionsRes = await request(app.getHttpServer())
         .get('/api/auth/sessions')
         .set('Cookie', loginCookies)
+        .set('Authorization', `Bearer ${loginRes.body.accessToken}`)
         .expect(200);
 
       const sessionList = sessionsRes.body as SessionListResponse;
@@ -278,10 +307,11 @@ describe('Auth Tokens E2E', () => {
 
       const sessionId = sessionsRes.body.sessions[0].id;
 
-      // Revoke session
+      // Revoke session (needs access token)
       await request(app.getHttpServer())
         .post('/api/auth/revoke-session')
         .set('Cookie', loginCookies)
+        .set('Authorization', `Bearer ${loginRes.body.accessToken}`)
         .send({ sessionId })
         .expect(200);
 
@@ -307,8 +337,15 @@ describe('Auth Tokens E2E', () => {
           password,
           firstName: 'Test',
           lastName: 'User',
-          organizationName: 'TestOrg',
+          organizationName: `TestOrg${Date.now()}${Math.random().toString(36).substring(2, 7)}`,
         })
+        .expect(200);
+
+      // Verify email
+      const user = await userRepository.findOneByOrFail({ email });
+      await request(app.getHttpServer())
+        .post('/api/users/verify-email')
+        .send({ token: user.emailVerificationToken })
         .expect(200);
 
       const loginRes = await request(app.getHttpServer())
@@ -318,7 +355,7 @@ describe('Auth Tokens E2E', () => {
 
       const loginCookies = loginRes.headers['set-cookie'];
 
-      // Change password
+      // Change password (needs access token)
       const passwordChange: PasswordChangePayload = {
         oldPassword: password,
         newPassword: newPassword,
@@ -327,6 +364,7 @@ describe('Auth Tokens E2E', () => {
       await request(app.getHttpServer())
         .post('/api/auth/change-password')
         .set('Cookie', loginCookies)
+        .set('Authorization', `Bearer ${loginRes.body.accessToken}`)
         .send(passwordChange)
         .expect(200);
 

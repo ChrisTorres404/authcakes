@@ -43,7 +43,12 @@ let UsersController = class UsersController {
         return this.usersService.search(search || '');
     }
     async getProfile(user) {
-        const entity = await this.usersService.findById(user.id);
+        common_2.Logger.log(`Profile access - UserID: ${user.sub}, SessionID: ${user.sessionId}`, 'UsersController');
+        const entity = await this.usersService.findById(user.sub);
+        if (entity.id !== user.sub) {
+            common_2.Logger.error(`Profile access security violation - JWT UserID: ${user.sub}, DB UserID: ${entity.id}`, 'UsersController');
+            throw new common_1.NotFoundException('User profile not found');
+        }
         return {
             id: entity.id,
             email: entity.email,
@@ -52,6 +57,7 @@ let UsersController = class UsersController {
             role: entity.role,
             active: entity.active,
             emailVerified: entity.emailVerified,
+            phoneVerified: entity.phoneVerified,
             avatar: entity.avatar,
         };
     }
@@ -60,7 +66,7 @@ let UsersController = class UsersController {
             ip: request.ip,
             userAgent: request.headers['user-agent'],
         };
-        return this.usersService.updateProfile(user.id, updateUserProfileDto, user.id, requestInfo);
+        return this.usersService.updateProfile(user.sub, updateUserProfileDto, user.sub, requestInfo);
     }
     async findOne(id) {
         const entity = await this.usersService.findById(id);
@@ -97,7 +103,7 @@ let UsersController = class UsersController {
                 ip: request.ip,
                 userAgent: request.headers['user-agent'],
             };
-            return this.usersService.updateProfile(id, updateUserDto, admin.id, requestInfo);
+            return this.usersService.updateProfile(id, updateUserDto, admin.sub, requestInfo);
         }
         return this.usersService.update(id, updateUserDto);
     }
@@ -111,16 +117,16 @@ let UsersController = class UsersController {
         return this.usersService.verifyPhone(token);
     }
     async listDevices(user) {
-        common_2.Logger.log(`DeviceManagement: listDevices - User ${user.id}`, 'UsersController');
-        let devices = await this.usersService.listActiveSessions(user.id);
+        common_2.Logger.log(`DeviceManagement: listDevices - User ${user.sub}`, 'UsersController');
+        let devices = await this.usersService.listActiveSessions(user.sub);
         if (!Array.isArray(devices)) {
             devices = [];
         }
         return { devices: devices };
     }
     async revokeDevice(user, sessionId) {
-        common_2.Logger.log(`DeviceManagement: revokeDevice - User ${user.id}, Session ${sessionId}`, 'UsersController');
-        await this.usersService.revokeSession(user.id, sessionId);
+        common_2.Logger.log(`DeviceManagement: revokeDevice - User ${user.sub}, Session ${sessionId}`, 'UsersController');
+        await this.usersService.revokeSession(user.sub, sessionId);
         return { success: true };
     }
 };
@@ -161,7 +167,7 @@ __decorate([
     }),
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [user_entity_1.User]),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "getProfile", null);
 __decorate([
@@ -178,8 +184,7 @@ __decorate([
     __param(1, (0, common_1.Body)()),
     __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [user_entity_1.User,
-        update_user_profile_dto_1.UpdateUserProfileDto, Object]),
+    __metadata("design:paramtypes", [Object, update_user_profile_dto_1.UpdateUserProfileDto, Object]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "updateProfile", null);
 __decorate([
@@ -213,8 +218,7 @@ __decorate([
     __param(2, (0, current_user_decorator_1.CurrentUser)()),
     __param(3, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, update_user_dto_1.UpdateUserDto,
-        user_entity_1.User, Object]),
+    __metadata("design:paramtypes", [String, update_user_dto_1.UpdateUserDto, Object, Object]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "update", null);
 __decorate([
@@ -273,7 +277,7 @@ __decorate([
     (0, swagger_1.ApiResponse)({ status: 200, description: 'List of devices' }),
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [user_entity_1.User]),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "listDevices", null);
 __decorate([
@@ -284,7 +288,7 @@ __decorate([
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [user_entity_1.User, String]),
+    __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "revokeDevice", null);
 exports.UsersController = UsersController = __decorate([

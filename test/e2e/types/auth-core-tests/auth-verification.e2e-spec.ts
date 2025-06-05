@@ -3,11 +3,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 import * as cookieParser from 'cookie-parser';
-import { AppModule } from '../../src/app.module';
+import { AppModule } from '../../../../src/app.module';
 import { DataSource, Repository } from 'typeorm';
-import { User } from '../../src/modules/users/entities/user.entity';
-import { AuthService } from '../../src/modules/auth/services/auth.service';
-import { UsersService } from '../../src/modules/users/services/users.service';
+import { User } from '../../../../src/modules/users/entities/user.entity';
+import { AuthService } from '../../../../src/modules/auth/services/auth.service';
+import { UsersService } from '../../../../src/modules/users/services/users.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
 /**
@@ -59,6 +59,7 @@ describe('Auth Verification E2E', () => {
       // Register user
       const email = uniqueEmail('verifyflow');
       const password = 'Test1234!';
+      const orgName = `TestOrg-${Date.now()}`;
 
       await request(app.getHttpServer())
         .post('/api/auth/register')
@@ -67,7 +68,7 @@ describe('Auth Verification E2E', () => {
           password,
           firstName: 'Test',
           lastName: 'User',
-          organizationName: 'TestOrg',
+          organizationName: orgName,
         })
         .expect(200);
 
@@ -94,6 +95,7 @@ describe('Auth Verification E2E', () => {
       // Register user
       const email = uniqueEmail('phoneflow');
       const password = 'Test1234!';
+      const orgName = `TestOrg-${Date.now()}`;
 
       await request(app.getHttpServer())
         .post('/api/auth/register')
@@ -103,7 +105,7 @@ describe('Auth Verification E2E', () => {
           phoneNumber: '+1234567890',
           firstName: 'Test',
           lastName: 'User',
-          organizationName: 'TestOrg',
+          organizationName: orgName,
         })
         .expect(200);
 

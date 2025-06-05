@@ -23,6 +23,7 @@ export interface AuthTokenResponse {
   accessToken: string;
   refreshToken: string;
   verificationToken?: string;
+  passwordExpired?: boolean;
 }
 
 export interface MfaResponse {

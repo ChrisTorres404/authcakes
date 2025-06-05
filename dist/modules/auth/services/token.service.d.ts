@@ -16,7 +16,15 @@ export declare class TokenService {
     private readonly sessionService;
     private readonly refreshTokenRepository;
     constructor(jwtService: JwtService, configService: ConfigService, usersService: UsersService, tenantsService: TenantsService, sessionService: SessionService, refreshTokenRepository: Repository<RefreshToken>);
-    generateTokens(userId: string, deviceInfo?: DeviceInfo): Promise<AuthTokenResponse>;
+    generateTokens(userId: string, deviceInfo?: DeviceInfo, existingUser?: {
+        id: string;
+        email: string;
+        role: string;
+        firstName: string;
+        lastName: string;
+        avatar?: string;
+        emailVerified: boolean;
+    }): Promise<AuthTokenResponse>;
     generateAccessToken(payload: JwtPayload): string;
     generateRefreshToken(payload: JwtPayload): Promise<string>;
     verifyToken(token: string): JwtPayload;

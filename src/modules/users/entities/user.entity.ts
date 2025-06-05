@@ -45,7 +45,7 @@ export class User {
   @Column({ nullable: true })
   avatar: string;
 
-  @Column({ default: true })
+  @Column({ default: false })
   emailVerified: boolean;
 
   @Column({ nullable: true })

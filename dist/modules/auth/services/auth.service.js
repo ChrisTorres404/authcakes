@@ -25,6 +25,7 @@ const settings_service_1 = require("../../settings/services/settings.service");
 const config_1 = require("@nestjs/config");
 const tenants_service_1 = require("../../tenants/services/tenants.service");
 const tenant_invitation_dto_1 = require("../../tenants/dto/tenant-invitation.dto");
+const crypto = require("crypto");
 function hasValidMfaConfig(user) {
     return (user.mfaEnabled &&
         user.mfaType !== null &&
@@ -57,51 +58,78 @@ let AuthService = AuthService_1 = class AuthService {
         this.isProduction =
             this.configService.get('NODE_ENV') === 'production';
     }
+    async generateVerificationToken() {
+        return crypto.randomBytes(32).toString('hex');
+    }
     async validateUser(email, password) {
         const user = await this.usersService.findByEmail(email);
-        console.log('[validateUser] Lookup for email:', email, 'Result:', user);
         if (!user) {
             await this.usersService.recordFailedLoginAttempt(email);
-            console.log('[validateUser] Login failed: user not found');
+            await this.auditLogService.log('login_failed', {
+                email,
+                reason: 'user_not_found',
+            });
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
         if (user.lockedUntil && user.lockedUntil > new Date()) {
-            console.log('[validateUser] Login failed: account locked until', user.lockedUntil);
             throw new common_1.ForbiddenException('Account is locked. Try again later.');
         }
         const isMatch = await bcrypt.compare(password, user.password);
-        console.log('[validateUser] Password match:', isMatch);
         if (!isMatch) {
             await this.usersService.recordFailedLoginAttempt(user.id);
-            console.log('[validateUser] Login failed: password mismatch');
+            await this.auditLogService.log('login_failed', {
+                userId: user.id,
+                email: user.email,
+                reason: 'invalid_password',
+            });
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
         await this.usersService.resetFailedLoginAttempts(user.id);
         await this.usersService.updateLastLogin(user.id);
-        console.log('[validateUser] Login success for user:', user.id);
         return user;
     }
     async register(registerDto, deviceInfo = { ip: '', userAgent: '' }) {
         const existing = await this.usersService.findByEmail(registerDto.email);
         if (existing)
             throw new common_1.BadRequestException('Email already in use');
-        const user = await this.usersService.create(registerDto);
+        const verificationToken = await this.generateVerificationToken();
+        const user = await this.usersService.create({
+            ...registerDto,
+            emailVerified: false,
+            emailVerificationToken: verificationToken,
+            active: true,
+        });
         let tenant = null;
         if (registerDto.organizationName) {
             const slug = registerDto.organizationName
                 .toLowerCase()
                 .replace(/[^a-z0-9]+/g, '-')
                 .replace(/(^-|-$)/g, '');
-            tenant = await this.tenantsService.create({
-                name: registerDto.organizationName,
-                slug,
-                active: true,
-            });
-            await this.tenantsService.addUserToTenant(user.id, tenant.id, tenant_invitation_dto_1.TenantRole.ADMIN);
+            try {
+                tenant = await this.tenantsService.create({
+                    name: registerDto.organizationName,
+                    slug,
+                    active: true,
+                });
+                await this.tenantsService.addUserToTenant(user.id, tenant.id, tenant_invitation_dto_1.TenantRole.ADMIN);
+            }
+            catch (error) {
+                console.warn('Tenant creation failed, continuing without tenant:', error.message);
+                tenant = null;
+            }
         }
-        await this.passwordHistoryService.addToHistory(user.id, user.password);
-        const verificationToken = await this.requestEmailVerification(user.id);
-        const tokens = await this.tokenService.generateTokens(user.id, deviceInfo);
+        const tokens = await this.tokenService.generateTokens(user.id, deviceInfo, user);
+        try {
+            await this.passwordHistoryService.addToHistory(user.id, user.password);
+        }
+        catch (error) {
+            this.logger.warn(`Failed to add initial password to history for user ${user.id}:`, error.message);
+        }
+        await this.auditLogService.log('user_registered', {
+            userId: user.id,
+            email: user.email,
+            organizationName: registerDto.organizationName,
+        });
         return { ...tokens, verificationToken };
     }
     async refresh(userId, sessionId, deviceInfo = { ip: '', userAgent: '' }) {
@@ -109,7 +137,14 @@ let AuthService = AuthService_1 = class AuthService {
         return tokens;
     }
     async requestEmailVerification(userId) {
-        const token = await this.usersService.generateEmailVerificationToken(userId);
+        const user = await this.usersService.findById(userId);
+        let token = user.emailVerificationToken;
+        if (!token) {
+            token = await this.generateVerificationToken();
+            await this.usersService.update(userId, {
+                emailVerificationToken: token,
+            });
+        }
         return token;
     }
     async verifyEmail(token) {
@@ -120,6 +155,10 @@ let AuthService = AuthService_1 = class AuthService {
         if (!user)
             throw new common_1.BadRequestException('User not found');
         const token = await this.usersService.generatePasswordResetToken(user.id);
+        await this.auditLogService.log('password_reset_requested', {
+            userId: user.id,
+            email: user.email,
+        });
         const updatedUser = await this.usersService.findById(user.id);
         if (updatedUser.otp) {
             this.notificationService.sendPasswordResetOtp(updatedUser.email, updatedUser.otp);
@@ -275,7 +314,51 @@ let AuthService = AuthService_1 = class AuthService {
         return user;
     }
     async enableMfa(userId) {
+        if (!userId) {
+            throw new common_1.BadRequestException('User ID is required');
+        }
         await this.usersService.update(userId, { mfaEnabled: true });
+        const recoveryCodes = await this.generateRecoveryCodes(userId);
+        return recoveryCodes;
+    }
+    async generateRecoveryCodes(userId) {
+        if (!userId) {
+            throw new common_1.BadRequestException('User ID is required for generating recovery codes');
+        }
+        const codes = [];
+        const codeCount = 8;
+        for (let i = 0; i < codeCount; i++) {
+            const code = Math.random().toString(36).substring(2, 10).toUpperCase();
+            codes.push(code);
+        }
+        await this.usersService.saveRecoveryCodes(userId, codes);
+        return codes;
+    }
+    async verifyRecoveryCode(userId, code) {
+        const user = await this.usersService.findById(userId, {
+            relations: ['mfaRecoveryCodes'],
+        });
+        if (!user || !user.mfaRecoveryCodes) {
+            return false;
+        }
+        const recoveryCode = user.mfaRecoveryCodes.find(rc => rc.code === code.toUpperCase() && !rc.used);
+        if (!recoveryCode) {
+            return false;
+        }
+        await this.usersService.markRecoveryCodeAsUsed(recoveryCode.id);
+        const unusedCodes = user.mfaRecoveryCodes.filter(rc => rc.id !== recoveryCode.id && !rc.used);
+        if (unusedCodes.length === 0) {
+            await this.generateRecoveryCodes(userId);
+            await this.auditLogService.log('mfa_recovery_codes_regenerated', {
+                userId,
+                reason: 'all_codes_used',
+            });
+        }
+        await this.auditLogService.log('mfa_recovery_code_used', {
+            userId,
+            codeId: recoveryCode.id,
+        });
+        return true;
     }
 };
 exports.AuthService = AuthService;

@@ -84,13 +84,13 @@ let AllExceptionsFilter = AllExceptionsFilter_1 = class AllExceptionsFilter {
             timestamp: new Date().toISOString(),
             path: request.url,
         };
-        if (process.env.NODE_ENV === 'development') {
+        if (process.env.NODE_ENV === 'development' && process.env.EXPOSE_STACK_TRACE === 'true') {
             if (exception instanceof Error && exception.stack) {
                 responseBody.stack = exception.stack;
             }
-            if (details) {
-                responseBody.details = details;
-            }
+        }
+        if (details && (status === common_1.HttpStatus.BAD_REQUEST || status === common_1.HttpStatus.UNPROCESSABLE_ENTITY)) {
+            responseBody.details = details;
         }
         httpAdapter.reply(response, responseBody, status);
     }

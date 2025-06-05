@@ -16,7 +16,7 @@ export class MfaRecoveryCode {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ name: 'userId' })
   @Index()
   userId: string;
 

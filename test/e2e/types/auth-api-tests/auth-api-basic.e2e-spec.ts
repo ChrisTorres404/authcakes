@@ -5,19 +5,27 @@
  * internal implementation. They only test the HTTP API contract and could
  * potentially be run against any deployment (local, staging, production).
  * 
- * No internal imports are used - only HTTP requests and responses.
+ * Auto-detects whether to run in external API mode or internal test mode.
  */
 
 import * as request from 'supertest';
+import { Test, TestingModule } from '@nestjs/testing';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
+import * as cookieParser from 'cookie-parser';
+import { AppModule } from '../../../../src/app.module';
+import { DataSource } from 'typeorm';
 
 /**
  * Configuration for API tests
  * Can be overridden via environment variables for testing different environments
  */
 const API_CONFIG = {
-  baseUrl: process.env.API_BASE_URL || 'http://localhost:3030',
+  baseUrl: process.env.API_BASE_URL || '',
   apiPrefix: process.env.API_PREFIX || '/api',
 };
+
+// Determine if we should run in external mode or internal test mode
+const USE_EXTERNAL_API = !!process.env.API_BASE_URL;
 
 /**
  * Helper function to generate unique email addresses for test isolation
@@ -67,7 +75,9 @@ function formatCookiesForRequest(cookies: Record<string, string>): string {
  * These tests treat the API as a black box and only test the HTTP contract
  */
 describe('Auth API Basic E2E Tests', () => {
-  const apiUrl = `${API_CONFIG.baseUrl}${API_CONFIG.apiPrefix}`;
+  let app: INestApplication;
+  let dataSource: DataSource;
+  let apiUrl: string;
   
   // Test data that will be shared across related tests
   let testUser: {
@@ -78,6 +88,61 @@ describe('Auth API Basic E2E Tests', () => {
     cookies?: Record<string, string>;
   };
 
+  beforeAll(async () => {
+    if (USE_EXTERNAL_API) {
+      // External API mode - use configured URL
+      apiUrl = `${API_CONFIG.baseUrl}${API_CONFIG.apiPrefix}`;
+      console.log(`Running against external API: ${apiUrl}`);
+    } else {
+      // Internal test mode - start NestJS app
+      process.env.NODE_ENV = 'test';
+      process.env.THROTTLE_SKIP = 'true';
+      
+      const moduleFixture: TestingModule = await Test.createTestingModule({
+        imports: [AppModule],
+      }).compile();
+
+      app = moduleFixture.createNestApplication();
+      app.use(cookieParser());
+      app.enableCors({
+        origin: ['http://localhost:3000', 'https://app.example.com'],
+        credentials: true,
+        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+        allowedHeaders: 'Content-Type,Authorization',
+      });
+      app.setGlobalPrefix('api');
+      app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+      await app.init();
+      
+      dataSource = app.get(DataSource);
+      apiUrl = ''; // Will use app.getHttpServer() directly
+      console.log('Running against internal test server');
+    }
+  }, 30000);
+
+  afterAll(async () => {
+    if (!USE_EXTERNAL_API && app) {
+      await app.close();
+    }
+  }, 10000);
+
+  beforeEach(async () => {
+    if (!USE_EXTERNAL_API && dataSource) {
+      // Clean up database between tests
+      await dataSource.query('TRUNCATE TABLE "refresh_tokens" CASCADE');
+      await dataSource.query('TRUNCATE TABLE "sessions" CASCADE');
+      await dataSource.query('TRUNCATE TABLE "password_history" CASCADE');
+      await dataSource.query('TRUNCATE TABLE "tenant_memberships" CASCADE');
+      await dataSource.query('TRUNCATE TABLE "tenants" CASCADE');
+      await dataSource.query('TRUNCATE TABLE "users" CASCADE');
+    }
+  });
+
+  // Helper function to get the correct request target
+  function getRequestTarget() {
+    return USE_EXTERNAL_API ? apiUrl : app.getHttpServer();
+  }
+
   /**
    * Registration API Tests
    */
@@ -87,8 +152,8 @@ describe('Auth API Basic E2E Tests', () => {
       const password = 'Test1234!';
       const organizationName = uniqueOrgName();
 
-      const response = await request(apiUrl)
-        .post('/auth/register')
+      const response = await request(getRequestTarget())
+        .post('/api/auth/register')
         .send({
           email,
           password,
@@ -110,7 +175,7 @@ describe('Auth API Basic E2E Tests', () => {
         firstName: 'Test',
         lastName: 'User',
         role: 'user',
-        emailVerified: true,
+        emailVerified: false,
       });
       
       // Should not expose sensitive data
@@ -133,8 +198,8 @@ describe('Auth API Basic E2E Tests', () => {
       const organizationName = uniqueOrgName();
 
       // First registration should succeed
-      await request(apiUrl)
-        .post('/auth/register')
+      await request(getRequestTarget())
+        .post('/api/auth/register')
         .send({
           email,
           password,
@@ -145,7 +210,7 @@ describe('Auth API Basic E2E Tests', () => {
         .expect(200);
 
       // Second registration with same email should fail
-      const response = await request(apiUrl)
+      const response = await request(getRequestTarget())
         .post('/auth/register')
         .send({
           email,
@@ -224,7 +289,7 @@ describe('Auth API Basic E2E Tests', () => {
 
     it('should login with valid credentials', async () => {
       const response = await request(apiUrl)
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send({
           email: testUser.email,
           password: testUser.password,
@@ -249,7 +314,7 @@ describe('Auth API Basic E2E Tests', () => {
 
     it('should not login with invalid credentials', async () => {
       const response = await request(apiUrl)
-        .post('/auth/login')
+        .post('/api/auth/login')
         .send({
           email: testUser.email,
           password: 'WrongPassword!',
@@ -342,7 +407,7 @@ describe('Auth API Basic E2E Tests', () => {
         .expect(200);
 
       // Login to get tokens
-      const loginResponse = await request(apiUrl)
+      const loginResponse = await request(getRequestTarget())
         .post('/auth/login')
         .send({ email, password })
         .expect(200);
@@ -361,7 +426,7 @@ describe('Auth API Basic E2E Tests', () => {
       console.log('Token being used:', protectedTestUser.accessToken);
       
       const response = await request(apiUrl)
-        .get('/users/profile')
+        .get('/api/users/profile')
         .set('Authorization', `Bearer ${protectedTestUser.accessToken}`)
         .expect(200);
 
@@ -440,7 +505,7 @@ describe('Auth API Basic E2E Tests', () => {
     it('should logout successfully', async () => {
       // Logout request
       const response = await request(apiUrl)
-        .post('/auth/logout')
+        .post('/api/auth/logout')
         .set('Authorization', `Bearer ${logoutTestUser.accessToken}`)
         .expect(200);
 
@@ -495,7 +560,7 @@ describe('Auth API Basic E2E Tests', () => {
       const organizationName = uniqueOrgName();
 
       // Step 1: Register
-      const registerResponse = await request(apiUrl)
+      const registerResponse = await request(getRequestTarget())
         .post('/auth/register')
         .send({
           email,
@@ -592,7 +657,7 @@ describe('Auth API Basic E2E Tests', () => {
   describe('API Standards', () => {
     it('should include proper CORS headers', async () => {
       const response = await request(apiUrl)
-        .options('/auth/login')
+        .options('/api/auth/login')
         .expect(204);
 
       // CORS headers vary by origin - just check methods and headers

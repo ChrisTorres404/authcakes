@@ -26,7 +26,6 @@ let JwtAuthGuard = class JwtAuthGuard extends (0, passport_1.AuthGuard)('jwt') {
             context.getClass(),
         ]);
         const req = context.switchToHttp().getRequest();
-        console.log('[JwtAuthGuard] canActivate called. isPublic:', isPublic, 'url:', req.url, 'headers:', req.headers);
         if (isPublic) {
             return true;
         }
@@ -34,7 +33,6 @@ let JwtAuthGuard = class JwtAuthGuard extends (0, passport_1.AuthGuard)('jwt') {
     }
     handleRequest(err, user, info, context) {
         const req = context.switchToHttp().getRequest();
-        console.log('[JwtAuthGuard] handleRequest called. err:', err, 'user:', user, 'info:', info, 'url:', req.url, 'headers:', req.headers);
         if (err || !user) {
             throw new common_1.UnauthorizedException('Authentication required: Invalid or missing token');
         }

@@ -41,11 +41,11 @@ export declare class AuthController {
         success: boolean;
         user: Partial<User>;
     }>;
-    requestAccountRecovery(dto: RequestAccountRecoveryDto): Promise<{
+    requestAccountRecovery(dto: RequestAccountRecoveryDto, req: Request, res: Response): Promise<{
         success: boolean;
         recoveryToken?: string;
     }>;
-    completeAccountRecovery(dto: CompleteAccountRecoveryDto): Promise<{
+    completeAccountRecovery(dto: CompleteAccountRecoveryDto, req: Request, res: Response): Promise<{
         success: boolean;
     }>;
     changePassword(req: RequestWithUser, oldPassword: string, newPassword: string): Promise<{
@@ -56,10 +56,15 @@ export declare class AuthController {
         success: boolean;
         secret: string;
         otpauth_url?: string;
+        setupStatus: string;
     }>;
-    mfaVerify(req: RequestWithUser, code: string): Promise<{
+    mfaVerify(req: RequestWithUser, verifyDto: {
+        code: string;
+        type?: 'totp' | 'recovery';
+    }): Promise<{
         success: boolean;
         message?: string;
+        recoveryCodes?: string[];
     }>;
     socialLogin(): Promise<{
         success: boolean;

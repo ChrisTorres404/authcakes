@@ -25,11 +25,16 @@ let SeedCommand = SeedCommand_1 = class SeedCommand extends nest_commander_1.Com
     parseForceOption(val) {
         return !!val;
     }
+    parseEnvironmentOption(val) {
+        return val;
+    }
     async run(passedParams, options) {
         try {
-            this.logger.log('Starting database seeding...');
+            const environment = options.environment || process.env.NODE_ENV || 'development';
+            this.logger.log(`Starting database seeding for ${environment} environment...`);
             const seederOptions = {
                 force: options.force,
+                environment: environment,
             };
             await this.seederService.seed(seederOptions);
             this.logger.log('Database seeding completed successfully!');
@@ -54,6 +59,15 @@ __decorate([
     __metadata("design:paramtypes", [Boolean]),
     __metadata("design:returntype", Boolean)
 ], SeedCommand.prototype, "parseForceOption", null);
+__decorate([
+    (0, nest_commander_1.Option)({
+        flags: '-e, --environment <environment>',
+        description: 'Environment to seed for (development, test, production)',
+    }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", String)
+], SeedCommand.prototype, "parseEnvironmentOption", null);
 exports.SeedCommand = SeedCommand = SeedCommand_1 = __decorate([
     (0, nest_commander_1.Command)({ name: 'seed', description: 'Seed the database with initial data' }),
     __metadata("design:paramtypes", [seeder_service_1.SeederService])

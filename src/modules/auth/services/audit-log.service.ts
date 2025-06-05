@@ -33,8 +33,10 @@ export class AuditLogService {
    * @param details.userAgent - Optional user agent of the request
    */
   async log(event: string, details: AuditLogDetails): Promise<void> {
-    // In development, log to console
-    console.log(`[AuditLog] ${event}:`, details);
+    // Only log to console in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[AuditLog] ${event}:`, details);
+    }
 
     // Create log entry
     const log = this.logsRepository.create({

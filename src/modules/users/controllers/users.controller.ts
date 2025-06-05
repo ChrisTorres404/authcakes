@@ -95,6 +95,7 @@ export class UsersController {
       role: entity.role,
       active: entity.active,
       emailVerified: entity.emailVerified,
+      phoneVerified: entity.phoneVerified,
       avatar: entity.avatar,
     };
   }

@@ -8,6 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var JwtStrategy_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.JwtStrategy = void 0;
 const common_1 = require("@nestjs/common");
@@ -16,20 +17,21 @@ const passport_jwt_1 = require("passport-jwt");
 const config_1 = require("@nestjs/config");
 const users_service_1 = require("../../users/services/users.service");
 const session_service_1 = require("../services/session.service");
-let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(passport_jwt_1.Strategy, 'jwt') {
+let JwtStrategy = JwtStrategy_1 = class JwtStrategy extends (0, passport_1.PassportStrategy)(passport_jwt_1.Strategy, 'jwt') {
     configService;
     usersService;
     sessionService;
+    logger = new common_1.Logger(JwtStrategy_1.name);
     constructor(configService, usersService, sessionService) {
-        console.log('[JWTStrategy] Constructor called');
         super({
             jwtFromRequest: passport_jwt_1.ExtractJwt.fromExtractors([
                 passport_jwt_1.ExtractJwt.fromAuthHeaderAsBearerToken(),
                 (request) => {
-                    console.log('[JWTStrategy] Custom extractor, request.url:', request?.url, 'headers:', request?.headers);
-                    const token = request?.cookies?.access_token;
-                    if (!token)
-                        return null;
+                    const token = request?.cookies?.access_token || null;
+                    if (process.env.NODE_ENV === 'test') {
+                        console.log('JWT Cookie extraction - cookies:', request?.cookies);
+                        console.log('JWT Cookie extraction - token:', token ? 'found' : 'not found');
+                    }
                     return token;
                 },
             ]),
@@ -42,54 +44,63 @@ let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(pas
         this.sessionService = sessionService;
     }
     async validate(request, payload) {
-        console.log('[JWTStrategy] validate called. Request url:', request.url, 'headers:', request.headers);
-        console.log('[JWTStrategy] Request cookies:', request.cookies);
-        console.log('[JWTStrategy] Decoded JWT payload:', payload);
-        const user = await this.usersService.findById(payload.sub);
-        console.log('[JWTStrategy] User lookup result:', user);
-        if (!user) {
-            console.warn('[JWTStrategy] User not found for sub:', payload.sub);
-            throw new common_1.UnauthorizedException('User not found');
+        const startTime = Date.now();
+        const requestId = `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+        try {
+            this.logger.log(`JWT validation started - RequestID: ${requestId}, User: ${payload.sub}, URL: ${request.url}`);
+            const user = await this.usersService.findById(payload.sub);
+            if (!user) {
+                this.logger.warn(`JWT validation failed - User not found - RequestID: ${requestId}, UserID: ${payload.sub}`);
+                throw new common_1.UnauthorizedException('User not found');
+            }
+            if (!user.active) {
+                this.logger.warn(`JWT validation failed - Inactive user - RequestID: ${requestId}, UserID: ${payload.sub}`);
+                throw new common_1.UnauthorizedException('Account is inactive');
+            }
+            if (user.lockedUntil && user.lockedUntil > new Date()) {
+                this.logger.warn(`JWT validation failed - Account locked - RequestID: ${requestId}, UserID: ${payload.sub}, LockedUntil: ${user.lockedUntil}`);
+                throw new common_1.UnauthorizedException('Account is temporarily locked');
+            }
+            if (payload.sessionId) {
+                const session = await this.sessionService?.getSessionById(payload.sessionId);
+                const sessionValid = await this.sessionService?.isSessionValid(user.id, payload.sessionId) ?? false;
+                if (!session) {
+                    this.logger.warn(`JWT validation failed - Session not found - RequestID: ${requestId}, UserID: ${payload.sub}, SessionID: ${payload.sessionId}`);
+                    throw new common_1.UnauthorizedException('Session not found');
+                }
+                if (session.revoked) {
+                    this.logger.warn(`JWT validation failed - Session revoked - RequestID: ${requestId}, UserID: ${payload.sub}, SessionID: ${payload.sessionId}`);
+                    throw new common_1.UnauthorizedException('Session has been revoked');
+                }
+                if (session.expiresAt && session.expiresAt < new Date()) {
+                    this.logger.warn(`JWT validation failed - Session expired - RequestID: ${requestId}, UserID: ${payload.sub}, SessionID: ${payload.sessionId}, ExpiredAt: ${session.expiresAt}`);
+                    throw new common_1.UnauthorizedException('Session has expired');
+                }
+                if (!sessionValid) {
+                    this.logger.warn(`JWT validation failed - Invalid session - RequestID: ${requestId}, UserID: ${payload.sub}, SessionID: ${payload.sessionId}`);
+                    throw new common_1.UnauthorizedException('Session is invalid');
+                }
+            }
+            const typedRequest = request;
+            typedRequest.tenantId = payload.tenantId ?? undefined;
+            typedRequest.tenantAccess = payload.tenantAccess;
+            typedRequest.sessionId = payload.sessionId;
+            const duration = Date.now() - startTime;
+            this.logger.log(`JWT validation successful - RequestID: ${requestId}, UserID: ${payload.sub}, Duration: ${duration}ms`);
+            return {
+                ...payload,
+                tenantAccess: payload.tenantAccess || [],
+            };
         }
-        if (payload.sessionId) {
-            console.log('[JWTStrategy] Checking session validity for userId:', user.id, 'sessionId:', payload.sessionId);
-            let sessionValid = false;
-            const session = await this.sessionService?.getSessionById(payload.sessionId);
-            sessionValid =
-                (await this.sessionService?.isSessionValid(user.id, payload.sessionId)) ?? false;
-            console.log('[JWTStrategy] Session lookup result:', session);
-            if (!session) {
-                console.warn('[JWTStrategy] Session not found for sessionId:', payload.sessionId);
-            }
-            else if (session.revoked) {
-                console.warn('[JWTStrategy] Session is revoked:', session);
-            }
-            else if (session.expiresAt && session.expiresAt < new Date()) {
-                console.warn('[JWTStrategy] Session is expired:', session);
-            }
-            if (!sessionValid) {
-                console.warn('[JWTStrategy] Session is not valid for userId:', user.id, 'sessionId:', payload.sessionId);
-                throw new common_1.UnauthorizedException('Session is revoked or expired');
-            }
+        catch (error) {
+            const duration = Date.now() - startTime;
+            this.logger.error(`JWT validation error - RequestID: ${requestId}, Duration: ${duration}ms, Error: ${error.message}`);
+            throw error;
         }
-        const typedRequest = request;
-        typedRequest.tenantId = payload.tenantId ?? undefined;
-        typedRequest.tenantAccess = payload.tenantAccess;
-        typedRequest.sessionId = payload.sessionId;
-        const result = {
-            sub: user.id,
-            email: user.email,
-            role: user.role,
-            tenantId: payload.tenantId,
-            tenantAccess: payload.tenantAccess,
-            sessionId: payload.sessionId,
-            type: payload.type,
-        };
-        return result;
     }
 };
 exports.JwtStrategy = JwtStrategy;
-exports.JwtStrategy = JwtStrategy = __decorate([
+exports.JwtStrategy = JwtStrategy = JwtStrategy_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [config_1.ConfigService,
         users_service_1.UsersService,

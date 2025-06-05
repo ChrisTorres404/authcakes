@@ -2,18 +2,17 @@
  * @fileoverview E2E Tests for Multi-Factor Authentication
  * Tests MFA enrollment, verification, and recovery flows
  */
-// Import test setup before any other imports to ensure environment is configured
-import '../test-setup';
+// Test setup is handled by Jest configuration
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 const request = require('supertest');
 const cookieParser = require('cookie-parser');
-import { AppModule } from '../../src/app.module';
+import { AppModule } from '../../../../src/app.module';
 import { DataSource, Repository } from 'typeorm';
-import { User } from '../../src/modules/users/entities/user.entity';
-import { AuthService } from '../../src/modules/auth/services/auth.service';
-import { UsersService } from '../../src/modules/users/services/users.service';
+import { User } from '../../../../src/modules/users/entities/user.entity';
+import { AuthService } from '../../../../src/modules/auth/services/auth.service';
+import { UsersService } from '../../../../src/modules/users/services/users.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import {
   AuthTestResponse,
@@ -23,7 +22,7 @@ import {
   MfaVerifyRequest,
   MfaVerifyResponse,
   MfaSetupStatus,
-} from './types/auth.types';
+} from '../auth.types';
 const speakeasy = require('speakeasy');
 
 /**
@@ -199,6 +198,7 @@ describe('Auth MFA E2E', () => {
       const verifyRes = await request(app.getHttpServer())
         .post('/api/auth/mfa/verify')
         .set('Cookie', loginCookies)
+        .set('Authorization', `Bearer ${accessToken}`) // Use JWT to bypass CSRF
         .send(verifyRequest)
         .expect(200);
       const verifyResponse = verifyRes.body as MfaVerifyResponse;

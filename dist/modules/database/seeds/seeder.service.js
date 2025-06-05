@@ -17,26 +17,18 @@ exports.SeederService = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
+const bcrypt = require("bcrypt");
 const system_setting_entity_1 = require("../../settings/entities/system-setting.entity");
 const user_entity_1 = require("../../users/entities/user.entity");
 const tenant_entity_1 = require("../../tenants/entities/tenant.entity");
 const tenant_membership_entity_1 = require("../../tenants/entities/tenant-membership.entity");
-const system_settings_seeder_1 = require("./system-settings.seeder");
-const users_seeder_1 = require("./users.seeder");
-const tenants_seeder_1 = require("./tenants.seeder");
-const tenant_memberships_seeder_1 = require("./tenant-memberships.seeder");
 const log_entity_1 = require("../../logs/entities/log.entity");
 const api_key_entity_1 = require("../../api/entities/api-key.entity");
 const mfa_recovery_code_entity_1 = require("../../auth/entities/mfa-recovery-code.entity");
 const webauthn_credential_entity_1 = require("../../auth/entities/webauthn-credential.entity");
 const user_device_entity_1 = require("../../auth/entities/user-device.entity");
 const tenant_invitation_entity_1 = require("../../tenants/entities/tenant-invitation.entity");
-const logs_seeder_1 = require("./logs.seeder");
-const api_keys_seeder_1 = require("./api-keys.seeder");
-const mfa_recovery_codes_seeder_1 = require("./mfa-recovery-codes.seeder");
-const webauthn_credentials_seeder_1 = require("./webauthn-credentials.seeder");
-const user_devices_seeder_1 = require("./user-devices.seeder");
-const tenant_invitations_seeder_1 = require("./tenant-invitations.seeder");
+const data_1 = require("./data");
 let SeederService = SeederService_1 = class SeederService {
     systemSettingsRepository;
     userRepository;
@@ -63,19 +55,187 @@ let SeederService = SeederService_1 = class SeederService {
         common_1.Logger.log('SeederService constructed');
     }
     async seed(options = {}) {
-        console.log('SeederService.seed() called with options:', options);
-        this.logger.log('SeederService.seed() called with options: ' + JSON.stringify(options));
-        await (0, system_settings_seeder_1.seedSystemSettings)(this.systemSettingsRepository, options);
-        await (0, users_seeder_1.seedUsers)(this.userRepository, options);
-        await (0, tenants_seeder_1.seedTenants)(this.tenantRepository, options);
-        await (0, tenant_memberships_seeder_1.seedTenantMemberships)(this.tenantMembershipRepository, this.userRepository, this.tenantRepository, options);
-        await (0, logs_seeder_1.seedLogs)(this.logRepository, this.userRepository, this.tenantRepository, options);
-        await (0, api_keys_seeder_1.seedApiKeys)(this.apiKeyRepository, this.userRepository, this.tenantRepository, options);
-        await (0, mfa_recovery_codes_seeder_1.seedMfaRecoveryCodes)(this.mfaRecoveryCodeRepository, this.userRepository, options);
-        await (0, webauthn_credentials_seeder_1.seedWebauthnCredentials)(this.webauthnCredentialRepository, this.userRepository, options);
-        await (0, user_devices_seeder_1.seedUserDevices)(this.userDeviceRepository, this.userRepository, options);
-        await (0, tenant_invitations_seeder_1.seedTenantInvitations)(this.invitationRepository, this.userRepository, this.tenantRepository, options);
+        const environment = options.environment || process.env.NODE_ENV || 'development';
+        this.logger.log(`Seeding database for ${environment} environment`);
+        const seedData = (0, data_1.getSeedDataForEnvironment)(environment);
+        await this.seedSystemSettings(seedData, options);
+        if (seedData.users.length > 0) {
+            await this.seedUsers(seedData, options);
+        }
+        if (seedData.tenants.length > 0) {
+            await this.seedTenants(seedData, options);
+        }
+        if (seedData.tenantMemberships.length > 0) {
+            await this.seedTenantMemberships(seedData, options);
+        }
+        if (seedData.apiKeys && seedData.apiKeys.length > 0) {
+            await this.seedApiKeys(seedData, options);
+        }
+        if (seedData.includeDemoData) {
+            await this.seedDemoData(seedData, options);
+        }
         this.logger.log('Database seeding completed');
+    }
+    async seedSystemSettings(seedData, options) {
+        const existingSettings = await this.systemSettingsRepository.count();
+        if (existingSettings > 0 && !options.force) {
+            this.logger.log('System settings already exist, skipping seeding');
+            return;
+        }
+        if (options.force) {
+            await this.systemSettingsRepository.clear();
+        }
+        for (const setting of seedData.systemSettings) {
+            const entity = this.systemSettingsRepository.create(setting);
+            await this.systemSettingsRepository.save(entity);
+        }
+        this.logger.log(`Seeded ${seedData.systemSettings.length} system settings`);
+    }
+    async seedUsers(seedData, options) {
+        const existingUsers = await this.userRepository.count();
+        if (existingUsers > 0 && !options.force) {
+            this.logger.log('Users already exist, skipping seeding');
+            return;
+        }
+        if (options.force) {
+            await this.userRepository.clear();
+        }
+        for (const userData of seedData.users) {
+            const hashedPassword = await bcrypt.hash(userData.password, 10);
+            const user = this.userRepository.create({
+                ...userData,
+                password: hashedPassword,
+            });
+            await this.userRepository.save(user);
+        }
+        this.logger.log(`Seeded ${seedData.users.length} users`);
+    }
+    async seedTenants(seedData, options) {
+        const existingTenants = await this.tenantRepository.count();
+        if (existingTenants > 0 && !options.force) {
+            this.logger.log('Tenants already exist, skipping seeding');
+            return;
+        }
+        if (options.force) {
+            await this.tenantRepository.clear();
+        }
+        for (const tenantData of seedData.tenants) {
+            const tenant = this.tenantRepository.create(tenantData);
+            await this.tenantRepository.save(tenant);
+        }
+        this.logger.log(`Seeded ${seedData.tenants.length} tenants`);
+    }
+    async seedTenantMemberships(seedData, options) {
+        const existingMemberships = await this.tenantMembershipRepository.count();
+        if (existingMemberships > 0 && !options.force) {
+            this.logger.log('Tenant memberships already exist, skipping seeding');
+            return;
+        }
+        if (options.force) {
+            await this.tenantMembershipRepository.clear();
+        }
+        for (const membershipData of seedData.tenantMemberships) {
+            const user = await this.userRepository.findOne({
+                where: { email: membershipData.userEmail },
+            });
+            const tenant = await this.tenantRepository.findOne({
+                where: { slug: membershipData.tenantSlug },
+            });
+            if (user && tenant) {
+                const membership = this.tenantMembershipRepository.create({
+                    user,
+                    tenant,
+                    role: membershipData.role,
+                });
+                await this.tenantMembershipRepository.save(membership);
+            }
+        }
+        this.logger.log(`Seeded ${seedData.tenantMemberships.length} tenant memberships`);
+    }
+    async seedApiKeys(seedData, options) {
+        if (!seedData.apiKeys || seedData.apiKeys.length === 0) {
+            return;
+        }
+        const existingKeys = await this.apiKeyRepository.count();
+        if (existingKeys > 0 && !options.force) {
+            this.logger.log('API keys already exist, skipping seeding');
+            return;
+        }
+        if (options.force) {
+            await this.apiKeyRepository.clear();
+        }
+        for (const keyData of seedData.apiKeys) {
+            const user = await this.userRepository.findOne({
+                where: { email: keyData.userEmail },
+            });
+            const tenant = keyData.tenantSlug
+                ? await this.tenantRepository.findOne({
+                    where: { slug: keyData.tenantSlug },
+                })
+                : null;
+            if (user) {
+                const apiKey = this.apiKeyRepository.create({
+                    name: keyData.name,
+                    key: `demo_${Math.random().toString(36).substring(2, 15)}`,
+                    user,
+                    tenant: tenant || undefined,
+                    permissions: keyData.permissions,
+                    active: keyData.active,
+                });
+                await this.apiKeyRepository.save(apiKey);
+            }
+        }
+        this.logger.log(`Seeded ${seedData.apiKeys.length} API keys`);
+    }
+    async seedDemoData(seedData, options) {
+        const adminUser = await this.userRepository.findOne({
+            where: { email: 'admin@authcakes.com' },
+        });
+        if (!adminUser) {
+            this.logger.warn('Admin user not found, skipping demo data');
+            return;
+        }
+        const recoveryCodes = Array.from({ length: 10 }, () => ({
+            user: adminUser,
+            code: Math.random().toString(36).substring(2, 10).toUpperCase(),
+            used: false,
+        }));
+        for (const code of recoveryCodes) {
+            const entity = this.mfaRecoveryCodeRepository.create(code);
+            await this.mfaRecoveryCodeRepository.save(entity);
+        }
+        const webauthnCred = this.webauthnCredentialRepository.create({
+            user: adminUser,
+            credentialId: 'demo-credential-id',
+            publicKey: 'demo-public-key',
+            counter: 0,
+            deviceName: 'Demo Security Key',
+        });
+        await this.webauthnCredentialRepository.save(webauthnCred);
+        const device = this.userDeviceRepository.create({
+            user: adminUser,
+            deviceId: 'demo-device-id',
+            deviceType: 'desktop',
+            userAgent: 'Demo Browser',
+            lastLogin: new Date(),
+            trusted: true,
+        });
+        await this.userDeviceRepository.save(device);
+        const tenant = await this.tenantRepository.findOne({
+            where: { slug: 'acme-corp' },
+        });
+        if (tenant) {
+            const log = this.logRepository.create({
+                user: adminUser,
+                tenant,
+                action: 'user.login',
+                ip: '127.0.0.1',
+                userAgent: 'Demo Browser',
+                details: { demo: true },
+            });
+            await this.logRepository.save(log);
+        }
+        this.logger.log('Seeded demo data successfully');
     }
 };
 exports.SeederService = SeederService;

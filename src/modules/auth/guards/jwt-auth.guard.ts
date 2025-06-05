@@ -20,14 +20,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       context.getClass(),
     ]);
     const req = context.switchToHttp().getRequest();
-    console.log(
-      '[JwtAuthGuard] canActivate called. isPublic:',
-      isPublic,
-      'url:',
-      req.url,
-      'headers:',
-      req.headers,
-    );
+    // Security: Removed console.log that exposed request headers and authentication flow
     if (isPublic) {
       return true;
     }
@@ -37,18 +30,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   // Custom error handling for unauthorized access
   handleRequest(err, user, info, context) {
     const req = context.switchToHttp().getRequest();
-    console.log(
-      '[JwtAuthGuard] handleRequest called. err:',
-      err,
-      'user:',
-      user,
-      'info:',
-      info,
-      'url:',
-      req.url,
-      'headers:',
-      req.headers,
-    );
+    // Security: Removed console.log that exposed user data, errors, and request headers
     if (err || !user) {
       // You can customize the message or add logging here
       throw new UnauthorizedException(

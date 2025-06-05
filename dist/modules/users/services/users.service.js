@@ -21,18 +21,21 @@ const config_1 = require("@nestjs/config");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const user_entity_1 = require("../entities/user.entity");
+const mfa_recovery_code_entity_1 = require("../../auth/entities/mfa-recovery-code.entity");
 const session_service_1 = require("../../auth/services/session.service");
 const audit_log_service_1 = require("../../auth/services/audit-log.service");
 const settings_service_1 = require("../../settings/services/settings.service");
 let UsersService = UsersService_1 = class UsersService {
     userRepository;
+    mfaRecoveryCodeRepository;
     configService;
     sessionService;
     auditLogService;
     settingsService;
     logger = new common_1.Logger(UsersService_1.name);
-    constructor(userRepository, configService, sessionService, auditLogService, settingsService) {
+    constructor(userRepository, mfaRecoveryCodeRepository, configService, sessionService, auditLogService, settingsService) {
         this.userRepository = userRepository;
+        this.mfaRecoveryCodeRepository = mfaRecoveryCodeRepository;
         this.configService = configService;
         this.sessionService = sessionService;
         this.auditLogService = auditLogService;
@@ -223,7 +226,6 @@ let UsersService = UsersService_1 = class UsersService {
         resetTokenExpiry.setHours(resetTokenExpiry.getHours() + expiryHours);
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
-        console.log('[UsersService] Generated password reset token:', token, 'for user:', id, 'expires at:', resetTokenExpiry);
         await this.userRepository.update(id, {
             resetToken: token,
             resetTokenExpiry,
@@ -237,7 +239,6 @@ let UsersService = UsersService_1 = class UsersService {
         const expiryHours = 1;
         const accountRecoveryTokenExpiry = new Date();
         accountRecoveryTokenExpiry.setHours(accountRecoveryTokenExpiry.getHours() + expiryHours);
-        console.log('[UsersService] Generated account recovery token:', token, 'for user:', id, 'expires at:', accountRecoveryTokenExpiry);
         await this.userRepository.update(id, {
             accountRecoveryToken: token,
             accountRecoveryTokenExpiry,
@@ -254,20 +255,16 @@ let UsersService = UsersService_1 = class UsersService {
         return true;
     }
     async resetPassword(token, newPassword, otp) {
-        void this.auditLogService.log('password_reset_attempt', { token });
-        console.log('[UsersService] Attempting password reset with token:', token);
+        await this.auditLogService.log('password_reset_attempt', { token });
         const user = await this.userRepository.findOne({
             where: { resetToken: token },
         });
-        console.log('[UsersService] User lookup result for reset token:', user);
         if (!user) {
-            console.warn('[UsersService] Invalid reset token:', token);
-            void this.auditLogService.log('password_reset_failure', { token });
+            await this.auditLogService.log('password_reset_failure', { token });
             throw new common_1.BadRequestException('Invalid reset token');
         }
         if (user.resetTokenExpiry && user.resetTokenExpiry < new Date()) {
-            console.warn('[UsersService] Reset token expired:', user.resetTokenExpiry, 'now:', new Date());
-            void this.auditLogService.log('password_reset_failure', {
+            await this.auditLogService.log('password_reset_failure', {
                 userId: user.id,
                 reason: 'expired',
             });
@@ -283,14 +280,14 @@ let UsersService = UsersService_1 = class UsersService {
             }
         }
         if (!user.active) {
-            void this.auditLogService.log('password_reset_failure', {
+            await this.auditLogService.log('password_reset_failure', {
                 userId: user.id,
                 reason: 'inactive',
             });
             throw new common_1.BadRequestException('Account is deactivated');
         }
         if (user.lockedUntil && user.lockedUntil > new Date()) {
-            void this.auditLogService.log('password_reset_failure', {
+            await this.auditLogService.log('password_reset_failure', {
                 userId: user.id,
                 reason: 'locked',
             });
@@ -303,7 +300,7 @@ let UsersService = UsersService_1 = class UsersService {
         user.lockedUntil = null;
         user.otp = null;
         user.otpExpiry = null;
-        void this.auditLogService.log('password_reset_success', {
+        await this.auditLogService.log('password_reset_success', {
             userId: user.id,
         });
         return this.userRepository.save(user);
@@ -349,14 +346,12 @@ let UsersService = UsersService_1 = class UsersService {
         await this.sessionService.revokeSession({ sessionId, revokedBy: userId });
     }
     async completeAccountRecovery(token, newPassword) {
-        void this.auditLogService.log('account_recovery_attempt', { token });
-        console.log('[UsersService] Attempting account recovery with token:', token);
+        await this.auditLogService.log('account_recovery_attempt', { token });
         const user = await this.userRepository.findOne({
             where: { accountRecoveryToken: token },
         });
         if (!user) {
-            console.warn('[UsersService] Invalid account recovery token:', token);
-            void this.auditLogService.log('account_recovery_failure', {
+            await this.auditLogService.log('account_recovery_failure', {
                 token,
                 reason: 'invalid_token',
             });
@@ -364,36 +359,78 @@ let UsersService = UsersService_1 = class UsersService {
         }
         if (user.accountRecoveryTokenExpiry &&
             user.accountRecoveryTokenExpiry < new Date()) {
-            console.warn('[UsersService] Account recovery token expired:', user.accountRecoveryTokenExpiry, 'now:', new Date());
-            void this.auditLogService.log('account_recovery_failure', {
+            await this.auditLogService.log('account_recovery_failure', {
                 userId: user.id,
                 reason: 'expired',
             });
             throw new common_1.BadRequestException('Recovery token has expired');
         }
         if (!user.active) {
-            void this.auditLogService.log('account_recovery_failure', {
+            await this.auditLogService.log('account_recovery_failure', {
                 userId: user.id,
                 reason: 'inactive',
             });
             throw new common_1.BadRequestException('Account is deactivated');
         }
-        user.password = await this.hashPassword(newPassword);
-        user.accountRecoveryToken = null;
-        user.accountRecoveryTokenExpiry = null;
-        user.failedLoginAttempts = 0;
-        user.lockedUntil = null;
-        void this.auditLogService.log('account_recovery_success', {
-            userId: user.id,
+        const queryRunner = this.userRepository.manager.connection.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+        try {
+            user.password = await this.hashPassword(newPassword);
+            user.accountRecoveryToken = null;
+            user.accountRecoveryTokenExpiry = null;
+            user.failedLoginAttempts = 0;
+            user.lockedUntil = null;
+            const updatedUser = await queryRunner.manager.save(user);
+            await this.auditLogService.log('account_recovery_success', {
+                userId: user.id,
+            });
+            await queryRunner.commitTransaction();
+            return updatedUser;
+        }
+        catch (error) {
+            await queryRunner.rollbackTransaction();
+            throw error;
+        }
+        finally {
+            await queryRunner.release();
+        }
+    }
+    async saveRecoveryCodes(userId, codes) {
+        await this.mfaRecoveryCodeRepository.delete({ userId });
+        if (codes.length > 0) {
+            const queryRunner = this.mfaRecoveryCodeRepository.manager.connection.createQueryRunner();
+            await queryRunner.connect();
+            await queryRunner.startTransaction();
+            try {
+                for (const code of codes) {
+                    await queryRunner.query(`INSERT INTO "mfa_recovery_codes" ("userId", "code", "used") VALUES ($1, $2, $3)`, [userId, code, false]);
+                }
+                await queryRunner.commitTransaction();
+            }
+            catch (error) {
+                await queryRunner.rollbackTransaction();
+                throw error;
+            }
+            finally {
+                await queryRunner.release();
+            }
+        }
+    }
+    async markRecoveryCodeAsUsed(codeId) {
+        await this.mfaRecoveryCodeRepository.update({ id: codeId }, {
+            used: true,
+            usedAt: new Date()
         });
-        return this.userRepository.save(user);
     }
 };
 exports.UsersService = UsersService;
 exports.UsersService = UsersService = UsersService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
+    __param(1, (0, typeorm_1.InjectRepository)(mfa_recovery_code_entity_1.MfaRecoveryCode)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         config_1.ConfigService,
         session_service_1.SessionService,
         audit_log_service_1.AuditLogService,

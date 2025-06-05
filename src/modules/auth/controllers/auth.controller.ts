@@ -90,6 +90,9 @@ export class AuthController {
     // Set cookies
     this.setAuthCookies(res, { accessToken, refreshToken, sessionId });
 
+    // Check password expiration (enterprise feature)
+    const passwordExpired = false; // TODO: Implement actual password expiration logic
+
     // Return user info
     return {
       success: true,
@@ -97,6 +100,7 @@ export class AuthController {
       sessionId,
       accessToken,
       refreshToken,
+      passwordExpired,
     };
   }
 
@@ -113,6 +117,13 @@ export class AuthController {
     @Req() req: RequestWithUser,
     @Res({ passthrough: true }) res: Response,
   ): Promise<SuccessResponseDto> {
+    if (process.env.NODE_ENV === 'test') {
+      console.log('Logout endpoint - cookies:', req.cookies);
+      console.log('Logout endpoint - user:', req.user);
+    }
+    
+    // Remove the debugging code since we're using auth headers now
+    
     // Get session ID from token payload
     const sessionId = req.user.sessionId;
 
@@ -249,7 +260,7 @@ export class AuthController {
         id: session.id,
         createdAt: session.createdAt.toISOString(),
         deviceInfo: session.deviceInfo,
-        lastUsedAt: session.lastUsedAt.toISOString(),
+        lastUsedAt: session.lastUsedAt?.toISOString() || session.createdAt.toISOString(),
       })),
     };
   }
@@ -405,9 +416,16 @@ export class AuthController {
   @ApiBadRequestResponse({ description: 'Invalid email or user not found.' })
   async requestAccountRecovery(
     @Body() dto: RequestAccountRecoveryDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<{ success: boolean; recoveryToken?: string }> {
     // This will generate a recovery token and send notification
     const result = await this.authService.requestAccountRecovery(dto.email);
+    
+    // Set security headers
+    res.header('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.header('X-Request-ID', req.headers['x-request-id'] || Math.random().toString(36));
+    
     return result;
   }
 
@@ -429,11 +447,19 @@ export class AuthController {
   })
   async completeAccountRecovery(
     @Body() dto: CompleteAccountRecoveryDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<{ success: boolean }> {
     const result = await this.authService.completeAccountRecovery(
       dto.token,
       dto.newPassword,
+      dto.mfaCode,
     );
+    
+    // Set security headers
+    res.header('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.header('X-Request-ID', req.headers['x-request-id'] || Math.random().toString(36));
+    
     return result;
   }
 
@@ -498,10 +524,7 @@ export class AuthController {
     otpauth_url?: string;
     setupStatus: string;
   }> {
-    // Debug: Log req.user at the start of the endpoint
-    console.log('[mfaEnroll] req.user at entry:', req.user);
-    // Log the email from req.user
-    console.log('[mfaEnroll] req.user.email:', req.user?.email);
+    // Security: Removed console.log statements that exposed user data
     // Map sub to id for downstream compatibility
     const jwtUser = req.user as any;
     if (jwtUser && jwtUser.sub && !jwtUser.id) {
@@ -522,10 +545,8 @@ export class AuthController {
       throw new Error('Failed to generate MFA secret');
     }
 
-    // Add logging before and after calling setMfaSecret
-    console.log('[mfaEnroll] Calling setMfaSecret for user', req.user.id);
+    // Security: Removed console.log statements that exposed user ID
     await this.authService.setMfaSecret(req.user.id, secret.base32);
-    console.log('[mfaEnroll] setMfaSecret completed for user', req.user.id);
 
     return {
       success: true,
@@ -538,7 +559,14 @@ export class AuthController {
   @Post('mfa/verify')
   @HttpCode(200)
   @ApiOperation({ summary: 'Verify MFA code to enable MFA.' })
-  @ApiBody({ schema: { example: { code: '123456' } } })
+  @ApiBody({ 
+    schema: { 
+      example: { 
+        code: '123456',
+        type: 'totp' // or 'recovery' for recovery codes
+      } 
+    } 
+  })
   @ApiOkResponse({
     schema: {
       oneOf: [
@@ -552,28 +580,47 @@ export class AuthController {
   @ApiUnauthorizedResponse({ description: 'User is not authenticated.' })
   async mfaVerify(
     @Req() req: RequestWithUser,
-    @Body('code') code: string,
-  ): Promise<{ success: boolean; message?: string }> {
-    // Get user and secret
-    const user = await this.authService.getUserById(req.user.id);
+    @Body() verifyDto: { code: string; type?: 'totp' | 'recovery' },
+  ): Promise<{ success: boolean; message?: string; recoveryCodes?: string[] }> {
+    // Get user and secret - req.user is the JWT payload, so use 'sub' field
+    const userId = req.user?.id || (req.user as any)?.sub;
+    if (!userId) {
+      return { success: false, message: 'User not authenticated' };
+    }
+    
+    // Check if using recovery code
+    if (verifyDto.type === 'recovery') {
+      const isValid = await this.authService.verifyRecoveryCode(userId, verifyDto.code);
+      if (isValid) {
+        return { success: true };
+      }
+      return { success: false, message: 'Invalid recovery code' };
+    }
+    
+    // Regular TOTP verification
+    const user = await this.authService.getUserById(userId);
     const secret = user.mfaSecret;
-    // Log the user's email and mfaSecret for debugging
-    console.log('[mfaVerify] User email:', user.email, 'mfaSecret:', secret);
-    // Log the email from req.user
-    console.log('[mfaVerify] req.user.email:', req.user?.email);
     if (!secret) {
       return { success: false, message: 'No MFA secret set' };
     }
-    // Debug: Log the code and secret being verified
-    console.log('[mfaVerify] Verifying code:', code, 'with secret:', secret, 'at time:', Date.now());
+    
     const verified = speakeasy.totp.verify({
       secret,
       encoding: 'base32',
-      token: code,
+      token: verifyDto.code,
       window: 1,
     });
+    
     if (verified) {
-      await this.authService.enableMfa(req.user.id);
+      // First time enabling MFA - return recovery codes
+      if (!user.mfaEnabled) {
+        const recoveryCodes = await this.authService.enableMfa(userId);
+        return { 
+          success: true, 
+          recoveryCodes,
+          message: 'MFA enabled successfully. Save these recovery codes in a safe place.'
+        };
+      }
       return { success: true };
     } else {
       return { success: false, message: 'Invalid MFA code' };

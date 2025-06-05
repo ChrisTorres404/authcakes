@@ -19,6 +19,7 @@ class UserProfileDto {
     role;
     active;
     emailVerified;
+    phoneVerified;
     avatar;
 }
 exports.UserProfileDto = UserProfileDto;
@@ -50,6 +51,10 @@ __decorate([
     (0, swagger_1.ApiProperty)(),
     __metadata("design:type", Boolean)
 ], UserProfileDto.prototype, "emailVerified", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)(),
+    __metadata("design:type", Boolean)
+], UserProfileDto.prototype, "phoneVerified", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({ required: false }),
     __metadata("design:type", String)

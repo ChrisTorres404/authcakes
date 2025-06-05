@@ -24,7 +24,12 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
         ExtractJwt.fromAuthHeaderAsBearerToken(),
         (request: Request) => {
           // Extract JWT from cookies for browser-based applications
-          return request?.cookies?.access_token || null;
+          const token = request?.cookies?.access_token || null;
+          if (process.env.NODE_ENV === 'test') {
+            console.log('JWT Cookie extraction - cookies:', request?.cookies);
+            console.log('JWT Cookie extraction - token:', token ? 'found' : 'not found');
+          }
+          return token;
         },
       ]),
       ignoreExpiration: false,
@@ -93,8 +98,11 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       const duration = Date.now() - startTime;
       this.logger.log(`JWT validation successful - RequestID: ${requestId}, UserID: ${payload.sub}, Duration: ${duration}ms`);
       
-      // Return the original payload since we've validated the user exists
-      return payload;
+      // Return enhanced payload with tenant access for TenantAuthGuard
+      return {
+        ...payload,
+        tenantAccess: payload.tenantAccess || [],
+      };
     } catch (error) {
       const duration = Date.now() - startTime;
       this.logger.error(`JWT validation error - RequestID: ${requestId}, Duration: ${duration}ms, Error: ${error.message}`);
