@@ -398,7 +398,7 @@ exports.TenantsController = TenantsController = __decorate([
     (0, swagger_1.ApiUnauthorizedResponse)({
         description: 'Authentication required or invalid/missing token.',
     }),
-    (0, common_1.Controller)('tenants'),
+    (0, common_1.Controller)('v1/tenants'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [tenants_service_1.TenantsService])
 ], TenantsController);

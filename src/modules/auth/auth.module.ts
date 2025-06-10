@@ -7,11 +7,15 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 // Controllers
 import { AuthController } from './controllers/auth.controller';
+import { SessionController } from './controllers/session.controller';
+import { RefreshTokenController } from './controllers/refresh-token.controller';
+import { SystemAuthController } from './controllers/system-auth.controller';
 
 // Services
 import { AuthService } from './services/auth.service';
 import { TokenService } from './services/token.service';
 import { SessionService } from './services/session.service';
+import { RefreshTokenService } from './services/refresh-token.service';
 import { AuditLogService } from './services/audit-log.service';
 import { NotificationService } from './services/notification.service';
 import { PasswordHistoryService } from './services/password-history.service';
@@ -66,11 +70,12 @@ import { SettingsModule } from '../settings/settings.module';
     TenantsModule,
     SettingsModule,
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, SessionController, RefreshTokenController, SystemAuthController],
   providers: [
     AuthService,
     TokenService,
     SessionService,
+    RefreshTokenService,
     JwtStrategy,
     LocalStrategy,
     JwtRefreshStrategy,

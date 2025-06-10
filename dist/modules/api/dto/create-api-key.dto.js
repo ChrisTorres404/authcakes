@@ -19,18 +19,24 @@ class CreateApiKeyDto {
 }
 exports.CreateApiKeyDto = CreateApiKeyDto;
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: 'Name of the API key' }),
+    (0, swagger_1.ApiProperty)({ example: 'Production API Key', description: 'Name of the API key' }),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateApiKeyDto.prototype, "name", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ description: 'API key permissions object' }),
+    (0, swagger_1.ApiPropertyOptional)({
+        example: { read: true, write: false, delete: false },
+        description: 'API key permissions object'
+    }),
     (0, class_validator_1.IsObject)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Object)
 ], CreateApiKeyDto.prototype, "permissions", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ description: 'API key expiration date' }),
+    (0, swagger_1.ApiPropertyOptional)({
+        example: '2024-12-31T23:59:59Z',
+        description: 'API key expiration date'
+    }),
     (0, class_validator_1.IsDateString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)

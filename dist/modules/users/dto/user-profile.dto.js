@@ -24,39 +24,39 @@ class UserProfileDto {
 }
 exports.UserProfileDto = UserProfileDto;
 __decorate([
-    (0, swagger_1.ApiProperty)(),
+    (0, swagger_1.ApiProperty)({ example: '123e4567-e89b-12d3-a456-426614174000', description: 'User UUID' }),
     __metadata("design:type", String)
 ], UserProfileDto.prototype, "id", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)(),
+    (0, swagger_1.ApiProperty)({ example: 'user@example.com', description: 'User email address' }),
     __metadata("design:type", String)
 ], UserProfileDto.prototype, "email", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)(),
+    (0, swagger_1.ApiProperty)({ example: 'John', description: 'User first name' }),
     __metadata("design:type", String)
 ], UserProfileDto.prototype, "firstName", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)(),
+    (0, swagger_1.ApiProperty)({ example: 'Doe', description: 'User last name' }),
     __metadata("design:type", String)
 ], UserProfileDto.prototype, "lastName", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)(),
+    (0, swagger_1.ApiProperty)({ example: 'user', enum: ['user', 'admin'], description: 'User role' }),
     __metadata("design:type", String)
 ], UserProfileDto.prototype, "role", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)(),
+    (0, swagger_1.ApiProperty)({ example: true, description: 'User active status' }),
     __metadata("design:type", Boolean)
 ], UserProfileDto.prototype, "active", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)(),
+    (0, swagger_1.ApiProperty)({ example: true, description: 'Email verification status' }),
     __metadata("design:type", Boolean)
 ], UserProfileDto.prototype, "emailVerified", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)(),
+    (0, swagger_1.ApiProperty)({ example: false, description: 'Phone verification status' }),
     __metadata("design:type", Boolean)
 ], UserProfileDto.prototype, "phoneVerified", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ required: false }),
+    (0, swagger_1.ApiProperty)({ example: 'https://cdn.example.com/avatar.jpg', required: false, description: 'User avatar URL' }),
     __metadata("design:type", String)
 ], UserProfileDto.prototype, "avatar", void 0);
 //# sourceMappingURL=user-profile.dto.js.map

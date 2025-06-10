@@ -37,7 +37,7 @@ interface AdminLogData {
 }
 
 @ApiTags('Logs')
-@Controller('logs')
+@Controller('v1/logs')
 @UseGuards(JwtAuthGuard)
 export class LogsController {
   constructor(private readonly logsService: LogsService) {}

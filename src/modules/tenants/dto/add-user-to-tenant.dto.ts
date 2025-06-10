@@ -17,6 +17,7 @@ export class AddUserToTenantDto {
 
   @ApiProperty({
     enum: TenantRole,
+    example: TenantRole.MEMBER,
     description: 'Role for the user in the tenant',
   })
   @IsEnum(TenantRole)

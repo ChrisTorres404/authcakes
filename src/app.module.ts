@@ -6,6 +6,7 @@ import {
   MiddlewareConsumer,
   ExecutionContext,
   RequestMethod,
+  ClassSerializerInterceptor,
 } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -13,6 +14,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
+import { JwtModule } from '@nestjs/jwt';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -21,6 +23,7 @@ import appConfig from './config/app.config';
 import authConfig from './config/auth.config';
 import databaseConfig from './config/database.config';
 import throttlerConfig from './config/throttler.config';
+import systemConfig from './config/system.config';
 import { validationSchema } from './config/validation.schema';
 
 import { AuthModule } from './modules/auth/auth.module';
@@ -33,9 +36,11 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { TenantContextInterceptor } from './common/interceptors/tenant-context.interceptor';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { RolesGuard } from './common/guards/roles.guard';
+import { SystemAuthGuard } from './common/guards/system-auth.guard';
 import { LoggingMiddleware } from './common/middleware/logging.middleware';
 import { SecurityHeadersMiddleware } from './common/middleware/security-headers.middleware';
 import { CsrfMiddleware } from './common/middleware/csrf.middleware';
+import { ApiVersionMiddleware } from './common/middleware/api-version.middleware';
 import { PerformanceInterceptor } from './common/interceptors/performance.interceptor';
 
 @Module({
@@ -43,7 +48,7 @@ import { PerformanceInterceptor } from './common/interceptors/performance.interc
     // Global Configuration
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, authConfig, databaseConfig, throttlerConfig],
+      load: [appConfig, authConfig, databaseConfig, throttlerConfig, systemConfig],
       validationSchema,
       validationOptions: {
         allowUnknown: true,
@@ -95,6 +100,12 @@ import { PerformanceInterceptor } from './common/interceptors/performance.interc
       }),
     }),
 
+    // Global JWT Module for system auth
+    JwtModule.register({
+      global: true,
+      secret: process.env.SYSTEM_JWT_SECRET || 'system-jwt-secret',
+    }),
+
     // Feature Modules
     AuthModule,
     UsersModule,
@@ -124,6 +135,10 @@ import { PerformanceInterceptor } from './common/interceptors/performance.interc
     // Global Interceptors
     {
       provide: APP_INTERCEPTOR,
+      useClass: ClassSerializerInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
       useClass: TenantContextInterceptor,
     },
     {
@@ -143,13 +158,15 @@ export class AppModule implements NestModule {
     consumer
       .apply(SecurityHeadersMiddleware)
       .forRoutes('*')
+      .apply(ApiVersionMiddleware)
+      .forRoutes('*')
       .apply(LoggingMiddleware)
       .forRoutes('*')
       .apply(CsrfMiddleware)
       .exclude(
-        { path: 'api/auth/login', method: RequestMethod.POST },
-        { path: 'api/auth/register', method: RequestMethod.POST },
-        { path: 'api/auth/refresh', method: RequestMethod.POST },
+        { path: 'api/v1/auth/login', method: RequestMethod.POST },
+        { path: 'api/v1/auth/register', method: RequestMethod.POST },
+        { path: 'api/v1/auth/refresh', method: RequestMethod.POST },
         { path: 'api/health', method: RequestMethod.GET },
         { path: 'api/docs', method: RequestMethod.GET },
       )

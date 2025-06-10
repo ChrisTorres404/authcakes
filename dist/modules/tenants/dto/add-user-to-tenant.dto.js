@@ -34,6 +34,7 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiProperty)({
         enum: TenantRole,
+        example: TenantRole.MEMBER,
         description: 'Role for the user in the tenant',
     }),
     (0, class_validator_1.IsEnum)(TenantRole),

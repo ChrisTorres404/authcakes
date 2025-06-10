@@ -28,83 +28,83 @@ class UpdateUserProfileDto {
 }
 exports.UpdateUserProfileDto = UpdateUserProfileDto;
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ description: "User's first name" }),
+    (0, swagger_1.ApiPropertyOptional)({ example: 'Jane', description: "User's first name", maxLength: 100 }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.MaxLength)(100),
     __metadata("design:type", String)
 ], UpdateUserProfileDto.prototype, "firstName", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ description: "User's last name" }),
+    (0, swagger_1.ApiPropertyOptional)({ example: 'Smith', description: "User's last name", maxLength: 100 }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.MaxLength)(100),
     __metadata("design:type", String)
 ], UpdateUserProfileDto.prototype, "lastName", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ description: "URL to user's avatar image" }),
+    (0, swagger_1.ApiPropertyOptional)({ example: 'https://cdn.example.com/new-avatar.jpg', description: "URL to user's avatar image" }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], UpdateUserProfileDto.prototype, "avatar", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ description: "User's company name" }),
+    (0, swagger_1.ApiPropertyOptional)({ example: 'Tech Startup Inc.', description: "User's company name", maxLength: 200 }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.MaxLength)(200),
     __metadata("design:type", String)
 ], UpdateUserProfileDto.prototype, "company", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ description: "User's department within company" }),
+    (0, swagger_1.ApiPropertyOptional)({ example: 'Product Design', description: "User's department within company", maxLength: 200 }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.MaxLength)(200),
     __metadata("design:type", String)
 ], UpdateUserProfileDto.prototype, "department", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ description: "User's country" }),
+    (0, swagger_1.ApiPropertyOptional)({ example: 'Canada', description: "User's country", maxLength: 100 }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.MaxLength)(100),
     __metadata("design:type", String)
 ], UpdateUserProfileDto.prototype, "country", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ description: "User's state/province" }),
+    (0, swagger_1.ApiPropertyOptional)({ example: 'Ontario', description: "User's state/province", maxLength: 100 }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.MaxLength)(100),
     __metadata("design:type", String)
 ], UpdateUserProfileDto.prototype, "state", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ description: "User's address line 1" }),
+    (0, swagger_1.ApiPropertyOptional)({ example: '456 Oak Avenue', description: "User's address line 1", maxLength: 255 }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.MaxLength)(255),
     __metadata("design:type", String)
 ], UpdateUserProfileDto.prototype, "address", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ description: "User's address line 2" }),
+    (0, swagger_1.ApiPropertyOptional)({ example: 'Floor 12', description: "User's address line 2", maxLength: 255 }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.MaxLength)(255),
     __metadata("design:type", String)
 ], UpdateUserProfileDto.prototype, "address2", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ description: "User's city" }),
+    (0, swagger_1.ApiPropertyOptional)({ example: 'Toronto', description: "User's city", maxLength: 100 }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.MaxLength)(100),
     __metadata("design:type", String)
 ], UpdateUserProfileDto.prototype, "city", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ description: "User's ZIP/postal code" }),
+    (0, swagger_1.ApiPropertyOptional)({ example: 'M5V 3A8', description: "User's ZIP/postal code", maxLength: 20 }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.MaxLength)(20),
     __metadata("design:type", String)
 ], UpdateUserProfileDto.prototype, "zipCode", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ description: "User's biographical information" }),
+    (0, swagger_1.ApiPropertyOptional)({ example: 'Passionate about creating user-friendly interfaces and solving complex problems', description: "User's biographical information", maxLength: 1000 }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.MaxLength)(1000),

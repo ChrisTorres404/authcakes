@@ -117,7 +117,7 @@ function toTenantResponseDto(tenant: Tenant): TenantResponseDto {
 @ApiUnauthorizedResponse({
   description: 'Authentication required or invalid/missing token.',
 })
-@Controller('tenants')
+@Controller('v1/tenants')
 @UseGuards(JwtAuthGuard)
 export class TenantsController {
   constructor(private readonly tenantsService: TenantsService) {}

@@ -29,6 +29,7 @@ const reset_password_dto_1 = require("../dto/reset-password.dto");
 const revoke_session_dto_1 = require("../dto/revoke-session.dto");
 const request_account_recovery_dto_1 = require("../dto/request-account-recovery.dto");
 const complete_account_recovery_dto_1 = require("../dto/complete-account-recovery.dto");
+const change_password_dto_1 = require("../dto/change-password.dto");
 const throttle_decorator_1 = require("../../../common/decorators/throttle.decorator");
 const swagger_1 = require("@nestjs/swagger");
 const login_response_dto_1 = require("../dto/login-response.dto");
@@ -36,6 +37,15 @@ const success_response_dto_1 = require("../dto/success-response.dto");
 const token_response_dto_1 = require("../dto/token-response.dto");
 const session_status_response_dto_1 = require("../dto/session-status-response.dto");
 const session_list_response_dto_1 = require("../dto/session-list-response.dto");
+const verify_email_response_dto_1 = require("../dto/verify-email-response.dto");
+const reset_password_response_dto_1 = require("../dto/reset-password-response.dto");
+const forgot_password_response_dto_1 = require("../dto/forgot-password-response.dto");
+const account_recovery_response_dto_1 = require("../dto/account-recovery-response.dto");
+const change_password_response_dto_1 = require("../dto/change-password-response.dto");
+const mfa_response_dto_1 = require("../dto/mfa-response.dto");
+const mfa_verify_dto_1 = require("../dto/mfa-verify.dto");
+const social_login_response_dto_1 = require("../dto/social-login-response.dto");
+const audit_logs_response_dto_1 = require("../dto/audit-logs-response.dto");
 let AuthController = class AuthController {
     authService;
     tokenService;
@@ -47,18 +57,24 @@ let AuthController = class AuthController {
         this.sessionService = sessionService;
         this.configService = configService;
     }
-    async login(loginDto, req, res) {
+    async login(_loginDto, req, res) {
         const deviceInfo = this.extractDeviceInfo(req);
         const { accessToken, refreshToken, sessionId, user } = await this.tokenService.generateTokens(req.user.id, deviceInfo);
         this.setAuthCookies(res, { accessToken, refreshToken, sessionId });
-        const passwordExpired = false;
         return {
             success: true,
-            user,
+            user: {
+                id: user.id || '',
+                email: user.email || '',
+                firstName: user.firstName || '',
+                lastName: user.lastName || '',
+                role: user.role || 'user',
+                avatar: user.avatar || undefined,
+                emailVerified: user.emailVerified || false,
+            },
             sessionId,
             accessToken,
             refreshToken,
-            passwordExpired,
         };
     }
     async logout(req, res) {
@@ -92,8 +108,15 @@ let AuthController = class AuthController {
         });
         return {
             success: true,
-            user,
-            sessionId: oldSessionId,
+            user: {
+                id: user.id || '',
+                email: user.email || '',
+                firstName: user.firstName || '',
+                lastName: user.lastName || '',
+                role: user.role || 'user',
+                avatar: user.avatar || undefined,
+                emailVerified: user.emailVerified || false,
+            },
             accessToken,
             refreshToken,
         };
@@ -144,13 +167,13 @@ let AuthController = class AuthController {
         return {
             success: true,
             user: {
-                id: user.id,
-                email: user.email,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                role: user.role,
-                avatar: user.avatar,
-                emailVerified: user.emailVerified,
+                id: user.id || '',
+                email: user.email || '',
+                firstName: user.firstName || '',
+                lastName: user.lastName || '',
+                role: user.role || 'user',
+                avatar: user.avatar || undefined,
+                emailVerified: user.emailVerified || false,
             },
             sessionId,
             accessToken,
@@ -160,7 +183,17 @@ let AuthController = class AuthController {
     }
     async verifyEmail(token) {
         const user = await this.authService.verifyEmail(token);
-        return { success: true, user };
+        return {
+            success: true,
+            user: {
+                id: user.id || '',
+                email: user.email || '',
+                firstName: user.firstName || '',
+                lastName: user.lastName || '',
+                role: user.role || 'user',
+                emailVerified: user.emailVerified || false,
+            }
+        };
     }
     async forgotPassword(dto) {
         const token = await this.authService.requestPasswordReset(dto.email);
@@ -168,7 +201,17 @@ let AuthController = class AuthController {
     }
     async resetPassword(dto) {
         const user = await this.authService.resetPassword(dto.token, dto.password, dto.otp);
-        return { success: true, user };
+        return {
+            success: true,
+            user: {
+                id: user.id || '',
+                email: user.email || '',
+                firstName: user.firstName || '',
+                lastName: user.lastName || '',
+                role: user.role || 'user',
+                emailVerified: user.emailVerified || false,
+            }
+        };
     }
     async requestAccountRecovery(dto, req, res) {
         const result = await this.authService.requestAccountRecovery(dto.email);
@@ -182,9 +225,9 @@ let AuthController = class AuthController {
         res.header('X-Request-ID', req.headers['x-request-id'] || Math.random().toString(36));
         return result;
     }
-    async changePassword(req, oldPassword, newPassword) {
+    async changePassword(req, dto) {
         const userId = req.user.id;
-        const result = await this.authService.changePassword(userId, oldPassword, newPassword);
+        const result = await this.authService.changePassword(userId, dto.oldPassword, dto.newPassword);
         await this.sessionService.revokeAllUserSessions(userId);
         await this.tokenService.revokeAllUserTokens(userId);
         return { success: true, ...result };
@@ -416,7 +459,10 @@ __decorate([
     (0, common_1.Post)('verify-email'),
     (0, swagger_1.ApiOperation)({ summary: 'Verify user email with a token.' }),
     (0, swagger_1.ApiBody)({ schema: { example: { token: 'verification-token' } } }),
-    (0, swagger_1.ApiOkResponse)({ description: 'Email verified and user info returned.' }),
+    (0, swagger_1.ApiOkResponse)({
+        type: verify_email_response_dto_1.VerifyEmailResponseDto,
+        description: 'Email verified and user info returned.'
+    }),
     (0, swagger_1.ApiBadRequestResponse)({
         description: 'Invalid or expired verification token.',
     }),
@@ -432,7 +478,10 @@ __decorate([
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, swagger_1.ApiOperation)({ summary: 'Request a password reset email.' }),
     (0, swagger_1.ApiBody)({ type: forgot_password_dto_1.ForgotPasswordDto }),
-    (0, swagger_1.ApiOkResponse)({ description: 'Password reset token sent if email exists.' }),
+    (0, swagger_1.ApiOkResponse)({
+        type: forgot_password_response_dto_1.ForgotPasswordResponseDto,
+        description: 'Password reset token sent if email exists.'
+    }),
     (0, swagger_1.ApiBadRequestResponse)({ description: 'Invalid email or user not found.' }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -445,7 +494,10 @@ __decorate([
     (0, common_1.Post)('reset-password'),
     (0, common_1.HttpCode)(200),
     (0, swagger_1.ApiOperation)({ summary: 'Reset password using a token and optional OTP.' }),
-    (0, swagger_1.ApiOkResponse)({ description: 'Password reset and user info returned.' }),
+    (0, swagger_1.ApiOkResponse)({
+        type: reset_password_response_dto_1.ResetPasswordResponseDto,
+        description: 'Password reset and user info returned.'
+    }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [reset_password_dto_1.ResetPasswordDto]),
@@ -461,6 +513,7 @@ __decorate([
     }),
     (0, swagger_1.ApiBody)({ type: request_account_recovery_dto_1.RequestAccountRecoveryDto }),
     (0, swagger_1.ApiOkResponse)({
+        type: account_recovery_response_dto_1.RequestAccountRecoveryResponseDto,
         description: 'Account recovery token sent if email exists.',
     }),
     (0, swagger_1.ApiBadRequestResponse)({ description: 'Invalid email or user not found.' }),
@@ -480,7 +533,10 @@ __decorate([
         summary: 'Complete account recovery by setting a new password with a recovery token.',
     }),
     (0, swagger_1.ApiBody)({ type: complete_account_recovery_dto_1.CompleteAccountRecoveryDto }),
-    (0, swagger_1.ApiOkResponse)({ description: 'Account recovery completed.' }),
+    (0, swagger_1.ApiOkResponse)({
+        type: account_recovery_response_dto_1.CompleteAccountRecoveryResponseDto,
+        description: 'Account recovery completed.'
+    }),
     (0, swagger_1.ApiBadRequestResponse)({
         description: 'Invalid token, password, or MFA code.',
     }),
@@ -495,25 +551,16 @@ __decorate([
     (0, common_1.Post)('change-password'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, swagger_1.ApiOperation)({ summary: 'Change password for the current user.' }),
-    (0, swagger_1.ApiBody)({
-        schema: {
-            type: 'object',
-            required: ['oldPassword', 'newPassword'],
-            properties: {
-                oldPassword: { type: 'string', example: 'OldPassword123!' },
-                newPassword: { type: 'string', example: 'NewPassword123!' },
-            },
-        },
-    }),
+    (0, swagger_1.ApiBody)({ type: change_password_dto_1.ChangePasswordDto }),
     (0, swagger_1.ApiOkResponse)({
+        type: change_password_response_dto_1.ChangePasswordResponseDto,
         description: 'Password changed and all sessions/tokens revoked.',
     }),
     (0, swagger_1.ApiBadRequestResponse)({ description: 'Invalid input or weak password.' }),
     __param(0, (0, common_1.Req)()),
-    __param(1, (0, common_1.Body)('oldPassword')),
-    __param(2, (0, common_1.Body)('newPassword')),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String, String]),
+    __metadata("design:paramtypes", [Object, change_password_dto_1.ChangePasswordDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "changePassword", null);
 __decorate([
@@ -521,13 +568,7 @@ __decorate([
     (0, common_1.HttpCode)(200),
     (0, swagger_1.ApiOperation)({ summary: 'Enroll in multi-factor authentication (MFA).' }),
     (0, swagger_1.ApiOkResponse)({
-        schema: {
-            example: {
-                success: true,
-                secret: 'BASE32SECRET',
-                otpauth_url: 'otpauth://totp/Service:user@example.com?secret=BASE32SECRET&issuer=Service',
-            },
-        },
+        type: mfa_response_dto_1.MfaEnrollResponseDto,
         description: 'MFA enrollment secret and URL returned.',
     }),
     (0, swagger_1.ApiUnauthorizedResponse)({ description: 'User is not authenticated.' }),
@@ -540,29 +581,16 @@ __decorate([
     (0, common_1.Post)('mfa/verify'),
     (0, common_1.HttpCode)(200),
     (0, swagger_1.ApiOperation)({ summary: 'Verify MFA code to enable MFA.' }),
-    (0, swagger_1.ApiBody)({
-        schema: {
-            example: {
-                code: '123456',
-                type: 'totp'
-            }
-        }
-    }),
+    (0, swagger_1.ApiBody)({ type: mfa_verify_dto_1.MfaVerifyDto }),
     (0, swagger_1.ApiOkResponse)({
-        schema: {
-            oneOf: [
-                { example: { success: true } },
-                { example: { success: false, message: 'No MFA secret set' } },
-                { example: { success: false, message: 'Invalid MFA code' } },
-            ],
-        },
+        type: mfa_response_dto_1.MfaVerifyResponseDto,
         description: 'MFA enabled if code is valid.',
     }),
     (0, swagger_1.ApiUnauthorizedResponse)({ description: 'User is not authenticated.' }),
     __param(0, (0, common_1.Req)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:paramtypes", [Object, mfa_verify_dto_1.MfaVerifyDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "mfaVerify", null);
 __decorate([
@@ -572,9 +600,7 @@ __decorate([
         description: 'This endpoint is a stub and does not perform social login.',
     }),
     (0, swagger_1.ApiOkResponse)({
-        schema: {
-            example: { success: false, message: 'Social login not implemented yet' },
-        },
+        type: social_login_response_dto_1.SocialLoginResponseDto,
         description: 'Social login not implemented yet.',
     }),
     __metadata("design:type", Function),
@@ -588,9 +614,7 @@ __decorate([
         description: 'This endpoint is a stub and does not return audit logs.',
     }),
     (0, swagger_1.ApiOkResponse)({
-        schema: {
-            example: { success: false, message: 'Audit logs not implemented yet' },
-        },
+        type: audit_logs_response_dto_1.AuditLogsResponseDto,
         description: 'Audit logs not implemented yet.',
     }),
     __metadata("design:type", Function),
@@ -598,7 +622,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "auditLogs", null);
 exports.AuthController = AuthController = __decorate([
-    (0, common_1.Controller)('auth'),
+    (0, common_1.Controller)('v1/auth'),
     __metadata("design:paramtypes", [auth_service_1.AuthService,
         token_service_1.TokenService,
         session_service_1.SessionService,

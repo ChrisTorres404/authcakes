@@ -39,15 +39,15 @@ __decorate([
     __metadata("design:type", String)
 ], TenantMembershipDto.prototype, "role", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ type: 'string', format: 'date-time' }),
+    (0, swagger_1.ApiProperty)({ example: '2024-01-01T00:00:00Z', type: 'string', format: 'date-time' }),
     __metadata("design:type", String)
 ], TenantMembershipDto.prototype, "createdAt", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ type: 'string', format: 'date-time' }),
+    (0, swagger_1.ApiProperty)({ example: '2024-01-15T10:30:00Z', type: 'string', format: 'date-time' }),
     __metadata("design:type", String)
 ], TenantMembershipDto.prototype, "updatedAt", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ type: 'string', format: 'date-time', nullable: true }),
+    (0, swagger_1.ApiPropertyOptional)({ example: null, type: 'string', format: 'date-time', nullable: true }),
     __metadata("design:type", String)
 ], TenantMembershipDto.prototype, "deletedAt", void 0);
 //# sourceMappingURL=tenant-membership.dto.js.map

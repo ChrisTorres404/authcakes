@@ -1,36 +1,37 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class ApiKeyResponseDto {
-  @ApiProperty({ description: 'API key unique identifier' })
+  @ApiProperty({ example: '123e4567-e89b-12d3-a456-426614174000', description: 'API key unique identifier' })
   id: string;
 
-  @ApiProperty({ description: 'User ID who owns this API key' })
+  @ApiProperty({ example: '123e4567-e89b-12d3-a456-426614174001', description: 'User ID who owns this API key' })
   userId: string;
 
   @ApiPropertyOptional({
+    example: '123e4567-e89b-12d3-a456-426614174002',
     description: 'Tenant ID associated with this API key',
   })
   tenantId?: string;
 
-  @ApiProperty({ description: 'Name of the API key' })
+  @ApiProperty({ example: 'Production API Key', description: 'Name of the API key' })
   name: string;
 
-  @ApiProperty({ description: 'The API key value (only shown on creation)' })
+  @ApiProperty({ example: 'ak_live_1234567890abcdef', description: 'The API key value (only shown on creation)' })
   key?: string;
 
-  @ApiProperty({ description: 'API key permissions object' })
+  @ApiProperty({ example: { read: true, write: false, delete: false }, description: 'API key permissions object' })
   permissions: Record<string, unknown>;
 
-  @ApiPropertyOptional({ description: 'API key expiration date' })
+  @ApiPropertyOptional({ example: '2024-12-31T23:59:59Z', type: 'string', format: 'date-time', description: 'API key expiration date' })
   expiresAt?: Date;
 
-  @ApiProperty({ description: 'Whether the API key is active' })
+  @ApiProperty({ example: true, description: 'Whether the API key is active' })
   active: boolean;
 
-  @ApiProperty({ description: 'Creation timestamp' })
+  @ApiProperty({ example: '2024-01-01T00:00:00Z', type: 'string', format: 'date-time', description: 'Creation timestamp' })
   createdAt: Date;
 
-  @ApiProperty({ description: 'Last update timestamp' })
+  @ApiProperty({ example: '2024-01-15T10:30:00Z', type: 'string', format: 'date-time', description: 'Last update timestamp' })
   updatedAt: Date;
 }
 

@@ -6,7 +6,7 @@ import { RevokeSessionDto } from '../dto/revoke-session.dto';
 import { Session } from '../entities/session.entity';
 
 @ApiTags('Sessions')
-@Controller('sessions')
+@Controller('v1/sessions')
 export class SessionController {
   constructor(private readonly sessionService: SessionService) {}
 

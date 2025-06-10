@@ -76,7 +76,7 @@ __decorate([
 exports.RefreshTokenController = RefreshTokenController = __decorate([
     (0, swagger_1.ApiTags)('Refresh Tokens'),
     (0, swagger_1.ApiBearerAuth)(),
-    (0, common_1.Controller)('refresh-tokens'),
+    (0, common_1.Controller)('v1/refresh-tokens'),
     __metadata("design:paramtypes", [refresh_token_service_1.RefreshTokenService])
 ], RefreshTokenController);
 //# sourceMappingURL=refresh-token.controller.js.map

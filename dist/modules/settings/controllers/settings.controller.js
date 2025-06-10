@@ -202,7 +202,7 @@ __decorate([
 ], SettingsController.prototype, "upsertBulkSettings", null);
 exports.SettingsController = SettingsController = __decorate([
     (0, swagger_1.ApiTags)('Settings'),
-    (0, common_1.Controller)('settings'),
+    (0, common_1.Controller)('v1/settings'),
     (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
     __metadata("design:paramtypes", [settings_service_1.SettingsService])
 ], SettingsController);

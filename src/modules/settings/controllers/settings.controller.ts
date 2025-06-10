@@ -32,7 +32,7 @@ import { BulkSettingDto } from '../dto/bulk-setting.dto';
 type SettingType = 'string' | 'number' | 'boolean' | 'json';
 
 @ApiTags('Settings')
-@Controller('settings')
+@Controller('v1/settings')
 @UseGuards(RolesGuard)
 export class SettingsController {
   constructor(private readonly settingsService: SettingsService) {}

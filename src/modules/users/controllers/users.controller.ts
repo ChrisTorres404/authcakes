@@ -41,7 +41,7 @@ import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
 
 @ApiTags('users')
 @ApiBearerAuth()
-@Controller('users')
+@Controller('v1/users')
 @UseGuards(JwtAuthGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}

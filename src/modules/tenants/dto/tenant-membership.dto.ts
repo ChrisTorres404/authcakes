@@ -14,12 +14,12 @@ export class TenantMembershipDto {
   @ApiProperty({ example: TenantRole.MEMBER, enum: TenantRole })
   role: TenantRole;
 
-  @ApiProperty({ type: 'string', format: 'date-time' })
+  @ApiProperty({ example: '2024-01-01T00:00:00Z', type: 'string', format: 'date-time' })
   createdAt: string;
 
-  @ApiProperty({ type: 'string', format: 'date-time' })
+  @ApiProperty({ example: '2024-01-15T10:30:00Z', type: 'string', format: 'date-time' })
   updatedAt: string;
 
-  @ApiPropertyOptional({ type: 'string', format: 'date-time', nullable: true })
+  @ApiPropertyOptional({ example: null, type: 'string', format: 'date-time', nullable: true })
   deletedAt?: string;
 }

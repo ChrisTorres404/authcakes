@@ -68,7 +68,7 @@ __decorate([
 ], SessionController.prototype, "listActive", null);
 exports.SessionController = SessionController = __decorate([
     (0, swagger_1.ApiTags)('Sessions'),
-    (0, common_1.Controller)('sessions'),
+    (0, common_1.Controller)('v1/sessions'),
     __metadata("design:paramtypes", [session_service_1.SessionService])
 ], SessionController);
 //# sourceMappingURL=session.controller.js.map

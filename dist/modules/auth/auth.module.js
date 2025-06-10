@@ -13,9 +13,13 @@ const passport_1 = require("@nestjs/passport");
 const config_1 = require("@nestjs/config");
 const typeorm_1 = require("@nestjs/typeorm");
 const auth_controller_1 = require("./controllers/auth.controller");
+const session_controller_1 = require("./controllers/session.controller");
+const refresh_token_controller_1 = require("./controllers/refresh-token.controller");
+const system_auth_controller_1 = require("./controllers/system-auth.controller");
 const auth_service_1 = require("./services/auth.service");
 const token_service_1 = require("./services/token.service");
 const session_service_1 = require("./services/session.service");
+const refresh_token_service_1 = require("./services/refresh-token.service");
 const audit_log_service_1 = require("./services/audit-log.service");
 const notification_service_1 = require("./services/notification.service");
 const password_history_service_1 = require("./services/password-history.service");
@@ -65,11 +69,12 @@ exports.AuthModule = AuthModule = __decorate([
             tenants_module_1.TenantsModule,
             settings_module_1.SettingsModule,
         ],
-        controllers: [auth_controller_1.AuthController],
+        controllers: [auth_controller_1.AuthController, session_controller_1.SessionController, refresh_token_controller_1.RefreshTokenController, system_auth_controller_1.SystemAuthController],
         providers: [
             auth_service_1.AuthService,
             token_service_1.TokenService,
             session_service_1.SessionService,
+            refresh_token_service_1.RefreshTokenService,
             jwt_strategy_1.JwtStrategy,
             local_strategy_1.LocalStrategy,
             jwt_refresh_strategy_1.JwtRefreshStrategy,

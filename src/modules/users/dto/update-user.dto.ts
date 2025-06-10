@@ -12,12 +12,16 @@ import {
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateUserDto extends PartialType(CreateUserDto) {
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ example: 'newemail@example.com', description: 'New email address' })
   @IsOptional()
   @IsEmail()
   email?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ 
+    example: 'NewPassword123!',
+    description: 'New password - must contain uppercase, lowercase, number, and special character',
+    minLength: 8
+  })
   @IsOptional()
   @IsString()
   @MinLength(8)
@@ -30,77 +34,77 @@ export class UpdateUserDto extends PartialType(CreateUserDto) {
   )
   password?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ example: 'Jane', description: 'User first name' })
   @IsOptional()
   @IsString()
   firstName?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ example: 'Smith', description: 'User last name' })
   @IsOptional()
   @IsString()
   lastName?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ example: 'https://cdn.example.com/new-avatar.jpg', description: 'User avatar URL' })
   @IsOptional()
   @IsString()
   avatar?: string;
 
-  @ApiPropertyOptional({ default: 'user' })
+  @ApiPropertyOptional({ example: 'admin', enum: ['user', 'admin'], default: 'user', description: 'User role' })
   @IsOptional()
   @IsString()
   role?: string;
 
-  @ApiPropertyOptional({ default: true })
+  @ApiPropertyOptional({ example: true, default: true, description: 'User active status' })
   @IsOptional()
   @IsBoolean()
   active?: boolean;
 
-  @ApiPropertyOptional({ default: false })
+  @ApiPropertyOptional({ example: true, default: false, description: 'Email verification status' })
   @IsOptional()
   @IsBoolean()
   emailVerified?: boolean;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ example: 'Tech Startup Inc.', description: 'User company name' })
   @IsOptional()
   @IsString()
   company?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ example: 'Product', description: 'User department' })
   @IsOptional()
   @IsString()
   department?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ example: 'Canada', description: 'User country' })
   @IsOptional()
   @IsString()
   country?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ example: 'Ontario', description: 'User state/province' })
   @IsOptional()
   @IsString()
   state?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ example: '456 Oak Avenue', description: 'User address line 1' })
   @IsOptional()
   @IsString()
   address?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ example: 'Floor 12', description: 'User address line 2' })
   @IsOptional()
   @IsString()
   address2?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ example: 'Toronto', description: 'User city' })
   @IsOptional()
   @IsString()
   city?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ example: 'M5V 3A8', description: 'User postal/zip code' })
   @IsOptional()
   @IsString()
   zipCode?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ example: 'Passionate about building scalable systems', description: 'User biography' })
   @IsOptional()
   @IsString()
   bio?: string;

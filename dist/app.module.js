@@ -13,12 +13,14 @@ const typeorm_1 = require("@nestjs/typeorm");
 const throttler_1 = require("@nestjs/throttler");
 const throttler_2 = require("@nestjs/throttler");
 const core_1 = require("@nestjs/core");
+const jwt_1 = require("@nestjs/jwt");
 const app_controller_1 = require("./app.controller");
 const app_service_1 = require("./app.service");
 const app_config_1 = require("./config/app.config");
 const auth_config_1 = require("./config/auth.config");
 const database_config_1 = require("./config/database.config");
 const throttler_config_1 = require("./config/throttler.config");
+const system_config_1 = require("./config/system.config");
 const validation_schema_1 = require("./config/validation.schema");
 const auth_module_1 = require("./modules/auth/auth.module");
 const users_module_1 = require("./modules/users/users.module");
@@ -32,16 +34,19 @@ const roles_guard_1 = require("./common/guards/roles.guard");
 const logging_middleware_1 = require("./common/middleware/logging.middleware");
 const security_headers_middleware_1 = require("./common/middleware/security-headers.middleware");
 const csrf_middleware_1 = require("./common/middleware/csrf.middleware");
+const api_version_middleware_1 = require("./common/middleware/api-version.middleware");
 const performance_interceptor_1 = require("./common/interceptors/performance.interceptor");
 let AppModule = class AppModule {
     configure(consumer) {
         consumer
             .apply(security_headers_middleware_1.SecurityHeadersMiddleware)
             .forRoutes('*')
+            .apply(api_version_middleware_1.ApiVersionMiddleware)
+            .forRoutes('*')
             .apply(logging_middleware_1.LoggingMiddleware)
             .forRoutes('*')
             .apply(csrf_middleware_1.CsrfMiddleware)
-            .exclude({ path: 'api/auth/login', method: common_1.RequestMethod.POST }, { path: 'api/auth/register', method: common_1.RequestMethod.POST }, { path: 'api/auth/refresh', method: common_1.RequestMethod.POST }, { path: 'api/health', method: common_1.RequestMethod.GET }, { path: 'api/docs', method: common_1.RequestMethod.GET })
+            .exclude({ path: 'api/v1/auth/login', method: common_1.RequestMethod.POST }, { path: 'api/v1/auth/register', method: common_1.RequestMethod.POST }, { path: 'api/v1/auth/refresh', method: common_1.RequestMethod.POST }, { path: 'api/health', method: common_1.RequestMethod.GET }, { path: 'api/docs', method: common_1.RequestMethod.GET })
             .forRoutes('*');
     }
 };
@@ -51,7 +56,7 @@ exports.AppModule = AppModule = __decorate([
         imports: [
             config_1.ConfigModule.forRoot({
                 isGlobal: true,
-                load: [app_config_1.default, auth_config_1.default, database_config_1.default, throttler_config_1.default],
+                load: [app_config_1.default, auth_config_1.default, database_config_1.default, throttler_config_1.default, system_config_1.default],
                 validationSchema: validation_schema_1.validationSchema,
                 validationOptions: {
                     allowUnknown: true,
@@ -95,6 +100,10 @@ exports.AppModule = AppModule = __decorate([
                     },
                 }),
             }),
+            jwt_1.JwtModule.register({
+                global: true,
+                secret: process.env.SYSTEM_JWT_SECRET || 'system-jwt-secret',
+            }),
             auth_module_1.AuthModule,
             users_module_1.UsersModule,
             tenants_module_1.TenantsModule,
@@ -116,6 +125,10 @@ exports.AppModule = AppModule = __decorate([
                 useClass: roles_guard_1.RolesGuard,
             },
             core_1.Reflector,
+            {
+                provide: core_2.APP_INTERCEPTOR,
+                useClass: common_1.ClassSerializerInterceptor,
+            },
             {
                 provide: core_2.APP_INTERCEPTOR,
                 useClass: tenant_context_interceptor_1.TenantContextInterceptor,

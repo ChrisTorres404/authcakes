@@ -22,7 +22,7 @@ class LoginUserDto {
 }
 exports.LoginUserDto = LoginUserDto;
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: 'uuid-of-user' }),
+    (0, swagger_1.ApiProperty)({ example: '123e4567-e89b-12d3-a456-426614174000' }),
     __metadata("design:type", String)
 ], LoginUserDto.prototype, "id", void 0);
 __decorate([
@@ -44,6 +44,7 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiProperty)({
         example: 'https://cdn.example.com/avatar.jpg',
+        required: false,
         nullable: true,
     }),
     __metadata("design:type", String)
@@ -70,15 +71,15 @@ __decorate([
     __metadata("design:type", LoginUserDto)
 ], LoginResponseDto.prototype, "user", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: 'uuid-of-session' }),
+    (0, swagger_1.ApiProperty)({ example: '550e8400-e29b-41d4-a716-446655440000' }),
     __metadata("design:type", String)
 ], LoginResponseDto.prototype, "sessionId", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: 'access.jwt.token' }),
+    (0, swagger_1.ApiProperty)({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c' }),
     __metadata("design:type", String)
 ], LoginResponseDto.prototype, "accessToken", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: 'refresh.jwt.token' }),
+    (0, swagger_1.ApiProperty)({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c' }),
     __metadata("design:type", String)
 ], LoginResponseDto.prototype, "refreshToken", void 0);
 __decorate([

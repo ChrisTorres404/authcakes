@@ -20,6 +20,12 @@ export class CsrfMiddleware implements NestMiddleware {
       return next();
     }
 
+    // Skip CSRF for Swagger UI requests (development/testing)
+    const referer = req.headers.referer || '';
+    if (referer.includes('/api/docs')) {
+      return next();
+    }
+
     const cookieToken = req.cookies[this.CSRF_COOKIE];
     const headerToken = req.headers[this.CSRF_HEADER] as string;
 

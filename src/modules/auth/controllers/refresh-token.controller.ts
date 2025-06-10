@@ -12,7 +12,7 @@ import { RefreshToken } from '../entities/refresh-token.entity';
 
 @ApiTags('Refresh Tokens')
 @ApiBearerAuth()
-@Controller('refresh-tokens')
+@Controller('v1/refresh-tokens')
 export class RefreshTokenController {
   constructor(private readonly refreshTokenService: RefreshTokenService) {}
 

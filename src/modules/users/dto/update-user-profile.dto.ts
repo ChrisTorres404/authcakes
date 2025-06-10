@@ -7,72 +7,72 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
  * that are safe for users to update about themselves
  */
 export class UpdateUserProfileDto {
-  @ApiPropertyOptional({ description: "User's first name" })
+  @ApiPropertyOptional({ example: 'Jane', description: "User's first name", maxLength: 100 })
   @IsOptional()
   @IsString()
   @MaxLength(100)
   firstName?: string;
 
-  @ApiPropertyOptional({ description: "User's last name" })
+  @ApiPropertyOptional({ example: 'Smith', description: "User's last name", maxLength: 100 })
   @IsOptional()
   @IsString()
   @MaxLength(100)
   lastName?: string;
 
-  @ApiPropertyOptional({ description: "URL to user's avatar image" })
+  @ApiPropertyOptional({ example: 'https://cdn.example.com/new-avatar.jpg', description: "URL to user's avatar image" })
   @IsOptional()
   @IsString()
   avatar?: string;
 
-  @ApiPropertyOptional({ description: "User's company name" })
+  @ApiPropertyOptional({ example: 'Tech Startup Inc.', description: "User's company name", maxLength: 200 })
   @IsOptional()
   @IsString()
   @MaxLength(200)
   company?: string;
 
-  @ApiPropertyOptional({ description: "User's department within company" })
+  @ApiPropertyOptional({ example: 'Product Design', description: "User's department within company", maxLength: 200 })
   @IsOptional()
   @IsString()
   @MaxLength(200)
   department?: string;
 
-  @ApiPropertyOptional({ description: "User's country" })
+  @ApiPropertyOptional({ example: 'Canada', description: "User's country", maxLength: 100 })
   @IsOptional()
   @IsString()
   @MaxLength(100)
   country?: string;
 
-  @ApiPropertyOptional({ description: "User's state/province" })
+  @ApiPropertyOptional({ example: 'Ontario', description: "User's state/province", maxLength: 100 })
   @IsOptional()
   @IsString()
   @MaxLength(100)
   state?: string;
 
-  @ApiPropertyOptional({ description: "User's address line 1" })
+  @ApiPropertyOptional({ example: '456 Oak Avenue', description: "User's address line 1", maxLength: 255 })
   @IsOptional()
   @IsString()
   @MaxLength(255)
   address?: string;
 
-  @ApiPropertyOptional({ description: "User's address line 2" })
+  @ApiPropertyOptional({ example: 'Floor 12', description: "User's address line 2", maxLength: 255 })
   @IsOptional()
   @IsString()
   @MaxLength(255)
   address2?: string;
 
-  @ApiPropertyOptional({ description: "User's city" })
+  @ApiPropertyOptional({ example: 'Toronto', description: "User's city", maxLength: 100 })
   @IsOptional()
   @IsString()
   @MaxLength(100)
   city?: string;
 
-  @ApiPropertyOptional({ description: "User's ZIP/postal code" })
+  @ApiPropertyOptional({ example: 'M5V 3A8', description: "User's ZIP/postal code", maxLength: 20 })
   @IsOptional()
   @IsString()
   @MaxLength(20)
   zipCode?: string;
 
-  @ApiPropertyOptional({ description: "User's biographical information" })
+  @ApiPropertyOptional({ example: 'Passionate about creating user-friendly interfaces and solving complex problems', description: "User's biographical information", maxLength: 1000 })
   @IsOptional()
   @IsString()
   @MaxLength(1000)

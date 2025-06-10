@@ -140,7 +140,7 @@ __decorate([
 exports.ApiKeysController = ApiKeysController = ApiKeysController_1 = __decorate([
     (0, swagger_1.ApiTags)('API Keys'),
     (0, swagger_1.ApiBearerAuth)(),
-    (0, common_1.Controller)('api-keys'),
+    (0, common_1.Controller)('v1/api-keys'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [api_keys_service_1.ApiKeysService])
 ], ApiKeysController);

@@ -45,10 +45,11 @@ async function bootstrap() {
 
   // CORS setup
   app.enableCors({
-    origin: ['http://localhost:3000', 'https://your-frontend.com'],
+    origin: ['http://localhost:3000', 'http://localhost:5050', 'https://your-frontend.com'],
     credentials: true,
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    allowedHeaders: 'Content-Type,Authorization',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type,Authorization,X-CSRF-Token',
+    exposedHeaders: 'X-API-Version,X-CSRF-Token',
   });
 
   // Prefix all routes with /api
@@ -57,9 +58,40 @@ async function bootstrap() {
 // Swagger/OpenAPI setup
 const config = new DocumentBuilder()
   .setTitle('AuthCakes API')
-  .setDescription('API documentation for AuthCakes multi-tenant system')
-  .setVersion('1.0')
-  .addBearerAuth()
+  .setDescription('Enterprise Authentication Platform')
+  .setVersion('1.0.0')
+  .addServer('http://localhost:5050', 'Local Development')
+  .addServer('https://api.authcakes.com', 'Production')
+  .addApiKey(
+    {
+      type: 'apiKey',
+      name: 'X-System-API-Key',
+      in: 'header',
+      description: 'System API key for application-level authentication',
+    },
+    'SystemApiKey',
+  )
+  .addBearerAuth(
+    {
+      type: 'http',
+      scheme: 'bearer',
+      bearerFormat: 'JWT',
+      name: 'X-System-Authorization',
+      in: 'header',
+      description: 'System JWT token for application-level authentication',
+    },
+    'SystemJWT',
+  )
+  .addBearerAuth(
+    {
+      type: 'http',
+      scheme: 'bearer',
+      bearerFormat: 'JWT',
+      name: 'Authorization',
+      description: 'User JWT token for user-level authentication',
+    },
+    'UserJWT',
+  )
   .build();
 const document = SwaggerModule.createDocument(app, config);
 SwaggerModule.setup('api/docs', app, document, {
@@ -671,6 +703,32 @@ SwaggerModule.setup('api/docs', app, document, {
     .swagger-ui .models-control:hover {
       background-color: transparent !important;
     }
+
+    /* Ensure server selector is visible */
+    .swagger-ui .scheme-container {
+      display: block !important;
+      margin: 10px 0 !important;
+      padding: 10px !important;
+      background: #f7f7f7 !important;
+      border-radius: 4px !important;
+    }
+
+    .swagger-ui .servers {
+      display: block !important;
+    }
+
+    .swagger-ui .servers-title {
+      display: inline-block !important;
+      margin-right: 10px !important;
+      font-weight: 600 !important;
+    }
+
+    .swagger-ui .servers select {
+      padding: 5px 10px !important;
+      border: 1px solid #ddd !important;
+      border-radius: 4px !important;
+      font-size: 14px !important;
+    }
   `,
   swaggerOptions: {
     docExpansion: 'none',
@@ -682,8 +740,52 @@ SwaggerModule.setup('api/docs', app, document, {
     showExtensions: true,
     showCommonExtensions: true,
     defaultModelExpandDepth: 2,
-    defaultModelRendering: 'model',
+    defaultModelRendering: 'example',
     deepLinking: true,
+    servers: [
+      { url: 'http://localhost:5050', description: 'Local Development' },
+      { url: 'https://api.authcakes.com', description: 'Production' }
+    ],
+    persistAuthorization: true,
+    requestSnippetsEnabled: true,
+    requestSnippets: {
+      generators: {
+        'curl_bash': {
+          title: 'cURL (bash)',
+          syntax: 'bash',
+        },
+        'curl_powershell': {
+          title: 'cURL (PowerShell)',
+          syntax: 'powershell',
+        },
+        'curl_cmd': {
+          title: 'cURL (CMD)',
+          syntax: 'bash',
+        },
+        'node_native': {
+          title: 'Node.js (Native)',
+          syntax: 'javascript',
+        },
+        'node_axios': {
+          title: 'Node.js (Axios)',
+          syntax: 'javascript',
+        },
+        'javascript_fetch': {
+          title: 'JavaScript (Fetch)',
+          syntax: 'javascript',
+        },
+        'python_requests': {
+          title: 'Python (Requests)',
+          syntax: 'python',
+        },
+      },
+      defaultExpanded: true,
+      languages: ['bash', 'powershell', 'cmd', 'javascript', 'python'],
+    },
+    syntaxHighlight: {
+      activate: true,
+      theme: 'monokai',
+    },
   },
 }); // Swagger UI at /api/docs
 

@@ -25,45 +25,46 @@ class ApiKeyResponseDto {
 }
 exports.ApiKeyResponseDto = ApiKeyResponseDto;
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: 'API key unique identifier' }),
+    (0, swagger_1.ApiProperty)({ example: '123e4567-e89b-12d3-a456-426614174000', description: 'API key unique identifier' }),
     __metadata("design:type", String)
 ], ApiKeyResponseDto.prototype, "id", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: 'User ID who owns this API key' }),
+    (0, swagger_1.ApiProperty)({ example: '123e4567-e89b-12d3-a456-426614174001', description: 'User ID who owns this API key' }),
     __metadata("design:type", String)
 ], ApiKeyResponseDto.prototype, "userId", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
+        example: '123e4567-e89b-12d3-a456-426614174002',
         description: 'Tenant ID associated with this API key',
     }),
     __metadata("design:type", String)
 ], ApiKeyResponseDto.prototype, "tenantId", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: 'Name of the API key' }),
+    (0, swagger_1.ApiProperty)({ example: 'Production API Key', description: 'Name of the API key' }),
     __metadata("design:type", String)
 ], ApiKeyResponseDto.prototype, "name", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: 'The API key value (only shown on creation)' }),
+    (0, swagger_1.ApiProperty)({ example: 'ak_live_1234567890abcdef', description: 'The API key value (only shown on creation)' }),
     __metadata("design:type", String)
 ], ApiKeyResponseDto.prototype, "key", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: 'API key permissions object' }),
+    (0, swagger_1.ApiProperty)({ example: { read: true, write: false, delete: false }, description: 'API key permissions object' }),
     __metadata("design:type", Object)
 ], ApiKeyResponseDto.prototype, "permissions", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ description: 'API key expiration date' }),
+    (0, swagger_1.ApiPropertyOptional)({ example: '2024-12-31T23:59:59Z', type: 'string', format: 'date-time', description: 'API key expiration date' }),
     __metadata("design:type", Date)
 ], ApiKeyResponseDto.prototype, "expiresAt", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: 'Whether the API key is active' }),
+    (0, swagger_1.ApiProperty)({ example: true, description: 'Whether the API key is active' }),
     __metadata("design:type", Boolean)
 ], ApiKeyResponseDto.prototype, "active", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: 'Creation timestamp' }),
+    (0, swagger_1.ApiProperty)({ example: '2024-01-01T00:00:00Z', type: 'string', format: 'date-time', description: 'Creation timestamp' }),
     __metadata("design:type", Date)
 ], ApiKeyResponseDto.prototype, "createdAt", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: 'Last update timestamp' }),
+    (0, swagger_1.ApiProperty)({ example: '2024-01-15T10:30:00Z', type: 'string', format: 'date-time', description: 'Last update timestamp' }),
     __metadata("design:type", Date)
 ], ApiKeyResponseDto.prototype, "updatedAt", void 0);
 class ApiKeyListResponseDto {

@@ -11,6 +11,38 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SessionListResponseDto = void 0;
 const swagger_1 = require("@nestjs/swagger");
+class DeviceInfoDto {
+    ip;
+    userAgent;
+    type;
+    platform;
+    browser;
+    version;
+}
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: '127.0.0.1', required: false }),
+    __metadata("design:type", String)
+], DeviceInfoDto.prototype, "ip", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', required: false }),
+    __metadata("design:type", String)
+], DeviceInfoDto.prototype, "userAgent", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 'desktop', required: false }),
+    __metadata("design:type", String)
+], DeviceInfoDto.prototype, "type", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 'Windows', required: false }),
+    __metadata("design:type", String)
+], DeviceInfoDto.prototype, "platform", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 'Chrome', required: false }),
+    __metadata("design:type", String)
+], DeviceInfoDto.prototype, "browser", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: '120.0.0.0', required: false }),
+    __metadata("design:type", String)
+], DeviceInfoDto.prototype, "version", void 0);
 class SessionDto {
     id;
     createdAt;
@@ -26,8 +58,8 @@ __decorate([
     __metadata("design:type", String)
 ], SessionDto.prototype, "createdAt", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: { ip: '127.0.0.1', userAgent: 'Mozilla/5.0' } }),
-    __metadata("design:type", Object)
+    (0, swagger_1.ApiProperty)({ type: DeviceInfoDto }),
+    __metadata("design:type", DeviceInfoDto)
 ], SessionDto.prototype, "deviceInfo", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({ example: '2024-06-01T12:30:00Z' }),

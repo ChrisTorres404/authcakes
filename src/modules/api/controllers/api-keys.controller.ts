@@ -42,7 +42,7 @@ interface RequestWithUser extends ExpressRequest {
 
 @ApiTags('API Keys')
 @ApiBearerAuth()
-@Controller('api-keys')
+@Controller('v1/api-keys')
 @UseGuards(JwtAuthGuard)
 export class ApiKeysController {
   private readonly logger = new Logger(ApiKeysController.name);

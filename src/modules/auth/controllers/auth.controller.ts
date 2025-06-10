@@ -13,12 +13,10 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Response, Request } from 'express';
-import { User } from '../../users/entities/user.entity';
 import * as speakeasy from 'speakeasy';
 import {
   DeviceInfo,
   AuthCookieParams,
-  AuthTokenResponse,
 } from '../interfaces/auth.interfaces';
 import { RequestWithUser } from '../interfaces/request-with-user.interface';
 import { ConfigService } from '@nestjs/config';
@@ -35,6 +33,7 @@ import { ResetPasswordDto } from '../dto/reset-password.dto';
 import { RevokeSessionDto } from '../dto/revoke-session.dto';
 import { RequestAccountRecoveryDto } from '../dto/request-account-recovery.dto';
 import { CompleteAccountRecoveryDto } from '../dto/complete-account-recovery.dto';
+import { ChangePasswordDto } from '../dto/change-password.dto';
 import {
   ThrottleLogin,
   ThrottleRegister,
@@ -54,8 +53,17 @@ import { SuccessResponseDto } from '../dto/success-response.dto';
 import { TokenResponseDto } from '../dto/token-response.dto';
 import { SessionStatusResponseDto } from '../dto/session-status-response.dto';
 import { SessionListResponseDto } from '../dto/session-list-response.dto';
+import { VerifyEmailResponseDto } from '../dto/verify-email-response.dto';
+import { ResetPasswordResponseDto } from '../dto/reset-password-response.dto';
+import { ForgotPasswordResponseDto } from '../dto/forgot-password-response.dto';
+import { RequestAccountRecoveryResponseDto, CompleteAccountRecoveryResponseDto } from '../dto/account-recovery-response.dto';
+import { ChangePasswordResponseDto } from '../dto/change-password-response.dto';
+import { MfaEnrollResponseDto, MfaVerifyResponseDto } from '../dto/mfa-response.dto';
+import { MfaVerifyDto } from '../dto/mfa-verify.dto';
+import { SocialLoginResponseDto } from '../dto/social-login-response.dto';
+import { AuditLogsResponseDto } from '../dto/audit-logs-response.dto';
 
-@Controller('auth')
+@Controller('v1/auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
@@ -76,10 +84,10 @@ export class AuthController {
     description: 'Successful login returns user info and tokens.',
   })
   async login(
-    @Body() loginDto: LoginDto,
+    @Body() _loginDto: LoginDto,
     @Req() req: RequestWithUser,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<AuthTokenResponse> {
+  ): Promise<LoginResponseDto> {
     // Get device info from request headers
     const deviceInfo = this.extractDeviceInfo(req);
 
@@ -90,17 +98,21 @@ export class AuthController {
     // Set cookies
     this.setAuthCookies(res, { accessToken, refreshToken, sessionId });
 
-    // Check password expiration (enterprise feature)
-    const passwordExpired = false; // TODO: Implement actual password expiration logic
-
-    // Return user info
+    // Return user info with proper DTO structure
     return {
       success: true,
-      user,
+      user: {
+        id: user.id || '',
+        email: user.email || '',
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        role: user.role || 'user',
+        avatar: user.avatar || undefined,
+        emailVerified: user.emailVerified || false,
+      },
       sessionId,
       accessToken,
       refreshToken,
-      passwordExpired,
     };
   }
 
@@ -157,7 +169,7 @@ export class AuthController {
   async refresh(
     @Req() req: RequestWithUser,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<AuthTokenResponse> {
+  ): Promise<TokenResponseDto> {
     const userId = req.user.id;
     const oldSessionId = req.user.sessionId;
     const oldRefreshToken = req.cookies.refresh_token;
@@ -192,11 +204,18 @@ export class AuthController {
       sessionId: oldSessionId,
     });
 
-    // Return user info
+    // Return user info with proper DTO structure
     return {
       success: true,
-      user,
-      sessionId: oldSessionId,
+      user: {
+        id: user.id || '',
+        email: user.email || '',
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        role: user.role || 'user',
+        avatar: user.avatar || undefined,
+        emailVerified: user.emailVerified || false,
+      },
       accessToken,
       refreshToken,
     };
@@ -311,7 +330,7 @@ export class AuthController {
     @Body() registerDto: RegisterDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<AuthTokenResponse> {
+  ): Promise<LoginResponseDto> {
     // Get device info from request headers
     const deviceInfo = this.extractDeviceInfo(req);
 
@@ -326,13 +345,13 @@ export class AuthController {
     return {
       success: true,
       user: {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-        avatar: user.avatar,
-        emailVerified: user.emailVerified,
+        id: user.id || '',
+        email: user.email || '',
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        role: user.role || 'user',
+        avatar: user.avatar || undefined,
+        emailVerified: user.emailVerified || false,
       },
       sessionId,
       accessToken,
@@ -348,16 +367,26 @@ export class AuthController {
   @Post('verify-email')
   @ApiOperation({ summary: 'Verify user email with a token.' })
   @ApiBody({ schema: { example: { token: 'verification-token' } } })
-  @ApiOkResponse({ description: 'Email verified and user info returned.' })
+  @ApiOkResponse({ 
+    type: VerifyEmailResponseDto,
+    description: 'Email verified and user info returned.' 
+  })
   @ApiBadRequestResponse({
     description: 'Invalid or expired verification token.',
   })
-  async verifyEmail(@Body('token') token: string): Promise<{
-    success: boolean;
-    user: Partial<User>;
-  }> {
+  async verifyEmail(@Body('token') token: string): Promise<VerifyEmailResponseDto> {
     const user = await this.authService.verifyEmail(token);
-    return { success: true, user };
+    return { 
+      success: true, 
+      user: {
+        id: user.id || '',
+        email: user.email || '',
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        role: user.role || 'user',
+        emailVerified: user.emailVerified || false,
+      }
+    };
   }
 
   /**
@@ -369,11 +398,14 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Request a password reset email.' })
   @ApiBody({ type: ForgotPasswordDto })
-  @ApiOkResponse({ description: 'Password reset token sent if email exists.' })
+  @ApiOkResponse({ 
+    type: ForgotPasswordResponseDto,
+    description: 'Password reset token sent if email exists.' 
+  })
   @ApiBadRequestResponse({ description: 'Invalid email or user not found.' })
   async forgotPassword(
     @Body() dto: ForgotPasswordDto,
-  ): Promise<{ success: boolean; tokenSent: boolean }> {
+  ): Promise<ForgotPasswordResponseDto> {
     // This will generate a reset token and (TODO) send email
     const token = await this.authService.requestPasswordReset(dto.email);
     return { success: true, tokenSent: !!token };
@@ -387,16 +419,29 @@ export class AuthController {
   @Post('reset-password')
   @HttpCode(200)
   @ApiOperation({ summary: 'Reset password using a token and optional OTP.' })
-  @ApiOkResponse({ description: 'Password reset and user info returned.' })
+  @ApiOkResponse({ 
+    type: ResetPasswordResponseDto,
+    description: 'Password reset and user info returned.' 
+  })
   async resetPassword(
     @Body() dto: ResetPasswordDto,
-  ): Promise<{ success: boolean; user: Partial<User> }> {
+  ): Promise<ResetPasswordResponseDto> {
     const user = await this.authService.resetPassword(
       dto.token,
       dto.password,
       dto.otp,
     );
-    return { success: true, user };
+    return { 
+      success: true, 
+      user: {
+        id: user.id || '',
+        email: user.email || '',
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        role: user.role || 'user',
+        emailVerified: user.emailVerified || false,
+      }
+    };
   }
 
   /**
@@ -411,6 +456,7 @@ export class AuthController {
   })
   @ApiBody({ type: RequestAccountRecoveryDto })
   @ApiOkResponse({
+    type: RequestAccountRecoveryResponseDto,
     description: 'Account recovery token sent if email exists.',
   })
   @ApiBadRequestResponse({ description: 'Invalid email or user not found.' })
@@ -418,7 +464,7 @@ export class AuthController {
     @Body() dto: RequestAccountRecoveryDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<{ success: boolean; recoveryToken?: string }> {
+  ): Promise<RequestAccountRecoveryResponseDto> {
     // This will generate a recovery token and send notification
     const result = await this.authService.requestAccountRecovery(dto.email);
     
@@ -441,7 +487,10 @@ export class AuthController {
       'Complete account recovery by setting a new password with a recovery token.',
   })
   @ApiBody({ type: CompleteAccountRecoveryDto })
-  @ApiOkResponse({ description: 'Account recovery completed.' })
+  @ApiOkResponse({ 
+    type: CompleteAccountRecoveryResponseDto,
+    description: 'Account recovery completed.' 
+  })
   @ApiBadRequestResponse({
     description: 'Invalid token, password, or MFA code.',
   })
@@ -449,7 +498,7 @@ export class AuthController {
     @Body() dto: CompleteAccountRecoveryDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<{ success: boolean }> {
+  ): Promise<CompleteAccountRecoveryResponseDto> {
     const result = await this.authService.completeAccountRecovery(
       dto.token,
       dto.newPassword,
@@ -469,30 +518,21 @@ export class AuthController {
   @Post('change-password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Change password for the current user.' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      required: ['oldPassword', 'newPassword'],
-      properties: {
-        oldPassword: { type: 'string', example: 'OldPassword123!' },
-        newPassword: { type: 'string', example: 'NewPassword123!' },
-      },
-    },
-  })
+  @ApiBody({ type: ChangePasswordDto })
   @ApiOkResponse({
+    type: ChangePasswordResponseDto,
     description: 'Password changed and all sessions/tokens revoked.',
   })
   @ApiBadRequestResponse({ description: 'Invalid input or weak password.' })
   async changePassword(
     @Req() req: RequestWithUser,
-    @Body('oldPassword') oldPassword: string,
-    @Body('newPassword') newPassword: string,
-  ): Promise<{ success: boolean; message?: string }> {
+    @Body() dto: ChangePasswordDto,
+  ): Promise<ChangePasswordResponseDto> {
     const userId = req.user.id;
     const result = await this.authService.changePassword(
       userId,
-      oldPassword,
-      newPassword,
+      dto.oldPassword,
+      dto.newPassword,
     );
     // Revoke all sessions and tokens for this user
     await this.sessionService.revokeAllUserSessions(userId);
@@ -507,23 +547,11 @@ export class AuthController {
   @HttpCode(200)
   @ApiOperation({ summary: 'Enroll in multi-factor authentication (MFA).' })
   @ApiOkResponse({
-    schema: {
-      example: {
-        success: true,
-        secret: 'BASE32SECRET',
-        otpauth_url:
-          'otpauth://totp/Service:user@example.com?secret=BASE32SECRET&issuer=Service',
-      },
-    },
+    type: MfaEnrollResponseDto,
     description: 'MFA enrollment secret and URL returned.',
   })
   @ApiUnauthorizedResponse({ description: 'User is not authenticated.' })
-  async mfaEnroll(@Req() req: RequestWithUser): Promise<{
-    success: boolean;
-    secret: string;
-    otpauth_url?: string;
-    setupStatus: string;
-  }> {
+  async mfaEnroll(@Req() req: RequestWithUser): Promise<MfaEnrollResponseDto> {
     // Security: Removed console.log statements that exposed user data
     // Map sub to id for downstream compatibility
     const jwtUser = req.user as any;
@@ -559,29 +587,16 @@ export class AuthController {
   @Post('mfa/verify')
   @HttpCode(200)
   @ApiOperation({ summary: 'Verify MFA code to enable MFA.' })
-  @ApiBody({ 
-    schema: { 
-      example: { 
-        code: '123456',
-        type: 'totp' // or 'recovery' for recovery codes
-      } 
-    } 
-  })
+  @ApiBody({ type: MfaVerifyDto })
   @ApiOkResponse({
-    schema: {
-      oneOf: [
-        { example: { success: true } },
-        { example: { success: false, message: 'No MFA secret set' } },
-        { example: { success: false, message: 'Invalid MFA code' } },
-      ],
-    },
+    type: MfaVerifyResponseDto,
     description: 'MFA enabled if code is valid.',
   })
   @ApiUnauthorizedResponse({ description: 'User is not authenticated.' })
   async mfaVerify(
     @Req() req: RequestWithUser,
-    @Body() verifyDto: { code: string; type?: 'totp' | 'recovery' },
-  ): Promise<{ success: boolean; message?: string; recoveryCodes?: string[] }> {
+    @Body() verifyDto: MfaVerifyDto,
+  ): Promise<MfaVerifyResponseDto> {
     // Get user and secret - req.user is the JWT payload, so use 'sub' field
     const userId = req.user?.id || (req.user as any)?.sub;
     if (!userId) {
@@ -636,12 +651,10 @@ export class AuthController {
     description: 'This endpoint is a stub and does not perform social login.',
   })
   @ApiOkResponse({
-    schema: {
-      example: { success: false, message: 'Social login not implemented yet' },
-    },
+    type: SocialLoginResponseDto,
     description: 'Social login not implemented yet.',
   })
-  async socialLogin(): Promise<{ success: boolean; message: string }> {
+  async socialLogin(): Promise<SocialLoginResponseDto> {
     return { success: false, message: 'Social login not implemented yet' };
   }
 
@@ -654,12 +667,10 @@ export class AuthController {
     description: 'This endpoint is a stub and does not return audit logs.',
   })
   @ApiOkResponse({
-    schema: {
-      example: { success: false, message: 'Audit logs not implemented yet' },
-    },
+    type: AuditLogsResponseDto,
     description: 'Audit logs not implemented yet.',
   })
-  async auditLogs(): Promise<{ success: boolean; message: string }> {
+  async auditLogs(): Promise<AuditLogsResponseDto> {
     return { success: false, message: 'Audit logs not implemented yet' };
   }
 

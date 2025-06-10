@@ -22,6 +22,10 @@ let CsrfMiddleware = class CsrfMiddleware {
         if (req.headers.authorization?.startsWith('Bearer ')) {
             return next();
         }
+        const referer = req.headers.referer || '';
+        if (referer.includes('/api/docs')) {
+            return next();
+        }
         const cookieToken = req.cookies[this.CSRF_COOKIE];
         const headerToken = req.headers[this.CSRF_HEADER];
         if (!cookieToken) {

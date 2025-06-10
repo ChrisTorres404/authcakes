@@ -110,7 +110,7 @@ __decorate([
 ], LogsController.prototype, "createAdminLog", null);
 exports.LogsController = LogsController = __decorate([
     (0, swagger_1.ApiTags)('Logs'),
-    (0, common_1.Controller)('logs'),
+    (0, common_1.Controller)('v1/logs'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [logs_service_1.LogsService])
 ], LogsController);

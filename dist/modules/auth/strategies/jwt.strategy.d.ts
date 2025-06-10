@@ -4,7 +4,7 @@ import { Request } from 'express';
 import { UsersService } from '../../users/services/users.service';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
 import { SessionService } from '../services/session.service';
-declare const JwtStrategy_base: new (...args: [opt: import("passport-jwt").StrategyOptionsWithoutRequest] | [opt: StrategyOptionsWithRequest]) => Strategy & {
+declare const JwtStrategy_base: new (...args: [opt: StrategyOptionsWithRequest] | [opt: import("passport-jwt").StrategyOptionsWithoutRequest]) => Strategy & {
     validate(...args: any[]): unknown;
 };
 export declare class JwtStrategy extends JwtStrategy_base {
