@@ -30,6 +30,10 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { TenantsModule } from './modules/tenants/tenants.module';
 import { DatabaseModule } from './modules/database/database.module';
+import { MonitoringModule } from './modules/monitoring/monitoring.module';
+import { SettingsModule } from './modules/settings/settings.module';
+import { LogsModule } from './modules/logs/logs.module';
+import { ApiModule } from './modules/api/api.module';
 
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
@@ -43,6 +47,7 @@ import { CsrfMiddleware } from './common/middleware/csrf.middleware';
 import { ApiVersionMiddleware } from './common/middleware/api-version.middleware';
 import { PerformanceInterceptor } from './common/interceptors/performance.interceptor';
 import { TransformResponseInterceptor } from './common/interceptors/transform-response.interceptor';
+import { MonitoringInterceptor } from './common/interceptors/monitoring.interceptor';
 
 @Module({
   imports: [
@@ -144,6 +149,10 @@ import { TransformResponseInterceptor } from './common/interceptors/transform-re
     UsersModule,
     TenantsModule,
     DatabaseModule,
+    MonitoringModule,
+    SettingsModule,
+    LogsModule,
+    ApiModule,
   ],
   controllers: [AppController],
   providers: [
@@ -181,6 +190,10 @@ import { TransformResponseInterceptor } from './common/interceptors/transform-re
     {
       provide: APP_INTERCEPTOR,
       useClass: PerformanceInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: MonitoringInterceptor,
     },
 
     // Global Filters

@@ -8,8 +8,12 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { join } from 'path';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { StrictValidationPipe } from './common/pipes/strict-validation.pipe';
+import { initializeMonitoring } from './config/monitoring.config';
 
 async function bootstrap() {
+  // Initialize APM monitoring before app creation
+  initializeMonitoring();
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   // Serve static assets from src for Swagger logo, etc.
   app.useStaticAssets(join(__dirname, '..', 'src'));

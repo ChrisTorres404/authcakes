@@ -26,6 +26,10 @@ const auth_module_1 = require("./modules/auth/auth.module");
 const users_module_1 = require("./modules/users/users.module");
 const tenants_module_1 = require("./modules/tenants/tenants.module");
 const database_module_1 = require("./modules/database/database.module");
+const monitoring_module_1 = require("./modules/monitoring/monitoring.module");
+const settings_module_1 = require("./modules/settings/settings.module");
+const logs_module_1 = require("./modules/logs/logs.module");
+const api_module_1 = require("./modules/api/api.module");
 const core_2 = require("@nestjs/core");
 const jwt_auth_guard_1 = require("./modules/auth/guards/jwt-auth.guard");
 const tenant_context_interceptor_1 = require("./common/interceptors/tenant-context.interceptor");
@@ -37,6 +41,7 @@ const csrf_middleware_1 = require("./common/middleware/csrf.middleware");
 const api_version_middleware_1 = require("./common/middleware/api-version.middleware");
 const performance_interceptor_1 = require("./common/interceptors/performance.interceptor");
 const transform_response_interceptor_1 = require("./common/interceptors/transform-response.interceptor");
+const monitoring_interceptor_1 = require("./common/interceptors/monitoring.interceptor");
 let AppModule = class AppModule {
     configure(consumer) {
         consumer
@@ -128,6 +133,10 @@ exports.AppModule = AppModule = __decorate([
             users_module_1.UsersModule,
             tenants_module_1.TenantsModule,
             database_module_1.DatabaseModule,
+            monitoring_module_1.MonitoringModule,
+            settings_module_1.SettingsModule,
+            logs_module_1.LogsModule,
+            api_module_1.ApiModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [
@@ -160,6 +169,10 @@ exports.AppModule = AppModule = __decorate([
             {
                 provide: core_2.APP_INTERCEPTOR,
                 useClass: performance_interceptor_1.PerformanceInterceptor,
+            },
+            {
+                provide: core_2.APP_INTERCEPTOR,
+                useClass: monitoring_interceptor_1.MonitoringInterceptor,
             },
             {
                 provide: core_2.APP_FILTER,

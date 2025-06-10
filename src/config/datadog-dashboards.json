@@ -1,0 +1,241 @@
+{
+  "authcakes_api_dashboard": {
+    "title": "AuthCakes API Dashboard",
+    "description": "Real-time monitoring dashboard for AuthCakes API",
+    "widgets": [
+      {
+        "type": "timeseries",
+        "title": "API Request Rate",
+        "queries": [
+          {
+            "name": "Request Rate",
+            "data_source": "metrics",
+            "query": "sum:trace.express.request{service:authcakes-api}.as_rate()"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "API Response Time",
+        "queries": [
+          {
+            "name": "p95 Latency",
+            "data_source": "metrics",
+            "query": "avg:trace.express.request.duration.95percentile{service:authcakes-api}"
+          },
+          {
+            "name": "p99 Latency",
+            "data_source": "metrics",
+            "query": "avg:trace.express.request.duration.99percentile{service:authcakes-api}"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Authentication Metrics",
+        "queries": [
+          {
+            "name": "Login Success Rate",
+            "data_source": "metrics",
+            "query": "sum:authcakes.auth.login.success{*}.as_rate()"
+          },
+          {
+            "name": "Login Failure Rate",
+            "data_source": "metrics",
+            "query": "sum:authcakes.auth.login.failure{*}.as_rate()"
+          },
+          {
+            "name": "Registration Rate",
+            "data_source": "metrics",
+            "query": "sum:authcakes.auth.registration.success{*}.as_rate()"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Session Metrics",
+        "queries": [
+          {
+            "name": "Active Sessions",
+            "data_source": "metrics",
+            "query": "sum:authcakes.session.active{*}"
+          },
+          {
+            "name": "Session Creation Rate",
+            "data_source": "metrics",
+            "query": "sum:authcakes.session.created{*}.as_rate()"
+          },
+          {
+            "name": "Session Revocation Rate",
+            "data_source": "metrics",
+            "query": "sum:authcakes.session.revoked{*}.as_rate()"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Security Events",
+        "queries": [
+          {
+            "name": "Brute Force Attempts",
+            "data_source": "metrics",
+            "query": "sum:authcakes.security.brute_force.attempt{*}.as_rate()"
+          },
+          {
+            "name": "Rate Limit Hits",
+            "data_source": "metrics",
+            "query": "sum:authcakes.security.rate_limit.hit{*}.as_rate()"
+          },
+          {
+            "name": "Critical Security Events",
+            "data_source": "metrics",
+            "query": "sum:authcakes.security.event{severity:critical}.as_rate()"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Database Performance",
+        "queries": [
+          {
+            "name": "Query Duration (p95)",
+            "data_source": "metrics",
+            "query": "avg:authcakes.database.query.duration.95percentile{*} by {operation,table}"
+          },
+          {
+            "name": "Query Rate",
+            "data_source": "metrics",
+            "query": "sum:authcakes.database.query.count{*}.as_rate() by {operation}"
+          }
+        ]
+      },
+      {
+        "type": "query_value",
+        "title": "Error Rate",
+        "queries": [
+          {
+            "name": "Error Rate",
+            "data_source": "metrics",
+            "query": "sum:trace.express.request.error{service:authcakes-api}.as_rate()",
+            "aggregator": "avg"
+          }
+        ]
+      },
+      {
+        "type": "heatmap",
+        "title": "API Endpoint Latency Heatmap",
+        "queries": [
+          {
+            "name": "Endpoint Latency",
+            "data_source": "metrics",
+            "query": "avg:trace.express.request.duration{service:authcakes-api} by {resource_name}"
+          }
+        ]
+      },
+      {
+        "type": "top_list",
+        "title": "Top Slowest Endpoints",
+        "queries": [
+          {
+            "name": "Slowest Endpoints",
+            "data_source": "metrics",
+            "query": "avg:trace.express.request.duration{service:authcakes-api} by {resource_name}"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Tenant Activity",
+        "queries": [
+          {
+            "name": "Tenant Creation Rate",
+            "data_source": "metrics",
+            "query": "sum:authcakes.tenant.created{*}.as_rate()"
+          },
+          {
+            "name": "Member Addition Rate",
+            "data_source": "metrics",
+            "query": "sum:authcakes.tenant.member.added{*}.as_rate()"
+          },
+          {
+            "name": "Invitation Acceptance Rate",
+            "data_source": "metrics",
+            "query": "sum:authcakes.tenant.invitation.accepted{*}.as_rate()"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Resource Utilization",
+        "queries": [
+          {
+            "name": "Memory Usage",
+            "data_source": "metrics",
+            "query": "avg:nodejs.heap.size.used{service:authcakes-api}"
+          },
+          {
+            "name": "CPU Usage",
+            "data_source": "metrics",
+            "query": "avg:system.cpu.user{service:authcakes-api}"
+          }
+        ]
+      },
+      {
+        "type": "log_stream",
+        "title": "Recent Errors",
+        "query": "service:authcakes-api status:error"
+      }
+    ]
+  },
+  "alerts": [
+    {
+      "name": "High Error Rate",
+      "type": "metric",
+      "query": "sum(last_5m):sum:trace.express.request.error{service:authcakes-api}.as_rate() > 0.05",
+      "message": "Error rate is above 5% for AuthCakes API @pagerduty",
+      "tags": ["service:authcakes-api", "team:platform", "severity:high"]
+    },
+    {
+      "name": "High Response Time",
+      "type": "metric",
+      "query": "avg(last_5m):avg:trace.express.request.duration.95percentile{service:authcakes-api} > 1000",
+      "message": "95th percentile response time is above 1s for AuthCakes API",
+      "tags": ["service:authcakes-api", "team:platform", "severity:medium"]
+    },
+    {
+      "name": "Brute Force Attack Detection",
+      "type": "metric",
+      "query": "sum(last_5m):sum:authcakes.security.brute_force.attempt{*}.as_rate() > 10",
+      "message": "Potential brute force attack detected - more than 10 attempts per minute @security-team",
+      "tags": ["service:authcakes-api", "security:brute-force", "severity:critical"]
+    },
+    {
+      "name": "High Database Query Time",
+      "type": "metric",
+      "query": "avg(last_5m):avg:authcakes.database.query.duration{*} > 500",
+      "message": "Database queries are taking longer than 500ms on average",
+      "tags": ["service:authcakes-api", "team:platform", "severity:medium"]
+    },
+    {
+      "name": "Authentication Failure Spike",
+      "type": "metric",
+      "query": "change(avg(last_5m),last_5m_ago):sum:authcakes.auth.login.failure{*}.as_rate() > 5",
+      "message": "Authentication failures have increased by more than 500% in the last 5 minutes",
+      "tags": ["service:authcakes-api", "security:auth", "severity:high"]
+    },
+    {
+      "name": "Memory Leak Detection",
+      "type": "metric",
+      "query": "avg(last_30m):avg:nodejs.heap.size.used{service:authcakes-api} > 500000000",
+      "message": "Node.js heap size is above 500MB, potential memory leak",
+      "tags": ["service:authcakes-api", "team:platform", "severity:high"]
+    },
+    {
+      "name": "Rate Limiting Threshold",
+      "type": "metric",
+      "query": "sum(last_5m):sum:authcakes.security.rate_limit.hit{*}.as_rate() > 100",
+      "message": "Rate limiting is being triggered more than 100 times per minute",
+      "tags": ["service:authcakes-api", "security:rate-limit", "severity:medium"]
+    }
+  ]
+}

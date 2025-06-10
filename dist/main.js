@@ -8,7 +8,9 @@ const app_module_1 = require("./app.module");
 const swagger_1 = require("@nestjs/swagger");
 const path_1 = require("path");
 const strict_validation_pipe_1 = require("./common/pipes/strict-validation.pipe");
+const monitoring_config_1 = require("./config/monitoring.config");
 async function bootstrap() {
+    (0, monitoring_config_1.initializeMonitoring)();
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     app.useStaticAssets((0, path_1.join)(__dirname, '..', 'src'));
     const configService = app.get(config_1.ConfigService);
