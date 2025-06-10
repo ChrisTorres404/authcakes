@@ -42,6 +42,7 @@ import { SecurityHeadersMiddleware } from './common/middleware/security-headers.
 import { CsrfMiddleware } from './common/middleware/csrf.middleware';
 import { ApiVersionMiddleware } from './common/middleware/api-version.middleware';
 import { PerformanceInterceptor } from './common/interceptors/performance.interceptor';
+import { TransformResponseInterceptor } from './common/interceptors/transform-response.interceptor';
 
 @Module({
   imports: [
@@ -136,6 +137,10 @@ import { PerformanceInterceptor } from './common/interceptors/performance.interc
     {
       provide: APP_INTERCEPTOR,
       useClass: ClassSerializerInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: TransformResponseInterceptor,
     },
     {
       provide: APP_INTERCEPTOR,

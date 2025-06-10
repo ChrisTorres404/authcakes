@@ -21,9 +21,6 @@ export class ResetPasswordUserDto {
 }
 
 export class ResetPasswordResponseDto {
-  @ApiProperty({ example: true })
-  success: boolean;
-
   @ApiProperty({ type: ResetPasswordUserDto })
   user: ResetPasswordUserDto;
 }

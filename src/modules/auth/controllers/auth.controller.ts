@@ -100,7 +100,6 @@ export class AuthController {
 
     // Return user info with proper DTO structure
     return {
-      success: true,
       user: {
         id: user.id || '',
         email: user.email || '',
@@ -151,7 +150,7 @@ export class AuthController {
     // Clear cookies
     this.clearAuthCookies(res);
 
-    return { success: true };
+    return {};
   }
 
   @Public()
@@ -206,7 +205,6 @@ export class AuthController {
 
     // Return user info with proper DTO structure
     return {
-      success: true,
       user: {
         id: user.id || '',
         email: user.email || '',
@@ -311,7 +309,7 @@ export class AuthController {
       'User-initiated session revocation',
     );
 
-    return { success: true };
+    return {};
   }
 
   @Public()
@@ -343,7 +341,6 @@ export class AuthController {
 
     // Return user info (full user object) and verificationToken for dev only
     return {
-      success: true,
       user: {
         id: user.id || '',
         email: user.email || '',
@@ -377,7 +374,6 @@ export class AuthController {
   async verifyEmail(@Body('token') token: string): Promise<VerifyEmailResponseDto> {
     const user = await this.authService.verifyEmail(token);
     return { 
-      success: true, 
       user: {
         id: user.id || '',
         email: user.email || '',
@@ -408,7 +404,7 @@ export class AuthController {
   ): Promise<ForgotPasswordResponseDto> {
     // This will generate a reset token and (TODO) send email
     const token = await this.authService.requestPasswordReset(dto.email);
-    return { success: true, tokenSent: !!token };
+    return { tokenSent: !!token };
   }
 
   /**
@@ -432,7 +428,6 @@ export class AuthController {
       dto.otp,
     );
     return { 
-      success: true, 
       user: {
         id: user.id || '',
         email: user.email || '',
@@ -537,7 +532,7 @@ export class AuthController {
     // Revoke all sessions and tokens for this user
     await this.sessionService.revokeAllUserSessions(userId);
     await this.tokenService.revokeAllUserTokens(userId);
-    return { success: true, ...result };
+    return { ...result };
   }
 
   /**
@@ -577,7 +572,6 @@ export class AuthController {
     await this.authService.setMfaSecret(req.user.id, secret.base32);
 
     return {
-      success: true,
       secret: secret.base32,
       ...(secret.otpauth_url && { otpauth_url: secret.otpauth_url }),
       setupStatus: 'pending',
@@ -600,23 +594,23 @@ export class AuthController {
     // Get user and secret - req.user is the JWT payload, so use 'sub' field
     const userId = req.user?.id || (req.user as any)?.sub;
     if (!userId) {
-      return { success: false, message: 'User not authenticated' };
+      throw new UnauthorizedException('User not authenticated');
     }
     
     // Check if using recovery code
     if (verifyDto.type === 'recovery') {
       const isValid = await this.authService.verifyRecoveryCode(userId, verifyDto.code);
       if (isValid) {
-        return { success: true };
+        return {};
       }
-      return { success: false, message: 'Invalid recovery code' };
+      throw new UnauthorizedException('Invalid recovery code');
     }
     
     // Regular TOTP verification
     const user = await this.authService.getUserById(userId);
     const secret = user.mfaSecret;
     if (!secret) {
-      return { success: false, message: 'No MFA secret set' };
+      throw new UnauthorizedException('No MFA secret set');
     }
     
     const verified = speakeasy.totp.verify({
@@ -631,14 +625,13 @@ export class AuthController {
       if (!user.mfaEnabled) {
         const recoveryCodes = await this.authService.enableMfa(userId);
         return { 
-          success: true, 
           recoveryCodes,
           message: 'MFA enabled successfully. Save these recovery codes in a safe place.'
         };
       }
-      return { success: true };
+      return {};
     } else {
-      return { success: false, message: 'Invalid MFA code' };
+      throw new UnauthorizedException('Invalid MFA code');
     }
   }
 
@@ -655,7 +648,7 @@ export class AuthController {
     description: 'Social login not implemented yet.',
   })
   async socialLogin(): Promise<SocialLoginResponseDto> {
-    return { success: false, message: 'Social login not implemented yet' };
+    return { message: 'Social login not implemented yet' };
   }
 
   /**
@@ -671,7 +664,7 @@ export class AuthController {
     description: 'Audit logs not implemented yet.',
   })
   async auditLogs(): Promise<AuditLogsResponseDto> {
-    return { success: false, message: 'Audit logs not implemented yet' };
+    return { message: 'Audit logs not implemented yet' };
   }
 
   // Helper methods

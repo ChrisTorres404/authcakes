@@ -1,13 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const core_1 = require("@nestjs/core");
-const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
 const cookieParser = require("cookie-parser");
 const helmet_1 = require("helmet");
 const app_module_1 = require("./app.module");
 const swagger_1 = require("@nestjs/swagger");
 const path_1 = require("path");
+const strict_validation_pipe_1 = require("./common/pipes/strict-validation.pipe");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     app.useStaticAssets((0, path_1.join)(__dirname, '..', 'src'));
@@ -29,11 +29,7 @@ async function bootstrap() {
         crossOriginEmbedderPolicy: false,
     }));
     app.use(cookieParser());
-    app.useGlobalPipes(new common_1.ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-    }));
+    app.useGlobalPipes(new strict_validation_pipe_1.StrictValidationPipe());
     app.enableCors({
         origin: ['http://localhost:3000', 'http://localhost:5050', 'https://your-frontend.com'],
         credentials: true,

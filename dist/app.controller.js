@@ -20,7 +20,6 @@ const public_decorator_1 = require("./common/decorators/public.decorator");
 const swagger_generic_response_decorator_1 = require("./common/decorators/swagger-generic-response.decorator");
 const api_info_dto_1 = require("./dto/api-info.dto");
 const health_check_dto_1 = require("./dto/health-check.dto");
-const api_response_dto_1 = require("./modules/tenants/dto/api-response.dto");
 const system_auth_decorator_1 = require("./common/decorators/system-auth.decorator");
 const swagger_1 = require("@nestjs/swagger");
 let AppController = class AppController {
@@ -33,27 +32,20 @@ let AppController = class AppController {
     }
     healthCheck() {
         return {
-            success: true,
-            data: {
-                status: 'ok',
-                timestamp: new Date().toISOString(),
-            },
+            status: 'ok',
+            timestamp: new Date().toISOString(),
         };
     }
     getApiInfo() {
         return {
-            success: true,
-            data: {
-                name: 'AuthCakes API',
-                version: '1.0.0',
-                status: 'ok',
-                timestamp: new Date().toISOString(),
-            },
+            name: 'AuthCakes API',
+            version: '1.0.0',
+            status: 'ok',
+            timestamp: new Date().toISOString(),
         };
     }
     testSystemAuth(req) {
         return {
-            success: true,
             message: 'System authentication successful',
             system: req.system,
             timestamp: new Date().toISOString(),
@@ -61,7 +53,6 @@ let AppController = class AppController {
     }
     testSystemAndUserAuth(req) {
         return {
-            success: true,
             message: 'System and user authentication successful',
             system: req.system,
             user: {
@@ -87,7 +78,7 @@ __decorate([
     (0, swagger_generic_response_decorator_1.ApiResponseWithData)(health_check_dto_1.HealthCheckDto),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
-    __metadata("design:returntype", api_response_dto_1.ApiResponseDto)
+    __metadata("design:returntype", health_check_dto_1.HealthCheckDto)
 ], AppController.prototype, "healthCheck", null);
 __decorate([
     (0, public_decorator_1.Public)(),
@@ -96,7 +87,7 @@ __decorate([
     (0, swagger_generic_response_decorator_1.ApiResponseWithData)(api_info_dto_1.ApiInfoDto),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
-    __metadata("design:returntype", api_response_dto_1.ApiResponseDto)
+    __metadata("design:returntype", api_info_dto_1.ApiInfoDto)
 ], AppController.prototype, "getApiInfo", null);
 __decorate([
     (0, system_auth_decorator_1.SystemAuth)(),

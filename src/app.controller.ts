@@ -5,7 +5,6 @@ import { Public } from './common/decorators/public.decorator';
 import { ApiResponseWithData } from './common/decorators/swagger-generic-response.decorator';
 import { ApiInfoDto } from './dto/api-info.dto';
 import { HealthCheckDto } from './dto/health-check.dto';
-import { ApiResponseDto } from './modules/tenants/dto/api-response.dto';
 import { SystemAuth, SystemAndUserAuth } from './common/decorators/system-auth.decorator';
 import { Request } from 'express';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -23,13 +22,10 @@ export class AppController {
   @SkipThrottle()
   @Get('health')
   @ApiResponseWithData(HealthCheckDto)
-  healthCheck(): ApiResponseDto<HealthCheckDto> {
+  healthCheck(): HealthCheckDto {
     return {
-      success: true,
-      data: {
-        status: 'ok',
-        timestamp: new Date().toISOString(),
-      },
+      status: 'ok',
+      timestamp: new Date().toISOString(),
     };
   }
 
@@ -37,15 +33,12 @@ export class AppController {
   @SkipThrottle()
   @Get('api')
   @ApiResponseWithData(ApiInfoDto)
-  getApiInfo(): ApiResponseDto<ApiInfoDto> {
+  getApiInfo(): ApiInfoDto {
     return {
-      success: true,
-      data: {
-        name: 'AuthCakes API',
-        version: '1.0.0',
-        status: 'ok',
-        timestamp: new Date().toISOString(),
-      },
+      name: 'AuthCakes API',
+      version: '1.0.0',
+      status: 'ok',
+      timestamp: new Date().toISOString(),
     };
   }
 
@@ -58,7 +51,6 @@ export class AppController {
   })
   testSystemAuth(@Req() req: Request & { system?: any }): any {
     return {
-      success: true,
       message: 'System authentication successful',
       system: req.system,
       timestamp: new Date().toISOString(),
@@ -74,7 +66,6 @@ export class AppController {
   })
   testSystemAndUserAuth(@Req() req: Request & { system?: any; user?: any }): any {
     return {
-      success: true,
       message: 'System and user authentication successful',
       system: req.system,
       user: {

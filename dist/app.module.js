@@ -36,6 +36,7 @@ const security_headers_middleware_1 = require("./common/middleware/security-head
 const csrf_middleware_1 = require("./common/middleware/csrf.middleware");
 const api_version_middleware_1 = require("./common/middleware/api-version.middleware");
 const performance_interceptor_1 = require("./common/interceptors/performance.interceptor");
+const transform_response_interceptor_1 = require("./common/interceptors/transform-response.interceptor");
 let AppModule = class AppModule {
     configure(consumer) {
         consumer
@@ -128,6 +129,10 @@ exports.AppModule = AppModule = __decorate([
             {
                 provide: core_2.APP_INTERCEPTOR,
                 useClass: common_1.ClassSerializerInterceptor,
+            },
+            {
+                provide: core_2.APP_INTERCEPTOR,
+                useClass: transform_response_interceptor_1.TransformResponseInterceptor,
             },
             {
                 provide: core_2.APP_INTERCEPTOR,

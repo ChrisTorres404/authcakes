@@ -28,9 +28,6 @@ export class LoginUserDto {
 }
 
 export class LoginResponseDto {
-  @ApiProperty({ example: true })
-  success: boolean;
-
   @ApiProperty({ type: LoginUserDto })
   user: LoginUserDto;
 

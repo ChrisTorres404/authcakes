@@ -13,16 +13,11 @@ exports.TokenResponseDto = void 0;
 const swagger_1 = require("@nestjs/swagger");
 const login_response_dto_1 = require("./login-response.dto");
 class TokenResponseDto {
-    success;
     user;
     accessToken;
     refreshToken;
 }
 exports.TokenResponseDto = TokenResponseDto;
-__decorate([
-    (0, swagger_1.ApiProperty)({ example: true }),
-    __metadata("design:type", Boolean)
-], TokenResponseDto.prototype, "success", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({ type: login_response_dto_1.LoginUserDto }),
     __metadata("design:type", login_response_dto_1.LoginUserDto)

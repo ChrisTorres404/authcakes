@@ -62,7 +62,6 @@ let AuthController = class AuthController {
         const { accessToken, refreshToken, sessionId, user } = await this.tokenService.generateTokens(req.user.id, deviceInfo);
         this.setAuthCookies(res, { accessToken, refreshToken, sessionId });
         return {
-            success: true,
             user: {
                 id: user.id || '',
                 email: user.email || '',
@@ -87,7 +86,7 @@ let AuthController = class AuthController {
             await this.tokenService.revokeSession(sessionId, req.user.id, 'User logout');
         }
         this.clearAuthCookies(res);
-        return { success: true };
+        return {};
     }
     async refresh(req, res) {
         const userId = req.user.id;
@@ -107,7 +106,6 @@ let AuthController = class AuthController {
             sessionId: oldSessionId,
         });
         return {
-            success: true,
             user: {
                 id: user.id || '',
                 email: user.email || '',
@@ -158,14 +156,13 @@ let AuthController = class AuthController {
             throw new common_1.UnauthorizedException('Session not found or not owned by user');
         }
         await this.tokenService.revokeSession(dto.sessionId, userId, 'User-initiated session revocation');
-        return { success: true };
+        return {};
     }
     async register(registerDto, req, res) {
         const deviceInfo = this.extractDeviceInfo(req);
         const { accessToken, refreshToken, sessionId, user, verificationToken } = await this.authService.register(registerDto, deviceInfo);
         this.setAuthCookies(res, { accessToken, refreshToken, sessionId });
         return {
-            success: true,
             user: {
                 id: user.id || '',
                 email: user.email || '',
@@ -184,7 +181,6 @@ let AuthController = class AuthController {
     async verifyEmail(token) {
         const user = await this.authService.verifyEmail(token);
         return {
-            success: true,
             user: {
                 id: user.id || '',
                 email: user.email || '',
@@ -197,12 +193,11 @@ let AuthController = class AuthController {
     }
     async forgotPassword(dto) {
         const token = await this.authService.requestPasswordReset(dto.email);
-        return { success: true, tokenSent: !!token };
+        return { tokenSent: !!token };
     }
     async resetPassword(dto) {
         const user = await this.authService.resetPassword(dto.token, dto.password, dto.otp);
         return {
-            success: true,
             user: {
                 id: user.id || '',
                 email: user.email || '',
@@ -230,7 +225,7 @@ let AuthController = class AuthController {
         const result = await this.authService.changePassword(userId, dto.oldPassword, dto.newPassword);
         await this.sessionService.revokeAllUserSessions(userId);
         await this.tokenService.revokeAllUserTokens(userId);
-        return { success: true, ...result };
+        return { ...result };
     }
     async mfaEnroll(req) {
         const jwtUser = req.user;
@@ -250,7 +245,6 @@ let AuthController = class AuthController {
         }
         await this.authService.setMfaSecret(req.user.id, secret.base32);
         return {
-            success: true,
             secret: secret.base32,
             ...(secret.otpauth_url && { otpauth_url: secret.otpauth_url }),
             setupStatus: 'pending',
@@ -259,19 +253,19 @@ let AuthController = class AuthController {
     async mfaVerify(req, verifyDto) {
         const userId = req.user?.id || req.user?.sub;
         if (!userId) {
-            return { success: false, message: 'User not authenticated' };
+            throw new common_1.UnauthorizedException('User not authenticated');
         }
         if (verifyDto.type === 'recovery') {
             const isValid = await this.authService.verifyRecoveryCode(userId, verifyDto.code);
             if (isValid) {
-                return { success: true };
+                return {};
             }
-            return { success: false, message: 'Invalid recovery code' };
+            throw new common_1.UnauthorizedException('Invalid recovery code');
         }
         const user = await this.authService.getUserById(userId);
         const secret = user.mfaSecret;
         if (!secret) {
-            return { success: false, message: 'No MFA secret set' };
+            throw new common_1.UnauthorizedException('No MFA secret set');
         }
         const verified = speakeasy.totp.verify({
             secret,
@@ -283,22 +277,21 @@ let AuthController = class AuthController {
             if (!user.mfaEnabled) {
                 const recoveryCodes = await this.authService.enableMfa(userId);
                 return {
-                    success: true,
                     recoveryCodes,
                     message: 'MFA enabled successfully. Save these recovery codes in a safe place.'
                 };
             }
-            return { success: true };
+            return {};
         }
         else {
-            return { success: false, message: 'Invalid MFA code' };
+            throw new common_1.UnauthorizedException('Invalid MFA code');
         }
     }
     async socialLogin() {
-        return { success: false, message: 'Social login not implemented yet' };
+        return { message: 'Social login not implemented yet' };
     }
     async auditLogs() {
-        return { success: false, message: 'Audit logs not implemented yet' };
+        return { message: 'Audit logs not implemented yet' };
     }
     setAuthCookies(res, { accessToken, refreshToken, sessionId }) {
         const accessTokenTtl = parseInt(this.configService.get('auth.jwt.accessExpiresIn') || '900', 10);

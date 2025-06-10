@@ -21,9 +21,6 @@ export class VerifyEmailUserDto {
 }
 
 export class VerifyEmailResponseDto {
-  @ApiProperty({ example: true })
-  success: boolean;
-
   @ApiProperty({ type: VerifyEmailUserDto })
   user: VerifyEmailUserDto;
 }

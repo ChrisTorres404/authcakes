@@ -8,7 +8,6 @@ export declare class LoginUserDto {
     emailVerified: boolean;
 }
 export declare class LoginResponseDto {
-    success: boolean;
     user: LoginUserDto;
     sessionId: string;
     accessToken: string;

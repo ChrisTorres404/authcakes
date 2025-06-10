@@ -1,9 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 export class MfaEnrollResponseDto {
-  @ApiProperty({ example: true })
-  success: boolean;
-
   @ApiProperty({ example: 'BASE32SECRET' })
   secret: string;
 
@@ -18,9 +15,6 @@ export class MfaEnrollResponseDto {
 }
 
 export class MfaVerifyResponseDto {
-  @ApiProperty({ example: true })
-  success: boolean;
-
   @ApiProperty({ 
     example: 'MFA enabled successfully',
     required: false 

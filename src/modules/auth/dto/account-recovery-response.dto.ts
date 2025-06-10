@@ -1,9 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 export class RequestAccountRecoveryResponseDto {
-  @ApiProperty({ example: true })
-  success: boolean;
-
   @ApiProperty({ 
     example: 'dev-recovery-token',
     required: false,
@@ -13,6 +10,5 @@ export class RequestAccountRecoveryResponseDto {
 }
 
 export class CompleteAccountRecoveryResponseDto {
-  @ApiProperty({ example: true })
-  success: boolean;
+  // Empty DTO since TransformResponseInterceptor adds success wrapper
 }

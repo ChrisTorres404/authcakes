@@ -1,6 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
+// Empty DTO import - TransformResponseInterceptor adds success wrapper automatically
 
 export class SuccessResponseDto {
-  @ApiProperty({ example: true })
-  success: boolean;
+  // Empty DTO since TransformResponseInterceptor adds success wrapper
 }

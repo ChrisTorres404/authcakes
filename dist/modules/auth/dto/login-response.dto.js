@@ -54,7 +54,6 @@ __decorate([
     __metadata("design:type", Boolean)
 ], LoginUserDto.prototype, "emailVerified", void 0);
 class LoginResponseDto {
-    success;
     user;
     sessionId;
     accessToken;
@@ -62,10 +61,6 @@ class LoginResponseDto {
     verificationToken;
 }
 exports.LoginResponseDto = LoginResponseDto;
-__decorate([
-    (0, swagger_1.ApiProperty)({ example: true }),
-    __metadata("design:type", Boolean)
-], LoginResponseDto.prototype, "success", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({ type: LoginUserDto }),
     __metadata("design:type", LoginUserDto)

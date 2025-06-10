@@ -1,0 +1,329 @@
+
+> authcakes-api-nest@0.0.1 start:dev
+> nest start --watch
+
+[2J[3J[H[[90m11:52:35 PM[0m] Starting compilation in watch mode...
+
+[[90m11:52:37 PM[0m] Found 0 errors. Watching for file changes.
+
+(node:19727) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +11ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPassportModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mThrottlerModule dependencies initialized[39m[38;5;3m +14ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mJwtModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmCoreModule dependencies initialized[39m[38;5;3m +97ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [32mSeederService constructed[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDatabaseModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mSettingsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTenantsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mUsersModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+[33m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [33m   WARN[39m [38;5;3m[LegacyRouteConverter] [39m[33mUnsupported route path: "/api/*". In previous versions, the symbols ?, *, and + were used to denote optional or repeating path parameters. The latest version of "path-to-regexp" now requires the use of named parameters. For example, instead of using a route like /users/* to capture all routes starting with "/users", you should use /users/*path. For more details, refer to the migration guide. Attempting to auto-convert...[39m
+[33m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [33m   WARN[39m [38;5;3m[LegacyRouteConverter] [39m[33mUnsupported route path: "/api/*". In previous versions, the symbols ?, *, and + were used to denote optional or repeating path parameters. The latest version of "path-to-regexp" now requires the use of named parameters. For example, instead of using a route like /users/* to capture all routes starting with "/users", you should use /users/*path. For more details, refer to the migration guide. Attempting to auto-convert...[39m
+[33m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [33m   WARN[39m [38;5;3m[LegacyRouteConverter] [39m[33mUnsupported route path: "/api/*". In previous versions, the symbols ?, *, and + were used to denote optional or repeating path parameters. The latest version of "path-to-regexp" now requires the use of named parameters. For example, instead of using a route like /users/* to capture all routes starting with "/users", you should use /users/*path. For more details, refer to the migration guide. Attempting to auto-convert...[39m
+[33m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [33m   WARN[39m [38;5;3m[LegacyRouteConverter] [39m[33mUnsupported route path: "/api/*". In previous versions, the symbols ?, *, and + were used to denote optional or repeating path parameters. The latest version of "path-to-regexp" now requires the use of named parameters. For example, instead of using a route like /users/* to capture all routes starting with "/users", you should use /users/*path. For more details, refer to the migration guide. Attempting to auto-convert...[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/api}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/api, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/api/v1/auth}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/login, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/logout, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/refresh, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/session-status, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/sessions, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/revoke-session, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/register, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/verify-email, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/forgot-password, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/reset-password, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/request-account-recovery, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/complete-account-recovery, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/change-password, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/mfa/enroll, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/mfa/verify, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/social, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/audit-logs, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mUsersController {/api/v1/users}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/profile, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/profile, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/:id, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/verify-email, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/verify-phone, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/devices, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/devices/:id/revoke, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mTenantsController {/api/v1/tenants}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/:id, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/:id/members, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/members/:membershipId, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/:tenantId/members/:userId, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/:id/settings, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/:id/settings, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/:tenantId/members, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/:tenantId/invite, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/:tenantId/members/:userId, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mSettingsController {/api/v1/settings}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/settings, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/settings/:key, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/settings, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/settings/:key, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/settings/:key, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/settings/categories/session, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/settings/categories/authentication, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/settings/categories/tokens, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/settings/categories/profile, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/settings/bulk, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:37 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +2ms[39m
+✅ Application is running on: http://localhost:5050/api
+📖 Swagger UI is available at: http://localhost:5050/api/docs
+[33m[Nest] 19763  - [39m06/04/2025, 11:52:54 PM [33m   WARN[39m [38;5;3m[AllExceptionsFilter] [39m[33m[GET] /api/v2/test 404 - Cannot GET /api/v2/test[39m
+[32m[Nest] 19763  - [39m06/04/2025, 11:52:54 PM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /api/v2/test 404[39m
+[2J[3J[H[[90m11:53:19 PM[0m] File change detected. Starting incremental compilation...
+
+[[90m11:53:19 PM[0m] Found 0 errors. Watching for file changes.
+
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +10ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPassportModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mThrottlerModule dependencies initialized[39m[38;5;3m +13ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mJwtModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmCoreModule dependencies initialized[39m[38;5;3m +58ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [32mSeederService constructed[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDatabaseModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mSettingsModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTenantsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mUsersModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+[33m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [33m   WARN[39m [38;5;3m[LegacyRouteConverter] [39m[33mUnsupported route path: "/api/*". In previous versions, the symbols ?, *, and + were used to denote optional or repeating path parameters. The latest version of "path-to-regexp" now requires the use of named parameters. For example, instead of using a route like /users/* to capture all routes starting with "/users", you should use /users/*path. For more details, refer to the migration guide. Attempting to auto-convert...[39m
+[33m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [33m   WARN[39m [38;5;3m[LegacyRouteConverter] [39m[33mUnsupported route path: "/api/*". In previous versions, the symbols ?, *, and + were used to denote optional or repeating path parameters. The latest version of "path-to-regexp" now requires the use of named parameters. For example, instead of using a route like /users/* to capture all routes starting with "/users", you should use /users/*path. For more details, refer to the migration guide. Attempting to auto-convert...[39m
+[33m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [33m   WARN[39m [38;5;3m[LegacyRouteConverter] [39m[33mUnsupported route path: "/api/*". In previous versions, the symbols ?, *, and + were used to denote optional or repeating path parameters. The latest version of "path-to-regexp" now requires the use of named parameters. For example, instead of using a route like /users/* to capture all routes starting with "/users", you should use /users/*path. For more details, refer to the migration guide. Attempting to auto-convert...[39m
+[33m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [33m   WARN[39m [38;5;3m[LegacyRouteConverter] [39m[33mUnsupported route path: "/api/*". In previous versions, the symbols ?, *, and + were used to denote optional or repeating path parameters. The latest version of "path-to-regexp" now requires the use of named parameters. For example, instead of using a route like /users/* to capture all routes starting with "/users", you should use /users/*path. For more details, refer to the migration guide. Attempting to auto-convert...[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/api}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/api, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/api/v1/auth}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/login, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/logout, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/refresh, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/session-status, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/sessions, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/revoke-session, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/register, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/verify-email, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/forgot-password, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/reset-password, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/request-account-recovery, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/complete-account-recovery, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/change-password, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/mfa/enroll, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/mfa/verify, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/social, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/audit-logs, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mUsersController {/api/v1/users}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/profile, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/profile, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/:id, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/verify-email, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/verify-phone, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/devices, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/devices/:id/revoke, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mTenantsController {/api/v1/tenants}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/:id, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/:id/members, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/members/:membershipId, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/:tenantId/members/:userId, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/:id/settings, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/:id/settings, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/:tenantId/members, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/:tenantId/invite, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/:tenantId/members/:userId, PATCH} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mSettingsController {/api/v1/settings}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/settings, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/settings/:key, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/settings, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/settings/:key, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/settings/:key, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/settings/categories/session, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/settings/categories/authentication, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/settings/categories/tokens, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/settings/categories/profile, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/settings/bulk, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:20 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +1ms[39m
+✅ Application is running on: http://localhost:5050/api
+📖 Swagger UI is available at: http://localhost:5050/api/docs
+Path: /
+Path segments: []
+API index: -1
+[33m[Nest] 20062  - [39m06/04/2025, 11:53:50 PM [33m   WARN[39m [38;5;3m[AllExceptionsFilter] [39m[33m[GET] /api/v2/test 404 - Cannot GET /api/v2/test[39m
+[32m[Nest] 20062  - [39m06/04/2025, 11:53:50 PM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /api/v2/test 404[39m
+[2J[3J[H[[90m11:54:20 PM[0m] File change detected. Starting incremental compilation...
+
+[[90m11:54:20 PM[0m] Found 0 errors. Watching for file changes.
+
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +10ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPassportModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mThrottlerModule dependencies initialized[39m[38;5;3m +15ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mJwtModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmCoreModule dependencies initialized[39m[38;5;3m +54ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [32mSeederService constructed[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mDatabaseModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mSettingsModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTenantsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mUsersModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+[33m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [33m   WARN[39m [38;5;3m[LegacyRouteConverter] [39m[33mUnsupported route path: "/api/*". In previous versions, the symbols ?, *, and + were used to denote optional or repeating path parameters. The latest version of "path-to-regexp" now requires the use of named parameters. For example, instead of using a route like /users/* to capture all routes starting with "/users", you should use /users/*path. For more details, refer to the migration guide. Attempting to auto-convert...[39m
+[33m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [33m   WARN[39m [38;5;3m[LegacyRouteConverter] [39m[33mUnsupported route path: "/api/*". In previous versions, the symbols ?, *, and + were used to denote optional or repeating path parameters. The latest version of "path-to-regexp" now requires the use of named parameters. For example, instead of using a route like /users/* to capture all routes starting with "/users", you should use /users/*path. For more details, refer to the migration guide. Attempting to auto-convert...[39m
+[33m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [33m   WARN[39m [38;5;3m[LegacyRouteConverter] [39m[33mUnsupported route path: "/api/*". In previous versions, the symbols ?, *, and + were used to denote optional or repeating path parameters. The latest version of "path-to-regexp" now requires the use of named parameters. For example, instead of using a route like /users/* to capture all routes starting with "/users", you should use /users/*path. For more details, refer to the migration guide. Attempting to auto-convert...[39m
+[33m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [33m   WARN[39m [38;5;3m[LegacyRouteConverter] [39m[33mUnsupported route path: "/api/*". In previous versions, the symbols ?, *, and + were used to denote optional or repeating path parameters. The latest version of "path-to-regexp" now requires the use of named parameters. For example, instead of using a route like /users/* to capture all routes starting with "/users", you should use /users/*path. For more details, refer to the migration guide. Attempting to auto-convert...[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/api}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/health, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/api, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/api/v1/auth}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/login, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/logout, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/refresh, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/session-status, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/sessions, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/revoke-session, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/register, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/verify-email, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/forgot-password, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/reset-password, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/request-account-recovery, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/complete-account-recovery, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/change-password, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/mfa/enroll, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/mfa/verify, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/social, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/auth/audit-logs, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mUsersController {/api/v1/users}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/profile, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/profile, PATCH} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/:id, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/verify-email, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/verify-phone, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/devices, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/users/devices/:id/revoke, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mTenantsController {/api/v1/tenants}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/:id, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/:id, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/:id/members, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/members/:membershipId, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/:tenantId/members/:userId, DELETE} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/:id/settings, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/:id/settings, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/:tenantId/members, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/:tenantId/invite, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/tenants/:tenantId/members/:userId, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mSettingsController {/api/v1/settings}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/settings, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/settings/:key, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/settings, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/settings/:key, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/settings/:key, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/settings/categories/session, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/settings/categories/authentication, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/settings/categories/tokens, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/settings/categories/profile, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api/v1/settings/bulk, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:21 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +2ms[39m
+✅ Application is running on: http://localhost:5050/api
+📖 Swagger UI is available at: http://localhost:5050/api/docs
+[33m[Nest] 20419  - [39m06/04/2025, 11:54:36 PM [33m   WARN[39m [38;5;3m[AllExceptionsFilter] [39m[33m[GET] /api/v2/test 404 - Cannot GET /api/v2/test[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:36 PM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /api/v2/test 404[39m
+[33m[Nest] 20419  - [39m06/04/2025, 11:54:56 PM [33m   WARN[39m [38;5;3m[AllExceptionsFilter] [39m[33m[HEAD] /api/v1/users 401 - Authentication required[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:56 PM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mHEAD /api/v1/users 401[39m
+[33m[Nest] 20419  - [39m06/04/2025, 11:54:56 PM [33m   WARN[39m [38;5;3m[AllExceptionsFilter] [39m[33m[HEAD] /api/v2/test 404 - Cannot HEAD /api/v2/test[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:56 PM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mHEAD /api/v2/test 404[39m
+[33m[Nest] 20419  - [39m06/04/2025, 11:54:56 PM [33m   WARN[39m [38;5;3m[AllExceptionsFilter] [39m[33m[HEAD] /api/users 404 - Cannot HEAD /api/users[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:56 PM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mHEAD /api/users 404[39m
+[33m[Nest] 20419  - [39m06/04/2025, 11:54:56 PM [33m   WARN[39m [38;5;3m[TenantContextInterceptor] [39m[33mWarning: request.user is missing when trying to access tenantId[39m
+[33m[Nest] 20419  - [39m06/04/2025, 11:54:56 PM [33m   WARN[39m [38;5;3m[TenantContextInterceptor] [39mObject(1) {
+  path: [32m'/api/health'[39m
+}
+[33m[Nest] 20419  - [39m06/04/2025, 11:54:56 PM [33m   WARN[39m [38;5;3m[TenantContextInterceptor] [39m[33mWarning: tenantId is missing in request context[39m
+[33m[Nest] 20419  - [39m06/04/2025, 11:54:56 PM [33m   WARN[39m [38;5;3m[TenantContextInterceptor] [39mObject(2) {
+  path: [32m'/api/health'[39m,
+  method: [32m'HEAD'[39m
+}
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:56 PM [32m    LOG[39m [38;5;3m[Performance] [39m[32mHEAD /api/health - 1ms[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:56 PM [32m    LOG[39m [38;5;3m[Performance] [39mObject(1) {
+  metrics: {
+    method: [32m'HEAD'[39m,
+    url: [32m'/api/health'[39m,
+    duration: [33m1[39m,
+    timestamp: [35m2025-06-05T06:54:56.500Z[39m
+  }
+}
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:56 PM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mHEAD /api/health 200[39m
+[33m[Nest] 20419  - [39m06/04/2025, 11:54:56 PM [33m   WARN[39m [38;5;3m[AllExceptionsFilter] [39m[33m[HEAD] /api/vx/test 404 - Cannot HEAD /api/vx/test[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:54:56 PM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mHEAD /api/vx/test 404[39m
+[33m[Nest] 20419  - [39m06/04/2025, 11:55:13 PM [33m   WARN[39m [38;5;3m[AllExceptionsFilter] [39m[33m[HEAD] /api/v1/auth/login 404 - Cannot HEAD /api/v1/auth/login[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:55:13 PM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mHEAD /api/v1/auth/login 404[39m
+[33m[Nest] 20419  - [39m06/04/2025, 11:55:13 PM [33m   WARN[39m [38;5;3m[AllExceptionsFilter] [39m[33m[HEAD] /api/v1/tenants 401 - Authentication required[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:55:13 PM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mHEAD /api/v1/tenants 401[39m
+[33m[Nest] 20419  - [39m06/04/2025, 11:55:13 PM [33m   WARN[39m [38;5;3m[AllExceptionsFilter] [39m[33m[HEAD] /api/v1/settings 401 - Authentication required[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:55:13 PM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mHEAD /api/v1/settings 401[39m
+[33m[Nest] 20419  - [39m06/04/2025, 11:55:42 PM [33m   WARN[39m [38;5;3m[AllExceptionsFilter] [39m[33m[GET] /api/v1/auth/login 404 - Cannot GET /api/v1/auth/login[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:55:42 PM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /api/v1/auth/login 404[39m
+[33m[Nest] 20419  - [39m06/04/2025, 11:55:51 PM [33m   WARN[39m [38;5;3m[AllExceptionsFilter] [39m[33m[GET] /api/v1/users 401 - Authentication required[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:55:51 PM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /api/v1/users 401[39m
+[33m[Nest] 20419  - [39m06/04/2025, 11:56:11 PM [33m   WARN[39m [38;5;3m[AllExceptionsFilter] [39m[33m[GET] /api/auth/login 404 - Cannot GET /api/auth/login[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:56:11 PM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /api/auth/login 404[39m
+[33m[Nest] 20419  - [39m06/04/2025, 11:56:28 PM [33m   WARN[39m [38;5;3m[AllExceptionsFilter] [39m[33m[GET] /api/tenants 404 - Cannot GET /api/tenants[39m
+[32m[Nest] 20419  - [39m06/04/2025, 11:56:28 PM [32m    LOG[39m [38;5;3m[HTTP] [39m[32mGET /api/tenants 404[39m
