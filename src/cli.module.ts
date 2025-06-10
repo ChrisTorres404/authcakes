@@ -7,6 +7,13 @@ import { TruncateTablesCommand } from './commands/truncate-tables.command';
 import { ResetDatabaseCommand } from './commands/reset-database.command';
 import { VerifyDbConnectionCommand } from './commands/verify-db-connection.command';
 
+// Migration module and commands
+import { MigrationModule } from './modules/migration/migration.module';
+import { MigrateCommand } from './modules/migration/commands/migrate.command';
+import { ValidateCommand } from './modules/migration/commands/validate.command';
+import { RollbackCommand } from './modules/migration/commands/rollback.command';
+import { SetupLookupDataCommand } from './modules/migration/commands/setup-lookup-data.command';
+
 // Import config files to ensure they're available
 import appConfig from './config/app.config';
 import authConfig from './config/auth.config';
@@ -45,12 +52,18 @@ import { validationSchema } from './config/validation.schema';
     }),
 
     DatabaseModule,
+    MigrationModule,
   ],
   providers: [
     SeedCommand,
     TruncateTablesCommand,
     ResetDatabaseCommand,
     VerifyDbConnectionCommand,
+    // Migration commands
+    MigrateCommand,
+    ValidateCommand,
+    RollbackCommand,
+    SetupLookupDataCommand,
   ],
 })
 export class CliModule {}
