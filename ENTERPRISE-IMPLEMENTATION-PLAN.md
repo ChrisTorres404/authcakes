@@ -3,8 +3,9 @@
 ## Table of Contents
 1. [Executive Overview](#executive-overview)
 2. [Phase 1: Core MVP Fixes (Weeks 1-6)](#phase-1-core-mvp-fixes-weeks-1-6)
-3. [Phase 2: Enterprise Features (Weeks 7-14)](#phase-2-enterprise-features-weeks-7-14)
-4. [Phase 3: Production Readiness (Weeks 15-17)](#phase-3-production-readiness-weeks-15-17)
+3. [Phase 2: Database Migration Planning & Analysis (Weeks 7-10)](#phase-2-database-migration-planning--analysis-weeks-7-10)
+4. [Phase 3: Enterprise Features (Weeks 11-18)](#phase-3-enterprise-features-weeks-11-18)
+5. [Phase 4: Production Readiness (Weeks 19-21)](#phase-4-production-readiness-weeks-19-21)
 5. [Risk Mitigation Strategy](#risk-mitigation-strategy)
 6. [Success Metrics & KPIs](#success-metrics--kpis)
 7. [Resource Requirements](#resource-requirements)
@@ -15,7 +16,7 @@
 
 This implementation plan provides a detailed roadmap for transforming AuthCakes API into a fully enterprise-ready platform. Each task includes specific implementation details, rationale, and expected impact.
 
-**Timeline**: 17 weeks total
+**Timeline**: 21 weeks total
 **Team Size**: 2-3 senior developers, 1 DevOps engineer, 1 QA engineer
 **Budget**: $15,000-25,000 (infrastructure + tools)
 
@@ -978,15 +979,256 @@ The platform now has a solid foundation with:
 - Real-time monitoring
 - Optimized performance
 
-Next: Begin Phase 2 - Enterprise Features
+Next: Begin Phase 2 - Database Migration Planning & Analysis
 
 ---
 
-## Phase 2: Enterprise Features (Weeks 7-14)
+## Phase 2: Database Migration Planning & Analysis (Weeks 7-10)
 
-### Week 7-9: Security Hardening
+### Overview
 
-#### 2.1 Field-Level Encryption
+This phase focuses on understanding the current database architecture and planning the migration to the comprehensive master database schema. The master schema provides a more robust enterprise foundation with 48 tables compared to the current 13 tables.
+
+### Week 7-8: Current System Analysis
+
+#### 2.1 Current Database Assessment
+
+**What**: Deep analysis of existing database schema and data patterns
+
+**Why**:
+- Understand current data relationships
+- Identify migration complexities
+- Plan data transformation requirements
+- Minimize migration risks
+
+**Current Schema Summary**:
+- 13 core tables focused on authentication and multi-tenancy
+- Key tables: users, tenants, tenant_memberships, sessions, refresh_tokens
+- PostgreSQL with pgcrypto extension
+- Basic audit trail via logs table
+- Simple role-based access (user/admin)
+
+**Tasks**:
+- [ ] Document all current table relationships
+- [ ] Analyze data volumes and growth patterns
+- [ ] Identify custom business logic in database
+- [ ] Review existing indexes and constraints
+- [ ] Assess current backup and recovery procedures
+
+---
+
+#### 2.2 Master Database Schema Analysis
+
+**What**: Comprehensive review of target master database architecture
+
+**Why**:
+- Understand target state capabilities
+- Identify new features enabled by schema
+- Plan phased migration approach
+- Prepare for dual-schema support
+
+**Master Schema Highlights**:
+- 48 comprehensive tables for enterprise features
+- Dual schema support (best practices & original)
+- Advanced features: licensing, organizations, localization
+- Enhanced security: policy groups, privilege routes
+- Complete audit and versioning support
+
+**Key Differences**:
+| Feature | Current Schema | Master Schema |
+|---------|----------------|---------------|
+| Tables | 13 | 48 |
+| User Management | Basic users table | account_logins + account_users separation |
+| Multi-tenancy | tenant_memberships | account_management_groups + organizations |
+| Security | Role-based (user/admin) | Privilege-based with policy groups |
+| Licensing | None | Module licensing system |
+| Localization | None | Full i18n support |
+
+**Tasks**:
+- [ ] Map current tables to master schema equivalents
+- [ ] Identify new required data for master schema
+- [ ] Analyze TypeORM entity differences
+- [ ] Review migration scripts in master_db_project
+- [ ] Understand dual-schema approach benefits
+
+---
+
+### Week 9-10: Migration Strategy Development
+
+#### 2.3 Data Mapping & Transformation Plan
+
+**What**: Create detailed mapping between current and master schemas
+
+**Why**:
+- Ensure zero data loss
+- Maintain data integrity
+- Plan complex transformations
+- Support rollback capability
+
+**Key Mappings**:
+```typescript
+// Example mapping structure
+const schemaMappings = {
+  // Current -> Master
+  'users': {
+    target: ['account_logins', 'account_users'],
+    transformations: {
+      'id': 'account_login.id',
+      'email': 'account_login.email',
+      'password': 'account_login.password_hash',
+      'firstName': 'account_user.first_name',
+      'lastName': 'account_user.last_name',
+      'role': 'security_privilege_mapping',
+    }
+  },
+  'tenants': {
+    target: 'accounts',
+    transformations: {
+      'id': 'id',
+      'name': 'name',
+      'slug': 'subdomain',
+      // New fields needed
+      'account_status_id': 'DEFAULT_ACTIVE_STATUS',
+      'account_type_id': 'DEFAULT_TENANT_TYPE',
+    }
+  },
+  'tenant_memberships': {
+    target: 'account_management_group_members',
+    transformations: {
+      'userId': 'account_user_id',
+      'tenantId': 'account_id',
+      'role': 'privilege_mapping',
+    }
+  }
+};
+```
+
+**Tasks**:
+- [ ] Create complete field mapping document
+- [ ] Design data transformation functions
+- [ ] Plan for default values in new schema
+- [ ] Identify data validation requirements
+- [ ] Design rollback procedures
+
+---
+
+#### 2.4 Migration Implementation Plan
+
+**What**: Detailed step-by-step migration execution plan
+
+**Why**:
+- Minimize downtime
+- Ensure data consistency
+- Enable phased rollout
+- Support testing at each stage
+
+**Migration Phases**:
+
+**Phase A: Preparation**
+1. Set up master database schema in parallel
+2. Create migration scripts and tools
+3. Implement dual-write capability
+4. Set up data validation tools
+
+**Phase B: Data Migration**
+1. Migrate reference data (countries, timezones, etc.)
+2. Migrate user accounts (split to account_logins/account_users)
+3. Transform tenant data to accounts structure
+4. Migrate memberships to management groups
+5. Migrate sessions and authentication data
+
+**Phase C: Application Updates**
+1. Update entities to support both schemas
+2. Implement repository pattern for abstraction
+3. Create compatibility layer
+4. Update authentication flows
+
+**Phase D: Validation & Cutover**
+1. Run parallel validation
+2. Performance testing
+3. Gradual traffic migration
+4. Final cutover
+
+**Tasks**:
+- [ ] Create detailed migration scripts
+- [ ] Design compatibility layer
+- [ ] Plan downtime windows
+- [ ] Create validation test suite
+- [ ] Document rollback procedures
+
+---
+
+#### 2.5 Risk Assessment & Mitigation
+
+**What**: Identify and plan for migration risks
+
+**Why**:
+- Prevent data loss
+- Minimize service disruption
+- Ensure business continuity
+- Prepare contingency plans
+
+**Key Risks**:
+
+1. **Data Loss Risk**
+   - Mitigation: Comprehensive backups, dual-write period
+   - Validation: Automated data comparison tools
+   
+2. **Performance Impact**
+   - Mitigation: Migration during low-traffic periods
+   - Validation: Load testing on new schema
+
+3. **Application Compatibility**
+   - Mitigation: Dual-schema support, feature flags
+   - Validation: Comprehensive integration testing
+
+4. **Rollback Complexity**
+   - Mitigation: Point-in-time recovery, reverse migration scripts
+   - Validation: Rollback testing in staging
+
+**Tasks**:
+- [ ] Complete risk assessment document
+- [ ] Create mitigation procedures
+- [ ] Design monitoring for migration
+- [ ] Prepare incident response plan
+- [ ] Schedule migration windows
+
+---
+
+### Phase 2 Deliverables
+
+1. **Current State Analysis Document**
+   - Complete schema documentation
+   - Data volume analysis
+   - Performance baselines
+
+2. **Migration Strategy Document**
+   - Detailed mapping specifications
+   - Transformation rules
+   - Phased migration plan
+
+3. **Migration Tooling**
+   - Migration scripts
+   - Validation tools
+   - Rollback procedures
+
+4. **Updated Application Code**
+   - Dual-schema support
+   - Compatibility layer
+   - Feature flags
+
+5. **Testing & Validation**
+   - Migration test suite
+   - Performance benchmarks
+   - Validation reports
+
+---
+
+## Phase 3: Enterprise Features (Weeks 11-18)
+
+### Week 11-13: Security Hardening
+
+#### 3.1 Field-Level Encryption
 
 **What**: Implement encryption for sensitive fields at rest
 
@@ -1276,9 +1518,9 @@ export class SecurityDashboardController {
 
 ---
 
-### Week 10-12: Scalability & Compliance
+### Week 14-16: Scalability & Compliance
 
-#### 2.3 Caching Layer Implementation
+#### 3.3 Caching Layer Implementation
 
 **What**: Implement Redis caching for improved performance
 
@@ -1436,7 +1678,7 @@ export class CacheWarmerService {
 
 ---
 
-#### 2.4 Event-Driven Architecture
+#### 3.4 Event-Driven Architecture
 
 **What**: Implement event-driven patterns for scalability
 
@@ -1590,9 +1832,9 @@ export class EmailProcessor {
 
 ---
 
-### Week 13-14: Advanced Enterprise Features
+### Week 17-18: Advanced Enterprise Features
 
-#### 2.5 Infrastructure as Code
+#### 3.5 Infrastructure as Code
 
 **What**: Implement Terraform for infrastructure management
 
@@ -1741,11 +1983,11 @@ resource "aws_appautoscaling_policy" "cpu" {
 
 ---
 
-## Phase 3: Production Readiness (Weeks 15-17)
+## Phase 4: Production Readiness (Weeks 19-21)
 
-### Week 15-16: Platform Finalization
+### Week 19-20: Platform Finalization
 
-#### 3.1 Documentation Overhaul
+#### 4.1 Documentation Overhaul
 
 **What**: Create comprehensive technical and API documentation
 
@@ -1797,7 +2039,7 @@ resource "aws_appautoscaling_policy" "cpu" {
 
 ---
 
-#### 3.2 Security Audit
+#### 4.2 Security Audit
 
 **What**: Comprehensive security assessment and penetration testing
 
@@ -1823,9 +2065,9 @@ resource "aws_appautoscaling_policy" "cpu" {
 
 ---
 
-### Week 17: Launch Preparation
+### Week 21: Launch Preparation
 
-#### 3.3 Load Testing
+#### 4.3 Load Testing
 
 **What**: Comprehensive performance and load testing
 
@@ -1971,4 +2213,6 @@ export let options = {
 
 This implementation plan provides a structured approach to achieving enterprise readiness for AuthCakes API. By following this plan, the platform will be transformed into a robust, scalable, and secure enterprise solution ready for production deployment and rapid feature development.
 
-The total investment of 17 weeks and ~$30,000 in infrastructure will result in a platform capable of supporting millions of users while maintaining enterprise-grade security and reliability standards.
+The key addition of Phase 2 (Database Migration Planning & Analysis) ensures a smooth transition from the current 13-table schema to the comprehensive 48-table master schema, enabling advanced enterprise features while maintaining data integrity and system stability.
+
+The total investment of 21 weeks and ~$30,000 in infrastructure will result in a platform capable of supporting millions of users while maintaining enterprise-grade security and reliability standards.
