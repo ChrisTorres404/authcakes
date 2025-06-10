@@ -29,7 +29,8 @@ let TransformResponseInterceptor = class TransformResponseInterceptor {
             if (data instanceof api_response_dto_1.ApiResponseDto) {
                 return data;
             }
-            if (response.getHeader('Content-Type')?.includes('application/octet-stream')) {
+            const contentType = response.getHeader('Content-Type');
+            if (typeof contentType === 'string' && contentType.includes('application/octet-stream')) {
                 return data;
             }
             return api_response_dto_1.ApiResponseDto.success(data, {

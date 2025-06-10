@@ -87,6 +87,40 @@ export const dataSourceOptions: PostgresConnectionOptions = {
   logging: envVars.DB_LOGGING === 'true',
   // Add migration logging for troubleshooting
   migrationsRun: process.env.NODE_ENV === 'test' || envVars.DB_MIGRATIONS_RUN === 'true',
+  
+  // Connection pooling configuration for production-ready performance
+  extra: {
+    // Pool size configuration
+    min: parseInt(process.env.DB_POOL_MIN || '2', 10),
+    max: parseInt(process.env.DB_POOL_MAX || '20', 10),
+    
+    // Connection timeout settings
+    idleTimeoutMillis: parseInt(process.env.DB_POOL_IDLE_TIMEOUT || '10000', 10),
+    acquireTimeoutMillis: parseInt(process.env.DB_POOL_ACQUIRE_TIMEOUT || '60000', 10),
+    createTimeoutMillis: parseInt(process.env.DB_POOL_CREATE_TIMEOUT || '30000', 10),
+    
+    // Connection validation
+    validateConnection: process.env.DB_POOL_VALIDATE !== 'false',
+    
+    // Statement timeout for preventing long-running queries
+    statement_timeout: parseInt(process.env.DB_STATEMENT_TIMEOUT || '30000', 10),
+    query_timeout: parseInt(process.env.DB_QUERY_TIMEOUT || '30000', 10),
+    
+    // Application name for database monitoring
+    application_name: `authcakes-${process.env.NODE_ENV || 'development'}`,
+    
+    // Connection retry configuration
+    retryAttempts: parseInt(process.env.DB_RETRY_ATTEMPTS || '10', 10),
+    retryDelay: parseInt(process.env.DB_RETRY_DELAY || '3000', 10),
+    
+    // SSL configuration for production
+    ssl: process.env.DB_SSL === 'true' ? {
+      rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false',
+      ca: process.env.DB_SSL_CA,
+      cert: process.env.DB_SSL_CERT,
+      key: process.env.DB_SSL_KEY,
+    } : false,
+  },
 };
 
 // Create and export a new data source

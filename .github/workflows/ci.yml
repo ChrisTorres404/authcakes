@@ -1,0 +1,233 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: '18'
+  POSTGRES_VERSION: '15'
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: authcakes_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Create test environment file
+      run: |
+        cat > .env.test << EOF
+        NODE_ENV=test
+        APP_PORT=5050
+        
+        # Database
+        DATABASE_HOST=localhost
+        DATABASE_PORT=5432
+        DATABASE_USER=postgres
+        DATABASE_PASSWORD=postgres
+        DATABASE_NAME=authcakes_test
+        
+        # JWT Secrets
+        JWT_SECRET=test-jwt-secret-for-ci
+        JWT_REFRESH_SECRET=test-refresh-secret-for-ci
+        SYSTEM_JWT_SECRET=test-system-jwt-secret-for-ci
+        
+        # API Keys
+        SYSTEM_API_KEY=test-system-api-key-for-ci
+        
+        # Encryption
+        ENCRYPTION_KEY=dGVzdC1lbmNyeXB0aW9uLWtleS1mb3ItY2k=
+        
+        # Other settings
+        THROTTLE_TTL=60
+        THROTTLE_LIMIT=100
+        CSRF_SECRET=test-csrf-secret
+        EOF
+    
+    - name: Run linting
+      run: npm run lint
+    
+    - name: Run database migrations
+      run: npm run migration:run
+      env:
+        DATABASE_HOST: localhost
+        DATABASE_PORT: 5432
+        DATABASE_USER: postgres
+        DATABASE_PASSWORD: postgres
+        DATABASE_NAME: authcakes_test
+    
+    - name: Run unit tests with coverage
+      run: npm run test:cov
+      env:
+        NODE_ENV: test
+    
+    - name: Run e2e tests
+      run: npm run test:e2e
+      env:
+        NODE_ENV: test
+    
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage/lcov.info
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+    
+    - name: SonarCloud Scan
+      uses: SonarSource/sonarcloud-github-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      continue-on-error: true
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        severity: 'CRITICAL,HIGH'
+    
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'trivy-results.sarif'
+      continue-on-error: true
+    
+    - name: Run npm audit
+      run: npm audit --audit-level=moderate
+      continue-on-error: true
+
+  build:
+    name: Build Docker Image
+    needs: [test]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      continue-on-error: true
+    
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: |
+          ${{ secrets.DOCKER_USERNAME }}/authcakes-api
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+    
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile.production
+        platforms: linux/amd64,linux/arm64
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+      continue-on-error: true
+
+  deploy-staging:
+    name: Deploy to Staging
+    needs: [build]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment: staging
+    
+    steps:
+    - name: Deploy to staging
+      run: |
+        echo "Deployment to staging would happen here"
+        echo "This is a placeholder for actual deployment steps"
+        # Add your deployment commands here
+        # Examples:
+        # - SSH to server and pull latest Docker image
+        # - Trigger webhook to deployment service
+        # - Use kubectl to update Kubernetes deployment
+        # - Deploy to cloud provider (AWS ECS, Google Cloud Run, etc.)
+    
+    - name: Run smoke tests
+      run: |
+        echo "Running smoke tests against staging environment"
+        # Add smoke test commands here
+
+  deploy-production:
+    name: Deploy to Production
+    needs: [deploy-staging]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment: production
+    
+    steps:
+    - name: Deploy to production
+      run: |
+        echo "Deployment to production would happen here"
+        echo "This requires manual approval in GitHub"
+        # Add your production deployment commands here
+    
+    - name: Run smoke tests
+      run: |
+        echo "Running smoke tests against production environment"
+        # Add production smoke test commands here
+    
+    - name: Notify deployment
+      run: |
+        echo "Send notification about successful deployment"
+        # Add notification logic (Slack, email, etc.)

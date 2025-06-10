@@ -12,5 +12,14 @@ exports.default = (0, config_1.registerAs)('database', () => ({
     logging: process.env.DB_LOGGING === 'true',
     ssl: process.env.DB_SSL === 'true',
     migrationsRun: process.env.DB_MIGRATIONS_RUN === 'true',
+    poolSize: parseInt(process.env.DB_POOL_SIZE || '20', 10),
+    poolMaxConnections: parseInt(process.env.DB_POOL_MAX || '100', 10),
+    poolIdleTimeout: parseInt(process.env.DB_POOL_IDLE_TIMEOUT || '10000', 10),
+    poolAcquireTimeout: parseInt(process.env.DB_POOL_ACQUIRE_TIMEOUT || '60000', 10),
+    poolValidateConnection: process.env.DB_POOL_VALIDATE !== 'false',
+    retryAttempts: parseInt(process.env.DB_RETRY_ATTEMPTS || '10', 10),
+    retryDelay: parseInt(process.env.DB_RETRY_DELAY || '3000', 10),
+    statementTimeout: parseInt(process.env.DB_STATEMENT_TIMEOUT || '30000', 10),
+    queryTimeout: parseInt(process.env.DB_QUERY_TIMEOUT || '30000', 10),
 }));
 //# sourceMappingURL=database.config.js.map

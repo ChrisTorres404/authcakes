@@ -57,7 +57,7 @@ import { TransformResponseInterceptor } from './common/interceptors/transform-re
       },
     }),
 
-    // Database connection
+    // Database connection with connection pooling
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -71,6 +71,38 @@ import { TransformResponseInterceptor } from './common/interceptors/transform-re
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         synchronize: configService.get<boolean>('database.synchronize'),
         logging: configService.get<boolean>('database.logging'),
+        // Connection pooling configuration
+        extra: {
+          // Pool size configuration
+          min: Math.floor((configService.get<number>('database.poolSize') || 20) / 4),
+          max: configService.get<number>('database.poolMaxConnections') || 100,
+          
+          // Connection timeout settings
+          idleTimeoutMillis: configService.get<number>('database.poolIdleTimeout'),
+          acquireTimeoutMillis: configService.get<number>('database.poolAcquireTimeout'),
+          createTimeoutMillis: 30000,
+          
+          // Connection validation
+          validateConnection: configService.get<boolean>('database.poolValidateConnection'),
+          
+          // Statement timeout for preventing long-running queries
+          statement_timeout: configService.get<number>('database.statementTimeout'),
+          query_timeout: configService.get<number>('database.queryTimeout'),
+          
+          // Application name for database monitoring
+          application_name: `authcakes-${process.env.NODE_ENV || 'development'}`,
+          
+          // SSL configuration for production
+          ssl: configService.get<boolean>('database.ssl') ? {
+            rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false',
+            ca: process.env.DB_SSL_CA,
+            cert: process.env.DB_SSL_CERT,
+            key: process.env.DB_SSL_KEY,
+          } : false,
+        },
+        // Connection retry configuration
+        retryAttempts: configService.get<number>('database.retryAttempts'),
+        retryDelay: configService.get<number>('database.retryDelay'),
       }),
     }),
 

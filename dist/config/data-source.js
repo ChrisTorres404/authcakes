@@ -48,6 +48,25 @@ exports.dataSourceOptions = {
     synchronize: envVars.DB_SYNCHRONIZE === 'true',
     logging: envVars.DB_LOGGING === 'true',
     migrationsRun: process.env.NODE_ENV === 'test' || envVars.DB_MIGRATIONS_RUN === 'true',
+    extra: {
+        min: parseInt(process.env.DB_POOL_MIN || '2', 10),
+        max: parseInt(process.env.DB_POOL_MAX || '20', 10),
+        idleTimeoutMillis: parseInt(process.env.DB_POOL_IDLE_TIMEOUT || '10000', 10),
+        acquireTimeoutMillis: parseInt(process.env.DB_POOL_ACQUIRE_TIMEOUT || '60000', 10),
+        createTimeoutMillis: parseInt(process.env.DB_POOL_CREATE_TIMEOUT || '30000', 10),
+        validateConnection: process.env.DB_POOL_VALIDATE !== 'false',
+        statement_timeout: parseInt(process.env.DB_STATEMENT_TIMEOUT || '30000', 10),
+        query_timeout: parseInt(process.env.DB_QUERY_TIMEOUT || '30000', 10),
+        application_name: `authcakes-${process.env.NODE_ENV || 'development'}`,
+        retryAttempts: parseInt(process.env.DB_RETRY_ATTEMPTS || '10', 10),
+        retryDelay: parseInt(process.env.DB_RETRY_DELAY || '3000', 10),
+        ssl: process.env.DB_SSL === 'true' ? {
+            rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false',
+            ca: process.env.DB_SSL_CA,
+            cert: process.env.DB_SSL_CERT,
+            key: process.env.DB_SSL_KEY,
+        } : false,
+    },
 };
 const dataSource = new typeorm_1.DataSource(exports.dataSourceOptions);
 if (process.env.NODE_ENV === 'test' && dbName !== 'authcakes_test') {

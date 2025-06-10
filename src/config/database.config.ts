@@ -21,6 +21,18 @@ export interface DatabaseConfig {
   logging: boolean;
   ssl: boolean;
   migrationsRun: boolean;
+  // Connection pooling configuration
+  poolSize: number;
+  poolMaxConnections: number;
+  poolIdleTimeout: number;
+  poolAcquireTimeout: number;
+  poolValidateConnection: boolean;
+  // Connection retry configuration
+  retryAttempts: number;
+  retryDelay: number;
+  // Statement timeout configuration
+  statementTimeout: number;
+  queryTimeout: number;
 }
 
 export default registerAs(
@@ -37,5 +49,17 @@ export default registerAs(
     logging: process.env.DB_LOGGING === 'true',
     ssl: process.env.DB_SSL === 'true',
     migrationsRun: process.env.DB_MIGRATIONS_RUN === 'true',
+    // Connection pooling configuration with enterprise-grade defaults
+    poolSize: parseInt(process.env.DB_POOL_SIZE || '20', 10),
+    poolMaxConnections: parseInt(process.env.DB_POOL_MAX || '100', 10),
+    poolIdleTimeout: parseInt(process.env.DB_POOL_IDLE_TIMEOUT || '10000', 10), // 10 seconds
+    poolAcquireTimeout: parseInt(process.env.DB_POOL_ACQUIRE_TIMEOUT || '60000', 10), // 60 seconds
+    poolValidateConnection: process.env.DB_POOL_VALIDATE !== 'false', // Default true
+    // Connection retry configuration
+    retryAttempts: parseInt(process.env.DB_RETRY_ATTEMPTS || '10', 10),
+    retryDelay: parseInt(process.env.DB_RETRY_DELAY || '3000', 10), // 3 seconds
+    // Statement timeout configuration
+    statementTimeout: parseInt(process.env.DB_STATEMENT_TIMEOUT || '30000', 10), // 30 seconds
+    queryTimeout: parseInt(process.env.DB_QUERY_TIMEOUT || '30000', 10), // 30 seconds
   }),
 );

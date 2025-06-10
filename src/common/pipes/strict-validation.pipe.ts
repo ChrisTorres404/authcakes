@@ -28,7 +28,7 @@ export class StrictValidationPipe extends ValidationPipe {
           field: error.property,
           value: process.env.NODE_ENV === 'production' ? undefined : error.value,
           constraints: error.constraints,
-          children: error.children?.length > 0 ? this.mapChildrenErrors(error.children) : undefined,
+          children: error.children && error.children.length > 0 ? this.mapChildrenErrors(error.children) : undefined,
         }));
 
         return new BadRequestException({
@@ -57,7 +57,7 @@ export class StrictValidationPipe extends ValidationPipe {
       skipUndefinedProperties: false,
       
       // Validate nested objects
-      validateNestedObjects: true,
+      // validateNestedObjects: true, // This option doesn't exist in ValidationPipeOptions
     });
   }
 
@@ -65,7 +65,7 @@ export class StrictValidationPipe extends ValidationPipe {
     return children.map((child) => ({
       field: child.property,
       constraints: child.constraints,
-      children: child.children?.length > 0 ? this.mapChildrenErrors(child.children) : undefined,
+      children: child.children && child.children.length > 0 ? this.mapChildrenErrors(child.children) : undefined,
     }));
   }
 }

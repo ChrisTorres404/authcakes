@@ -50,7 +50,8 @@ export class TransformResponseInterceptor<T>
         }
 
         // Check if it's a file download or other special response
-        if (response.getHeader('Content-Type')?.includes('application/octet-stream')) {
+        const contentType = response.getHeader('Content-Type');
+        if (typeof contentType === 'string' && contentType.includes('application/octet-stream')) {
           return data;
         }
 

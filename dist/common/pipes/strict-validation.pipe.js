@@ -17,7 +17,7 @@ class StrictValidationPipe extends common_1.ValidationPipe {
                     field: error.property,
                     value: process.env.NODE_ENV === 'production' ? undefined : error.value,
                     constraints: error.constraints,
-                    children: error.children?.length > 0 ? this.mapChildrenErrors(error.children) : undefined,
+                    children: error.children && error.children.length > 0 ? this.mapChildrenErrors(error.children) : undefined,
                 }));
                 return new common_1.BadRequestException({
                     statusCode: 400,
@@ -33,14 +33,13 @@ class StrictValidationPipe extends common_1.ValidationPipe {
             skipMissingProperties: false,
             skipNullProperties: false,
             skipUndefinedProperties: false,
-            validateNestedObjects: true,
         });
     }
     mapChildrenErrors(children) {
         return children.map((child) => ({
             field: child.property,
             constraints: child.constraints,
-            children: child.children?.length > 0 ? this.mapChildrenErrors(child.children) : undefined,
+            children: child.children && child.children.length > 0 ? this.mapChildrenErrors(child.children) : undefined,
         }));
     }
 }
